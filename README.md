@@ -5,7 +5,10 @@ Games for Android phones, one per folder.
 | Game | Folder | What it is |
 | --- | --- | --- |
 | Graveway (zombie shooter) | [`graveway/`](graveway) | Plain ES modules and three.js, no build step. Runs in a browser and as an Android app |
-| Graveway for Unity (port in progress) | [`graveway-unity/`](graveway-unity) | Unity 6 project, ported from the web version one system at a time |
+| Graveway for Unity (port in progress) | [`graveway-unity/`](graveway-unity) | Unity 6 project with real 3D art, ported from the web version. See its [port plan](graveway-unity/PORT_PLAN.md) |
+
+The web version is frozen as the reference while the Unity port catches
+up: bug fixes only, and new features go into Unity.
 
 Graveway moved here from the
 [MyApps](https://github.com/enachealex/MyApps) repo with its history.
