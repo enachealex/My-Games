@@ -18,8 +18,17 @@ namespace Graveway
                 uint t = a;
                 t = (t ^ (t >> 15)) * (t | 1u);
                 t ^= t + (t ^ (t >> 7)) * (t | 61u);
-                return (float)((t ^ (t >> 14)) / 4294967296.0);
+                return ToUnit(t ^ (t >> 14));
             }
+        }
+
+        // The web version divides by 2^32 in doubles. In floats, the top few
+        // values round up to exactly 1, which would index past the end of an
+        // array, so they're held just under it.
+        public static float ToUnit(uint bits)
+        {
+            float f = (float)(bits / 4294967296.0);
+            return f < 1f ? f : 0.99999994f;
         }
 
         public float Range(float lo, float hi) => lo + Next() * (hi - lo);

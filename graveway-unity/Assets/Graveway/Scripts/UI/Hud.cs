@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -34,15 +35,17 @@ namespace Graveway
         float bannerT0, hurtT;
         readonly Dictionary<string, string> last = new Dictionary<string, string>();
 
+        // Numbers the same way on every phone: "1,234", whatever the locale.
+        static string N(float v) => v.ToString("N0", CultureInfo.InvariantCulture);
+
         public void Init(Game g)
         {
             game = g;
-            var settings = ScriptableObject.CreateInstance<PanelSettings>();
-            settings.themeStyleSheet = Resources.Load<ThemeStyleSheet>("UI/GravewayTheme");
-            settings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
-            settings.referenceResolution = new Vector2Int(390, 844);
-            settings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
-            settings.match = 0.5f;
+            // An asset (made by Graveway → Set up project), not one built here:
+            // a PanelSettings made at runtime misses references a build needs,
+            // and the UI comes up blank on a phone.
+            var settings = Resources.Load<PanelSettings>("UI/GravewayPanel");
+            if (settings == null) throw new InvalidOperationException("Graveway: Resources/UI/GravewayPanel.asset is missing. Run Graveway → Set up project.");
 
             var go = new GameObject("UI Document");
             go.SetActive(false);
@@ -201,8 +204,8 @@ namespace Graveway
             menuName.text = c.name.ToUpperInvariant();
             menuRole.text = c.role;
             menuPerk.text = $"{c.perk.name}: {c.perk.text} · brings the {Tunables.Weapon(c.startingWeapon).name}";
-            menuBest.text = s.best > 0 ? $"Best run {s.best:N0} m" : "No runs yet";
-            menuRuns.text = s.runs > 0 ? $"{s.runs} run{(s.runs == 1 ? "" : "s")} · {s.kills:N0} kills · {s.coins:N0} coins" : "";
+            menuBest.text = s.best > 0 ? $"Best run {N(s.best)} m" : "No runs yet";
+            menuRuns.text = s.runs > 0 ? $"{s.runs} run{(s.runs == 1 ? "" : "s")} · {N(s.kills)} kills · {N(s.coins)} coins" : "";
         }
 
         void Cycle(int d)
@@ -223,16 +226,16 @@ namespace Graveway
 
         public void ShowPause()
         {
-            pauseLevel.text = $"{game.Distance:N0} m · stage {game.Stage + 1}";
+            pauseLevel.text = $"{N(game.Distance)} m · stage {game.Stage + 1}";
             Only(pause);
         }
 
         public void ShowResult(Result r)
         {
-            rDist.text = $"{r.distance:N0} M";
+            rDist.text = $"{N(r.distance)} M";
             rSub.text = r.best ? "NEW BEST!" : $"Stage {r.stage + 1} · {Mathf.Round(r.time)}s · {r.character}";
-            rStats.text = $"Zombies down  {r.kills:N0}\nCoins picked up  {r.coins:N0}\nStage bonuses  {r.bonus:N0}\nTotal  {r.coins + r.bonus:N0}";
-            rWallet.text = $"Wallet: {r.wallet:N0} · Best: {r.bestEver:N0} m";
+            rStats.text = $"Zombies down  {N(r.kills)}\nCoins picked up  {N(r.coins)}\nStage bonuses  {N(r.bonus)}\nTotal  {N(r.coins + r.bonus)}";
+            rWallet.text = $"Wallet: {N(r.wallet)} · Best: {N(r.bestEver)} m";
             Only(result);
         }
 
@@ -291,11 +294,11 @@ namespace Graveway
             var r = game.run;
             if (p == null || r == null) return;
             int d = Mathf.FloorToInt(game.Distance);
-            if (Changed("dist", d.ToString())) dist.text = $"{d:N0} M";
+            if (Changed("dist", d.ToString())) dist.text = $"{N(d)} M";
             if (Changed("stage", game.Stage.ToString())) stageLabel.text = $"STAGE {game.Stage + 1}";
             Fill(prog, game.Distance % Tunables.Director.StageLength / Tunables.Director.StageLength);
             int c = Save.Data.coins + Mathf.FloorToInt(r.coins) + r.bonus;
-            if (Changed("coins", c.ToString())) coins.text = c.ToString("N0");
+            if (Changed("coins", c.ToString())) coins.text = N(c);
             if (Changed("kills", r.kills.ToString())) kills.text = $"{r.kills} kill{(r.kills == 1 ? "" : "s")}";
             int hp = Mathf.CeilToInt(p.hp);
             if (Changed("hp", hp + "/" + p.maxHp)) { hpText.text = hp.ToString(); Fill(hpFill, p.hp / p.maxHp); }

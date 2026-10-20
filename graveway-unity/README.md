@@ -10,28 +10,43 @@ play and test until this one catches up.
    6000.5.8f1** with **Android Build Support** (tick OpenJDK and the
    Android SDK & NDK under it).
 2. In Unity Hub: **Add → Add project from disk**, pick this
-   `graveway-unity` folder. Until the project has been opened in 6000.5
-   once, Hub will offer to upgrade it from the version in
-   `ProjectSettings/ProjectVersion.txt`. That's expected.
-3. The first open takes a few minutes while Unity imports. A setup script
-   then names the app, sets portrait and the Android options, makes
-   `Assets/Graveway/Scenes/Main.unity` and opens it. It's empty on
-   purpose: the game builds itself when it starts.
+   `graveway-unity` folder.
+3. The first open takes a few minutes while Unity imports. Then open
+   `Assets/Graveway/Scenes/Main.unity`. It's empty on purpose: the game
+   builds itself when it starts.
 4. Press **Play**. In the Game view, pick a phone size (for example
    1080×2400 Portrait) from the resolution menu. Drag with the mouse to
    move (or use WASD); aiming and shooting are automatic. R reloads, 1–4 or
    Q/E switch guns, P or Esc pauses.
 
-To run it on your phone: **File → Build Profiles → Android → Switch
-Platform**, plug the phone in with USB debugging on, then **Build And
-Run**. The first build is slow.
-
 If something's wrong, the **Console** window (Window → General → Console)
 says what. Copy its red lines into a message to Claude.
 
-Unity puts a `.meta` file next to every file and folder on first open.
-Commit those along with everything else (the `.gitignore` here already
-leaves out the folders Unity rebuilds itself, like `Library/`).
+Everything Unity needs is committed: project settings, `.meta` files, the
+render pipeline, base materials and the scene. **Graveway → Set up
+project** (`Editor/ProjectSetup.cs`) remakes the generated ones after a
+change to that script.
+
+## Tests and builds without the editor
+
+Unity runs with no window (`-batchmode`), so none of this takes over the
+screen. Close the project in the editor first: Unity can't open it twice.
+
+```powershell
+$unity = "C:\Program Files\Unity\Hub\Editor\6000.5.8f1\Editor\Unity.exe"
+# Unit tests: random numbers, gun stats with parts, director, part prices
+& $unity -batchmode -nographics -projectPath graveway-unity -runTests -testPlatform EditMode -testResults graveway-unity/Logs/editmode.xml | Out-Null
+# The game running: menu, a minute up the road, dying; screenshots to Logs/shots/
+& $unity -batchmode -projectPath graveway-unity -runTests -testPlatform PlayMode -testResults graveway-unity/Logs/playmode.xml | Out-Null
+# An APK, installed on a phone plugged in over USB
+graveway-unity/build-android.ps1 -Version 0.1 -Code 1 -Install
+```
+
+APKs are signed with the release key from
+`%USERPROFILE%\.graveway\signing.properties` (see
+`Editor/BuildScript.cs`), so every build installs over the last one. Keep
+a backup of that folder: without it, phones have to uninstall (and lose
+their progress) before the next build will install.
 
 ## How it's put together
 
@@ -51,17 +66,23 @@ lives, and `Art` is the one place materials and meshes come from.
 | `Scripts/Combat/Director.cs` | Who spawns, where and when, from the distance | `src/director.js` |
 | `Scripts/World/Road.cs` | The endless street in 32 m chunks | `src/world.js` |
 | `Scripts/Actors/Humanoid.cs` | Survivors and zombies (box people for now) | `src/models.js` |
-| `Scripts/Core/StickInput.cs` | The floating joystick, any number of fingers | `src/input.js` |
+| `Scripts/Core/StickInput.cs` | The floating joystick, any number of fingers, and keyboard keys (Input System) | `src/input.js` |
 | `Scripts/UI/Hud.cs` + `Resources/UI/Graveway.uss` | HUD, menu, pause, results (UI Toolkit) | `src/ui.js`, `index.html` |
-| `Scripts/Core/Art.cs` | Materials, meshes and textures made in code | `src/models.js` |
+| `Scripts/Core/Art.cs` | Materials (copies of `Resources/Materials`), meshes and textures made in code | `src/models.js` |
 | `Scripts/Core/Save.cs` | Progress in PlayerPrefs | `src/save.js` |
-| `Editor/ProjectSetup.cs` | First-open setup (menu: Graveway → Set up project) | `tools/android/build-apk.mjs` |
+| `Settings/` | The URP pipeline (mobile renderer, no shadow maps) and its post-processing: ACES and +0.94 EV, the web version's look | `game.js` renderer |
+| `Editor/ProjectSetup.cs` | App and Android settings, base materials, panel settings, the scene (menu: Graveway → Set up project) | `android.json` |
+| `Editor/BuildScript.cs` + `build-android.ps1` | The APK build with no window, and installing it over USB | `tools/android/build-apk.mjs` |
+| `Tests/` | EditMode tests against the web version's numbers, and PlayMode smoke tests | |
 
 Coordinates: **+z is up the road**, +x is right, y is up. The survivor
 starts at z = 0. (The web version runs the other way, toward −z.)
 
-It works in the Built-in render pipeline as it is, and in URP if you add
-it: materials pick the matching shader.
+Rendering is URP. Materials are never made from a shader looked up by
+name: a phone build only keeps shaders (and shader variants) that some
+material asset uses, so `Art` copies the base materials in
+`Resources/Materials`. Input is the Input System package only;
+`UnityEngine.Input` throws in this project.
 
 ## Porting plan
 
@@ -71,8 +92,8 @@ through GitHub Releases), the open questions, and the phases with their
 progress. [docs/web-version-reference.md](docs/web-version-reference.md)
 lists everything the web version does, as the checklist for matching it.
 
-The first slice below has never been opened in Unity. Phase 0 of the plan
-gets it compiling and onto a phone.
+Phase 0 got the first slice compiling and running in Unity 6000.5 with
+URP and the Input System, with tests. It hasn't been on a phone yet.
 
 Done in this first slice (some of it partly, see Phase 0 and 1):
 

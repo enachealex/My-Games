@@ -51,25 +51,7 @@ namespace Graveway
             }
             // A soft shadow underfoot.
             var shadow = Art.GroundGlow(root.transform, new Color(0, 0, 0, 1), 1.1f, Vector3.zero);
-            shadow.GetComponent<MeshRenderer>().sharedMaterial = ShadowMat;
-        }
-
-        static Material shadowMat;
-        static Material ShadowMat
-        {
-            get
-            {
-                if (shadowMat) return shadowMat;
-                // Multiplicative-looking dark blob: the glow texture as alpha.
-                var urp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null;
-                shadowMat = new Material(Shader.Find(urp ? "Universal Render Pipeline/Unlit" : "Sprites/Default"));
-                shadowMat.SetTexture("_MainTex", Tex.Glow);
-                shadowMat.SetTexture("_BaseMap", Tex.Glow);
-                shadowMat.color = new Color(0, 0, 0, 0.55f);
-                shadowMat.SetColor("_BaseColor", new Color(0, 0, 0, 0.55f));
-                shadowMat.renderQueue = 2990;
-                return shadowMat;
-            }
+            shadow.GetComponent<MeshRenderer>().sharedMaterial = Art.Shadow(0.55f);
         }
 
         void Add(GameObject g)
