@@ -6,12 +6,13 @@ play and test until this one catches up.
 
 ## Opening it
 
-1. Install [Unity Hub](https://unity.com/download) and, from it, **Unity 6
-   LTS** (6000.0.x) with **Android Build Support** (tick OpenJDK and the
+1. Install [Unity Hub](https://unity.com/download) and, from it, **Unity
+   6000.5.8f1** with **Android Build Support** (tick OpenJDK and the
    Android SDK & NDK under it).
 2. In Unity Hub: **Add → Add project from disk**, pick this
-   `graveway-unity` folder. If Hub offers a newer 6000.0 version than the
-   one in `ProjectSettings/ProjectVersion.txt`, that's fine.
+   `graveway-unity` folder. Until the project has been opened in 6000.5
+   once, Hub will offer to upgrade it from the version in
+   `ProjectSettings/ProjectVersion.txt`. That's expected.
 3. The first open takes a few minutes while Unity imports. A setup script
    then names the app, sets portrait and the Android options, makes
    `Assets/Graveway/Scenes/Main.unity` and opens it. It's empty on
@@ -62,11 +63,21 @@ starts at z = 0. (The web version runs the other way, toward −z.)
 It works in the Built-in render pipeline as it is, and in URP if you add
 it: materials pick the matching shader.
 
-## Porting roadmap
+## Porting plan
 
-Done in this first slice:
+[PORT_PLAN.md](PORT_PLAN.md) has the plan for the complete port: the
+decisions (real art from the start, URP, builds on the dev PC, updates
+through GitHub Releases), the open questions, and the phases with their
+progress. [docs/web-version-reference.md](docs/web-version-reference.md)
+lists everything the web version does, as the checklist for matching it.
 
-- [x] Every tunable from `config.js`, including gun parts
+The first slice below has never been opened in Unity. Phase 0 of the plan
+gets it compiling and onto a phone.
+
+Done in this first slice (some of it partly, see Phase 0 and 1):
+
+- [x] Most tunables from `config.js`, including gun parts (power-ups,
+      survivor upgrades and props are still to come)
 - [x] The endless street: chunks, buildings, alleys, lamps, litter, the start barricade
 - [x] Survivors (all four) with their stats, perks and signature guns
 - [x] Floating joystick with multi-finger hand-off, keyboard in the editor
@@ -77,26 +88,12 @@ Done in this first slice:
 - [x] HUD (distance, stage, coins, health, armor, ammo, weapon bar, boss bar), menu with survivor pick, pause, results
 - [x] Saving coins, best distance, runs and kills
 
-Next, roughly in this order:
-
-- [ ] **Props and destruction**: cars, tanker, barricades, barrels, walls, lamps, fire barrels, condemned buildings (`props.js`), with bullets stopping at them
-- [ ] **Pathfinding**: the flow-field nav grid zombies use to go round wreckage (`nav.js`)
-- [ ] **Coins and pickups** on the road with the magnet; health and armor
-- [ ] **Power-ups** (`POWERUPS` in config)
-- [ ] **Fog of war** (`fog.js`)
-- [ ] **Effects**: fireballs, smoke columns, debris, scorch marks (`vfx.js`), as Unity particle systems
-- [ ] **Sound**: the synthesised effects (`audio.js`), or real recordings
-- [ ] **Armory**: buying guns, loadout, gun parts with the gun preview, survivor upgrades
-- [ ] **Survivor select** screen with portraits
-- [ ] **Playtest tools and notes** (Send to Claude)
-- [ ] **Real art**: rigged characters and animations (Mixamo, Asset Store packs), proper guns, URP lighting
-- [ ] **Cloud builds**: building the APK on GitHub Actions (needs a Unity licence added as repository secrets)
+Everything else is in the plan's phases.
 
 ## Updates on the phone
 
 The web version's Android app updates itself, because its game is web
 files it can download. A Unity game is compiled into the app, so new
-builds need installing again. Two ways to make that painless later: the
-Google Play internal testing track (the Play Store updates it for you;
-needs a Play developer account), or an in-app "update ready" prompt that
-downloads the new APK, after which Android still asks you to tap Install.
+builds need installing again. Builds go to My-Games GitHub Releases, and
+the app offers "New version · tap to install" when there's a newer one
+(Phase 7). Android still asks you to tap Install.
