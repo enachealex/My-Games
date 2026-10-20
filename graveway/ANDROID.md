@@ -17,6 +17,11 @@ Later cloud builds install over earlier ones and keep your progress. They're
 signed with the same cached key, as long as one ran in the past week from
 the same branch.
 
+**Coming from a build made in the MyApps repo?** That app checks MyApps for
+updates and was signed with MyApps' key, so it won't pick up builds from
+this repo, and Android won't install one over it. Copy your playtest notes
+out, uninstall it, then install a build from this repo's Releases.
+
 ### Updates without reinstalling (0.7 and later)
 
 From 0.7 on, the app updates itself. Each time it starts, it asks GitHub

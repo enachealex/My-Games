@@ -6,10 +6,10 @@
 export const GAME_NAME = 'Graveway';
 
 /* "Send to Claude" files playtest notes as an issue on this GitHub repo. */
-export const FEEDBACK_REPO = 'enachealex/MyApps';
+export const FEEDBACK_REPO = 'enachealex/My-Games';
 /* The Android app checks this repo's Releases for new builds of itself
    (see src/updater.js). */
-export const UPDATE_REPO = 'enachealex/MyApps';
+export const UPDATE_REPO = 'enachealex/My-Games';
 
 /* ── Weapons ───────────────────────────────────────────────────────────────
    Each entry is one weapon definition; src/weapons.js turns it into a live
