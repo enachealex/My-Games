@@ -1,0 +1,128 @@
+name: Build Android APK
+
+# Run this from your phone: repo -> Actions tab -> "Build Android APK"
+# -> "Run workflow". No computer, no Android SDK, nothing installed locally.
+# GitHub's Ubuntu runners already ship the Android SDK and Gradle.
+#
+# The build itself is tools/android/build-apk.mjs, the same script you can
+# run on your own computer (see graveway/ANDROID.md), so a cloud build and a
+# local one come out the same.
+#
+# Each app can keep an android.json next to its index.html. Every key is
+# optional:
+#   appId        Android package name        default com.thejumpvault.<folder>
+#   appName      name under the launcher icon default the folder name
+#   background   icon and splash colour      default #000000
+#   orientation  "portrait" or "landscape"   default: rotates freely
+#   fullscreen   true hides the status and navigation bars (for games)
+#   permissions  extra Android permissions, e.g. ["VIBRATE"]
+#   plugins      extra Capacitor plugins to install, e.g. ["@capacitor/app@^7"]
+#   prerelease   true publishes the APK as a pre-release. The updater lists
+#                every release, pre-releases included, so this only changes
+#                how the release is labelled on GitHub.
+#   liveUpdates  true lets the installed app update its own web files from
+#                these releases on startup, with no reinstall. The release
+#                then also carries <folder>-web-<hash>.json.gz. See the top
+#                of tools/android/build-apk.mjs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_folder:
+        description: "Folder holding the web app (must contain index.html)"
+        required: true
+        default: "graveway"
+      version_name:
+        description: "Version shown in Android settings"
+        required: false
+        default: "1.0"
+
+# Attaching the APK to a Release needs write access to contents.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+
+      # Capacitor 7 needs JDK 21. If a future Capacitor bumps this again,
+      # the Gradle step is where it will fail, and the error names the version.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Debug builds are signed with a key Gradle makes on first use. Every
+      # runner starts empty, so without this each APK would carry a new key and
+      # Android would refuse to install it over the last one. Caches expire
+      # after a week unused, and a branch can't see another branch's cache
+      # (only the default branch's), so expect the odd uninstall-and-reinstall.
+      - name: Reuse the signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-debug-keystore-v1
+
+      - name: Make sure a signing key exists
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -keystore ~/.android/debug.keystore -storepass android \
+              -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+            echo "Made a new signing key."
+          else
+            echo "Reusing the cached signing key."
+          fi
+
+      - name: Build the APK
+        id: out
+        env:
+          APP: ${{ github.event.inputs.app_folder }}
+          VERSION: ${{ github.event.inputs.version_name }}
+        run: node tools/android/build-apk.mjs "$APP" --version "$VERSION"
+
+      # The artifact is a .zip, which is awkward to open on a phone.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.out.outputs.slug }}-apk
+          path: ${{ steps.out.outputs.apk }}
+          retention-days: 30
+
+      # This is the one you want on mobile: a Release attaches the .apk as a
+      # direct download, so tapping it on Android installs straight away.
+      - name: Publish a Release with the APK attached
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.out.outputs.slug }}-v${{ github.event.inputs.version_name }}-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ steps.out.outputs.app_name }} ${{ github.event.inputs.version_name }} (build ${{ github.run_number }})
+          prerelease: ${{ steps.out.outputs.prerelease }}
+          body: |
+            Debug build of ${{ steps.out.outputs.app_name }}, built from `${{ github.event.inputs.app_folder }}/` at ${{ github.sha }} on `${{ github.ref_name }}`.
+
+            Tap the `.apk` below on your Android phone to install. You'll be asked
+            to allow installs from this source the first time.
+
+            If Android says the app can't be installed over the old one, that
+            build was signed with a different key (for example one you built on
+            your own computer): uninstall the old one first. That clears its
+            saved progress and playtest notes, so copy the notes out first.
+
+            Unsigned debug build — fine for testing and sideloading, not for the
+            Play Store.
+
+            ${{ steps.out.outputs.web && 'Already have a build that updates itself? It picks this one up the next time it starts, as long as nothing native changed. No download needed.' || '' }}
+          files: |
+            ${{ steps.out.outputs.apk }}
+            ${{ steps.out.outputs.web }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

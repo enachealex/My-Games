@@ -5,8 +5,9 @@ survivor and push up an endless dead street. Every 100 m the horde gets
 tougher. Wreck the street as you go, and the zombies re-route around (or
 over) whatever you leave behind.
 
-- **Play in a browser:** <https://myapps.thejumpvault.com/graveway/>
-  (installable, works offline).
+- **Play in a browser:** serve the repo and open `/graveway/` (see
+  [Running it locally](#running-it-locally)). It installs as an app and
+  works offline.
 - **Put it on your phone as an app:** see [ANDROID.md](ANDROID.md). It
   covers a cloud build that needs no setup, and a local build that installs
   over USB with `adb install -r`. From 0.7 the app updates itself on
