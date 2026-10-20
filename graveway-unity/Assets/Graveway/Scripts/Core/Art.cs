@@ -3,12 +3,16 @@
 // to be swapped for real models and materials as they arrive; nothing else
 // cares how a thing is drawn.
 //
-// Materials work in both the Built-in pipeline (Standard shader) and URP
-// (Universal Render Pipeline/Lit), whichever the project uses.
+// Materials are copies of the base materials in Resources/Materials (made by
+// Graveway → Set up project), never shaders looked up by name: a phone build
+// only keeps the shaders, and shader variants, that some material asset
+// uses.
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Object = UnityEngine.Object;
 
 namespace Graveway
 {
@@ -18,42 +22,55 @@ namespace Graveway
         public static Mesh Cube => cube != null ? cube : (cube = Resources.GetBuiltinResource<Mesh>("Cube.fbx"));
         public static Mesh Quad => quad != null ? quad : (quad = Resources.GetBuiltinResource<Mesh>("Quad.fbx"));
 
-        static bool Urp => GraphicsSettings.currentRenderPipeline != null;
+        // The base materials, one per shader setup (see ProjectSetup.cs).
+        public const string BaseLit = "Lit", BaseLitGlow = "LitGlow", BaseUnlit = "Unlit", BaseGlow = "Glow", BaseShadow = "Shadow";
 
-        static readonly Dictionary<string, Material> cache = new Dictionary<string, Material>();
+        static readonly Dictionary<string, Material> bases = new Dictionary<string, Material>();
+        static readonly Dictionary<(string, Color, float, Texture, Texture), Material> cache =
+            new Dictionary<(string, Color, float, Texture, Texture), Material>();
+
+        static Material Base(string name)
+        {
+            if (bases.TryGetValue(name, out var m) && m != null) return m;
+            m = Resources.Load<Material>("Materials/" + name);
+            if (m == null) throw new InvalidOperationException($"Graveway: Resources/Materials/{name}.mat is missing. Run Graveway → Set up project.");
+            bases[name] = m;
+            return m;
+        }
+
+        static bool Cached(string kind, Color c, float f, Texture a, Texture b, out Material m) =>
+            cache.TryGetValue((kind, c, f, a, b), out m) && m != null;
+
+        static Material Make(string baseName, string kind, Color c, float f, Texture a, Texture b)
+        {
+            var m = new Material(Base(baseName)) { name = $"{kind} #{ColorUtility.ToHtmlStringRGB(c)}" };
+            cache[(kind, c, f, a, b)] = m;
+            return m;
+        }
 
         // A lit, matte material. Shared: the same colour gets the same one, so
-        // Unity can batch and instance everything that uses it.
+        // the SRP Batcher draws everything that uses it together.
         public static Material Lit(Color c, float glow = 0, Texture tex = null, Texture glowTex = null)
         {
-            string key = $"lit|{ColorUtility.ToHtmlStringRGBA(c)}|{glow}|{(tex ? tex.GetInstanceID() : 0)}|{(glowTex ? glowTex.GetInstanceID() : 0)}";
-            if (cache.TryGetValue(key, out var m) && m != null) return m;
-            m = new Material(Shader.Find(Urp ? "Universal Render Pipeline/Lit" : "Standard")) { enableInstancing = true };
-            m.SetColor("_Color", c);
+            if (Cached("lit", c, glow, tex, glowTex, out var m)) return m;
+            bool glows = glow > 0 || glowTex;
+            m = Make(glows ? BaseLitGlow : BaseLit, "lit", c, glow, tex, glowTex);
             m.SetColor("_BaseColor", c);
-            m.SetFloat("_Glossiness", 0.12f);
-            m.SetFloat("_Smoothness", 0.12f);
-            if (tex) { m.SetTexture("_MainTex", tex); m.SetTexture("_BaseMap", tex); }
-            if (glow > 0 || glowTex)
+            if (tex) m.SetTexture("_BaseMap", tex);
+            if (glows)
             {
-                m.EnableKeyword("_EMISSION");
                 m.SetColor("_EmissionColor", glowTex ? Color.white * Mathf.Max(glow, 1) : c * glow);
                 if (glowTex) m.SetTexture("_EmissionMap", glowTex);
-                m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
             }
-            cache[key] = m;
             return m;
         }
 
         // Unlit and solid: tracers, eyes, warning lights.
         public static Material Unlit(Color c)
         {
-            string key = $"unlit|{ColorUtility.ToHtmlStringRGBA(c)}";
-            if (cache.TryGetValue(key, out var m) && m != null) return m;
-            m = new Material(Shader.Find(Urp ? "Universal Render Pipeline/Unlit" : "Unlit/Color")) { enableInstancing = true };
-            m.SetColor("_Color", c);
+            if (Cached("unlit", c, 0, null, null, out var m)) return m;
+            m = Make(BaseUnlit, "unlit", c, 0, null, null);
             m.SetColor("_BaseColor", c);
-            cache[key] = m;
             return m;
         }
 
@@ -62,25 +79,21 @@ namespace Graveway
         public static Material Glow(Color c, Texture tex = null)
         {
             tex = tex ? tex : Tex.Glow;
-            string key = $"glow|{ColorUtility.ToHtmlStringRGBA(c)}|{tex.GetInstanceID()}";
-            if (cache.TryGetValue(key, out var m) && m != null) return m;
-            m = new Material(Shader.Find(Urp ? "Universal Render Pipeline/Particles/Unlit" : "Legacy Shaders/Particles/Additive"));
-            m.SetColor("_TintColor", c * 0.5f);
+            if (Cached("glow", c, 0, tex, null, out var m)) return m;
+            m = Make(BaseGlow, "glow", c, 0, tex, null);
             m.SetColor("_BaseColor", c);
-            m.SetTexture("_MainTex", tex);
             m.SetTexture("_BaseMap", tex);
-            if (Urp)
-            {
-                // URP particles: transparent, additive.
-                m.SetFloat("_Surface", 1);
-                m.SetFloat("_Blend", 2);
-                m.SetInt("_SrcBlend", (int)BlendMode.One);
-                m.SetInt("_DstBlend", (int)BlendMode.One);
-                m.SetInt("_ZWrite", 0);
-                m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-                m.renderQueue = (int)RenderQueue.Transparent;
-            }
-            cache[key] = m;
+            return m;
+        }
+
+        // A soft dark blob on the ground: the only shadows in the game.
+        public static Material Shadow(float alpha)
+        {
+            var c = new Color(0, 0, 0, alpha);
+            if (Cached("shadow", c, 0, null, null, out var m)) return m;
+            m = Make(BaseShadow, "shadow", c, 0, null, null);
+            m.SetColor("_BaseColor", c);
+            m.SetTexture("_BaseMap", Tex.Glow);
             return m;
         }
 

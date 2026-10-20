@@ -16,3 +16,13 @@
 .vscode/
 *.apk
 *.aab
+*.symbols.zip
+*.pdb
+sysinfo.txt
+crashlytics-build.properties
+
+# Signing keys and their passwords live outside the repo (see
+# Assets/Graveway/Editor/BuildScript.cs). Never commit one by accident.
+*.keystore
+*.jks
+signing.properties

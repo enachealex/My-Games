@@ -245,7 +245,7 @@ namespace Graveway
                     blurb = "A much wider blast that throws zombies about, for less damage.",
                     mods = new PartMods { damage = 0.6f, blast = 1.35f, impulse = 2 } } } },
         };
-        public const float PartTierCost = 0.35f;     // each later gun's parts cost 35% more
+        public const double PartTierCost = 0.35;     // each later gun's parts cost 35% more
         public const float UpgradeCostGrowth = 1.65f;
 
         // ── Survivors ────────────────────────────────────────────────────
@@ -350,10 +350,13 @@ namespace Graveway
             return list[0];
         }
 
+        // In doubles and rounding halves up, exactly like the web version's
+        // Math.round: Mathf.RoundToInt rounds halves to even, which made some
+        // prices 5 coins off.
         public static int PartCost(WeaponDef def, PartDef part)
         {
             int tier = Mathf.Max(0, System.Array.IndexOf(Weapons, def));
-            return Mathf.RoundToInt(part.price * (1 + tier * PartTierCost) / 5f) * 5;
+            return (int)System.Math.Floor(part.price * (1 + tier * PartTierCost) / 5 + 0.5) * 5;
         }
     }
 }

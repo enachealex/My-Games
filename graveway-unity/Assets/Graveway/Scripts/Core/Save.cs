@@ -22,8 +22,15 @@ namespace Graveway
 
     public static class Save
     {
-        const string Key = "graveway.save.v1";
+        static string Key = "graveway.save.v1";
         static SaveData data;
+
+        // Tests keep their own save, away from real progress.
+        public static void UseKey(string key)
+        {
+            Key = key;
+            data = null;
+        }
 
         public static SaveData Data
         {

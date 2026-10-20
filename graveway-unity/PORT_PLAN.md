@@ -87,41 +87,49 @@ Each phase is one or more PRs. Tick items off here as they land.
 
 ### Phase 0: make the project real
 
-The first slice has never been opened in Unity. This phase gets it
+The first slice had never been opened in Unity. This phase gets it
 compiling, running and on the phone, on the foundation the rest needs.
+Everything but the phone is done: the APK build needs Unity's Android
+Build Support module, which isn't installed yet.
 
-- [ ] Open the project in 6000.5.8f1 without a window, fix compile errors, and
+- [x] Open the project in 6000.5.8f1 without a window, fix compile errors, and
       commit the generated `ProjectSettings/`, `.meta` files and
       `Packages/packages-lock.json`.
-- [ ] Packages: URP, Input System, Test Framework, Newtonsoft JSON, Android
+- [x] Packages: URP, Input System, Test Framework, Newtonsoft JSON, Android
       Logcat, an IDE package.
-- [ ] URP mobile renderer, linear colour space, ACES tone mapping
+- [x] URP mobile renderer, linear colour space, ACES tone mapping
       (exposure about 1.15, as on the web), and fog set in the scene so it
       isn't stripped.
-- [ ] Material assets (or one material library) instead of `Shader.Find`
+- [x] Material assets (or one material library) instead of `Shader.Find`
       at runtime. The URP shaders and keywords need to survive stripping,
       and the blob shadow has to be transparent.
-- [ ] A `PanelSettings` asset (runtime-created ones go blank on devices).
-- [ ] All input behind one facade on the Input System (EnhancedTouch for
+- [x] A `PanelSettings` asset (runtime-created ones go blank on devices).
+- [x] All input behind one facade on the Input System (EnhancedTouch for
       the floating joystick, with keys in the editor). The Android back
       button goes through it too.
-- [ ] Assemblies: `Graveway` (runtime), `Graveway.Editor`,
+- [x] Assemblies: `Graveway` (runtime), `Graveway.Editor`,
       `Graveway.Tests` (EditMode tests for `WeaponStats`, `Director`,
       `Rng`).
-- [ ] Fix the small bugs found in review:
+- [x] Fix the small bugs found in review:
       - `Rng.Next()` can return exactly 1.0, which breaks indexing.
       - `N0` number formatting follows the phone's locale.
       - 120 fps with vSync off: use 60 fps.
       - The muzzle and blast lights stay enabled at intensity 0.
-- [ ] Android settings: min and target API, Vulkan with a GLES3 fallback,
-      optimised frame pacing, fullscreen, VIBRATE permission.
-- [ ] Release keystore, with `*.keystore` and `*.jks` added to
-      `.gitignore`.
-- [ ] `Editor/BuildScript.cs`: an APK build with no window, version name
+      - Found while testing: part prices were worked out in floats and
+        rounded halves to even, so 11 of the 147 were 5 coins off the web
+        price (the rifle's long barrel was 510, not 515). A test now
+        checks every price against the web version.
+- [x] Android settings: min API 26 (Unity's default) and the newest target,
+      Vulkan with a GLES3 fallback, optimised frame pacing, fullscreen.
+      (The VIBRATE permission comes with haptics in Phase 5.)
+- [x] Release keystore, in `%USERPROFILE%\.graveway\` with its passwords
+      (back that folder up), and `*.keystore`, `*.jks` and
+      `signing.properties` in `.gitignore`.
+- [x] `Editor/BuildScript.cs`: an APK build with no window, version name
       and code passed in, and an optional `adb install -r`.
-- [ ] A PlayMode smoke test: boot, start a run, simulate 60 s, no
+- [x] A PlayMode smoke test: boot, start a run, simulate 60 s, no
       exceptions.
-- **Done when** the current slice runs on the phone at 60 fps.
+- [ ] **Done when** the current slice runs on the phone at 60 fps.
 
 ### Phase 1: restructure, and the first real characters
 

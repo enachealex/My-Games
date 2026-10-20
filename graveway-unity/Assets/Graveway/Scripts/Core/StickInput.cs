@@ -4,10 +4,18 @@
 // if it lifts while another is still down, that one takes over the stick
 // where it is. Touches that start on a button don't steer.
 // In the editor, the mouse acts as one finger and WASD / arrows also work.
+//
+// All input goes through here and GameKeys, on the Input System package
+// (the project's Active Input Handling is "Input System Package (New)", so
+// UnityEngine.Input must not be used anywhere).
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch;
+using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
+using TouchPhase = UnityEngine.InputSystem.TouchPhase;
 
 namespace Graveway
 {
@@ -19,6 +27,10 @@ namespace Graveway
         public bool enabled;
         public Func<Vector2, bool> overUi = _ => false;   // set by the HUD: is this screen point on a button?
 
+        // Set to steer without touching anything (tests, demos). x across the
+        // road, z up the road, length up to 1.
+        public Vector3? autopilot;
+
         public bool Active => pointer != int.MinValue;
         public Vector2 Origin { get; private set; }       // screen pixels
         public Vector2 Knob { get; private set; }         // offset from Origin, clamped to Radius
@@ -29,20 +41,28 @@ namespace Graveway
         readonly List<int> order = new List<int>();                    // fingers on the play area, oldest first
         readonly Dictionary<int, Vector2> fingers = new Dictionary<int, Vector2>();
 
+        public StickInput()
+        {
+            if (!EnhancedTouchSupport.enabled) EnhancedTouchSupport.Enable();
+        }
+
         public void Update()
         {
             if (!enabled) { Release(); return; }
-            for (int i = 0; i < Input.touchCount; i++)
+            var touches = Touch.activeTouches;
+            for (int i = 0; i < touches.Count; i++)
             {
-                var t = Input.GetTouch(i);
-                Handle(t.fingerId, t.phase, t.position);
+                var t = touches[i];
+                Handle(t.touchId, t.phase, t.screenPosition);
             }
-            if (Input.touchCount == 0)
+            var mouse = Mouse.current;
+            if (touches.Count == 0 && mouse != null)
             {
                 // Mouse as a finger (editor and desktop).
-                if (Input.GetMouseButtonDown(0)) Handle(MouseId, TouchPhase.Began, Input.mousePosition);
-                else if (Input.GetMouseButton(0)) Handle(MouseId, TouchPhase.Moved, Input.mousePosition);
-                else if (Input.GetMouseButtonUp(0)) Handle(MouseId, TouchPhase.Ended, Input.mousePosition);
+                var pos = mouse.position.ReadValue();
+                if (mouse.leftButton.wasPressedThisFrame) Handle(MouseId, TouchPhase.Began, pos);
+                else if (mouse.leftButton.wasReleasedThisFrame) Handle(MouseId, TouchPhase.Ended, pos);
+                else if (mouse.leftButton.isPressed) Handle(MouseId, TouchPhase.Moved, pos);
             }
         }
 
@@ -62,7 +82,8 @@ namespace Graveway
                     fingers[id] = pos;
                     if (id == pointer) Steer(pos);
                     break;
-                default:                                          // ended or cancelled
+                case TouchPhase.Ended:
+                case TouchPhase.Canceled:
                     if (!fingers.Remove(id)) return;
                     order.Remove(id);
                     if (id != pointer) return;
@@ -116,13 +137,32 @@ namespace Graveway
         {
             get
             {
-                float kx = (Key(KeyCode.D) || Key(KeyCode.RightArrow) ? 1 : 0) - (Key(KeyCode.A) || Key(KeyCode.LeftArrow) ? 1 : 0);
-                float kz = (Key(KeyCode.W) || Key(KeyCode.UpArrow) ? 1 : 0) - (Key(KeyCode.S) || Key(KeyCode.DownArrow) ? 1 : 0);
-                if (enabled && (kx != 0 || kz != 0)) return new Vector3(kx, 0, kz).normalized;
+                if (!enabled) return Vector3.zero;
+                if (autopilot.HasValue) return Vector3.ClampMagnitude(autopilot.Value, 1);
+                float kx = (GameKeys.Held(Key.D) || GameKeys.Held(Key.RightArrow) ? 1 : 0) - (GameKeys.Held(Key.A) || GameKeys.Held(Key.LeftArrow) ? 1 : 0);
+                float kz = (GameKeys.Held(Key.W) || GameKeys.Held(Key.UpArrow) ? 1 : 0) - (GameKeys.Held(Key.S) || GameKeys.Held(Key.DownArrow) ? 1 : 0);
+                if (kx != 0 || kz != 0) return new Vector3(kx, 0, kz).normalized;
                 return new Vector3(stick.x, 0, stick.y);
             }
         }
+    }
 
-        static bool Key(KeyCode k) => Input.GetKey(k);
+    // Keyboard shortcuts (editor and desktop), and the Android back button,
+    // which the Input System reports as Escape.
+    public static class GameKeys
+    {
+        public static bool Down(Key k)
+        {
+            var kb = Keyboard.current;
+            return kb != null && kb[k].wasPressedThisFrame;
+        }
+
+        public static bool Held(Key k)
+        {
+            var kb = Keyboard.current;
+            return kb != null && kb[k].isPressed;
+        }
+
+        public static bool Back => Down(Key.Escape);
     }
 }

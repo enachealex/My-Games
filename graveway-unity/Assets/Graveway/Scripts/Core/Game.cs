@@ -12,6 +12,8 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.Rendering.Universal;
 
 namespace Graveway
 {
@@ -52,16 +54,21 @@ namespace Graveway
         static readonly Color Fog = Hex.C(0x0d1418);
 
         public State state;
-        public Rng rng = new Rng(7);
-        public Road road;
-        public Player player;
-        public RunStats run;
+        // Playtest tool (web: Settings → Playtest tools → Invincible): hits
+        // still land and flinch, but do no damage.
+        public bool invincible;
+        [System.NonSerialized] public Rng rng = new Rng(7);
+        [System.NonSerialized] public Road road;
+        [System.NonSerialized] public Player player;
+        [System.NonSerialized] public RunStats run;
         public readonly List<Zombie> zombies = new List<Zombie>();
         public float time;
 
         Director director;
         Hud hud;
-        readonly StickInput input = new StickInput();
+        StickInput input;
+        public StickInput Stick => input;
+        public Camera Camera => cam;
         Camera cam;
         Light flashlight, muzzleLight, blastLight;
         Transform worldRoot;
@@ -90,18 +97,26 @@ namespace Graveway
 
         void Awake()
         {
-            Application.targetFrameRate = 120;
+            // 60 fps: smooth enough for this game, and half the heat and
+            // battery of running a 120 Hz phone flat out.
+            Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 0;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
-            Input.multiTouchEnabled = true;
+            input = new StickInput();
 
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
             RenderSettings.fogColor = Fog;
+            // The web version's lights, converted: three.js divides diffuse
+            // light by pi and Unity doesn't, three's lights fall off as
+            // distance^-decay and URP's as distance^-2, and three's ACES
+            // brightens by 1/0.6 (made up for by the +0.94 EV exposure in
+            // Settings/Graveway_PostFX). The sky light is three's hemisphere
+            // light (8aa0c8 over 2a2018, intensity 1.25).
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = Hex.C(0x8aa0c8) * 0.55f;
-            RenderSettings.ambientEquatorColor = Hex.C(0x4a5260) * 0.5f;
-            RenderSettings.ambientGroundColor = Hex.C(0x2a2018) * 0.5f;
+            RenderSettings.ambientSkyColor = Hex.C(0x8aa0c8) * 0.65f;
+            RenderSettings.ambientEquatorColor = Hex.C(0x404c5e);
+            RenderSettings.ambientGroundColor = Hex.C(0x2a2018) * 0.58f;
 
             cam = new GameObject("Camera").AddComponent<Camera>();
             cam.transform.SetParent(transform);
@@ -110,6 +125,9 @@ namespace Graveway
             cam.nearClipPlane = 0.1f;
             cam.farClipPlane = 90;
             cam.tag = "MainCamera";
+            // Tonemapping (ACES, like the web version) comes from the pipeline's
+            // volume profile, Settings/Graveway_PostFX.
+            cam.GetUniversalAdditionalCameraData().renderPostProcessing = true;
 
             // Moonlight from above, the survivor's flashlight, and two lights
             // that only come on for muzzle flashes and explosions.
@@ -117,13 +135,20 @@ namespace Graveway
             moon.transform.SetParent(transform);
             moon.type = LightType.Directional;
             moon.color = Hex.C(0xb0c4ff);
-            moon.intensity = 0.55f;
+            moon.intensity = 0.9f / Mathf.PI;
             moon.transform.rotation = Quaternion.LookRotation(new Vector3(8, -20, 6));
             moon.shadows = LightShadows.None;
-            flashlight = MakeLight("Flashlight", LightType.Spot, Hex.C(0xfff0d0), 3.2f, 34);
+            // Web: intensity 70, decay 1.2, cone 0.6 rad, penumbra 0.55. 70 here
+            // matches its pool of light 4-7 m ahead, where it matters.
+            flashlight = MakeLight("Flashlight", LightType.Spot, Hex.C(0xfff0d0), 70, 34);
             flashlight.spotAngle = 70;
+            flashlight.innerSpotAngle = 70 * (1 - 0.55f);
+            // Off until a shot or a blast: a light left on at zero still costs
+            // a pass over everything it touches.
             muzzleLight = MakeLight("Muzzle", LightType.Point, Hex.C(0xffc070), 0, 10);
+            muzzleLight.enabled = false;
             blastLight = MakeLight("Blast", LightType.Point, Hex.C(0xff9040), 0, 16);
+            blastLight.enabled = false;
 
             worldRoot = new GameObject("World").transform;
             worldRoot.SetParent(transform);
@@ -265,7 +290,7 @@ namespace Graveway
             float dt = Mathf.Min(Time.deltaTime, 1 / 20f);
             time += dt;
             input.Update();
-            if (Input.GetKeyDown(KeyCode.Escape)) hud.Back();
+            if (GameKeys.Back) hud.Back();
             if (state == State.Playing) Keys();
 
             var p = player;
@@ -299,11 +324,11 @@ namespace Graveway
 
         void Keys()
         {
-            if (Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Space)) Reload();
-            if (Input.GetKeyDown(KeyCode.Q)) SwapWeapon(-1);
-            if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Tab)) SwapWeapon(1);
-            if (Input.GetKeyDown(KeyCode.P)) Pause();
-            for (int i = 0; i < 9; i++) if (Input.GetKeyDown(KeyCode.Alpha1 + i)) SelectWeapon(i);
+            if (GameKeys.Down(Key.R) || GameKeys.Down(Key.Space)) Reload();
+            if (GameKeys.Down(Key.Q)) SwapWeapon(-1);
+            if (GameKeys.Down(Key.E) || GameKeys.Down(Key.Tab)) SwapWeapon(1);
+            if (GameKeys.Down(Key.P)) Pause();
+            for (int i = 0; i < 9; i++) if (GameKeys.Down(Key.Digit1 + i)) SelectWeapon(i);
         }
 
         // ── Player ──────────────────────────────────────────────────────
@@ -410,6 +435,7 @@ namespace Graveway
         {
             var p = player;
             if (state != State.Playing) return;
+            if (invincible) dmg = 0;
             if (blast) dmg *= 1 - p.explosionResist;
             if (p.armor > 0)
             {
@@ -472,7 +498,9 @@ namespace Graveway
         {
             var p = player;
             if (p == null) return;
-            bool portrait = Screen.height >= Screen.width;
+            // The camera's own shape, not the screen's: they differ when it
+            // renders to a texture (screenshots).
+            bool portrait = cam.aspect <= 1;
             cam.fieldOfView = portrait ? 68 : 52;
             float tanH = Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * cam.aspect;
             float dist = Mathf.Clamp(5.8f / tanH, 13, 20), lookAhead = 4;
@@ -506,12 +534,13 @@ namespace Graveway
             flashlight.transform.position = new Vector3(p.x + sin * 0.3f, 2.3f, p.z + cos * 0.3f);
             flashlight.transform.LookAt(new Vector3(p.x + sin * 9, 0, p.z + cos * 9));
             flashlight.enabled = state != State.Dying;
-            if (flashT > 0) { flashT -= dt; if (flashT <= 0) { muzzleLight.intensity = 0; muzzleFlash.SetActive(false); } }
+            if (flashT > 0) { flashT -= dt; if (flashT <= 0) { muzzleLight.enabled = false; muzzleFlash.SetActive(false); } }
             if (blastT > 0)
             {
                 blastT -= dt;
                 float k = Mathf.Max(0, blastT / 0.3f);
                 blastLight.intensity = blastPeak * k * k;
+                if (blastT <= 0) blastLight.enabled = false;
             }
         }
 

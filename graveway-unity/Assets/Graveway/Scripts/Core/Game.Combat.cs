@@ -149,7 +149,8 @@ namespace Graveway
                 }
             }
             muzzleLight.transform.position = mz + Vector3.up * 0.1f;
-            muzzleLight.intensity = 3;
+            muzzleLight.intensity = 12;               // web: 28 with decay 1.5
+            muzzleLight.enabled = true;
             muzzleFlash.SetActive(true);
             muzzleFlash.transform.position = mz;
             muzzleFlash.transform.rotation = Quaternion.LookRotation(cam.transform.forward);
@@ -282,8 +283,9 @@ namespace Graveway
             Blood(at, 6, 4);
             blastLight.transform.position = new Vector3(x, 1.8f, z);
             blastLight.range = radius * 4;
-            blastPeak = Mathf.Max(blastT > 0 ? blastLight.intensity : 0, 4 + radius * 0.8f);
+            blastPeak = Mathf.Max(blastT > 0 ? blastLight.intensity : 0, (60 + radius * 12) / Mathf.PI);
             blastLight.intensity = blastPeak;
+            blastLight.enabled = true;
             blastT = 0.3f;
             shake = Mathf.Max(shake, Mathf.Max(0.25f, 0.6f + radius * 0.06f - pd / 30));
         }

@@ -1,72 +1,171 @@
-// Sets the project up the first time it's opened, so there's nothing to
-// configure by hand: the app's name and Android settings, the main scene
-// (empty; the game builds itself in code), and the shaders the code asks
-// for by name, which a phone build would otherwise leave out.
-// Run it again any time from the menu: Graveway → Set up project.
+// Puts the project's settings and generated assets in place: the app's name
+// and Android settings, the base materials Art.cs copies, the UI's
+// PanelSettings, and the main scene (empty apart from its lighting and fog;
+// the game builds itself in code). Everything it makes is committed, so this
+// only needs running again after changing it.
+//
+// From the menu: Graveway → Set up project. Without opening the editor:
+//   Unity -batchmode -quit -projectPath graveway-unity
+//         -executeMethod Graveway.EditorTools.ProjectSetup.Run
+//
+// The render pipeline itself (Settings/Graveway_URP*.asset) and the graphics
+// settings that point at it are plain committed files.
 
+using System.IO;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using UnityEngine.Rendering;
+using UnityEngine.UIElements;
 
 namespace Graveway.EditorTools
 {
-    [InitializeOnLoad]
-    static class ProjectSetup
+    public static class ProjectSetup
     {
-        const string ScenePath = "Assets/Graveway/Scenes/Main.unity";
-        static readonly string[] Shaders = { "Standard", "Unlit/Color", "Legacy Shaders/Particles/Additive", "Sprites/Default" };
-
-        static ProjectSetup()
-        {
-            string key = "Graveway.setup." + Application.dataPath;
-            if (EditorPrefs.GetBool(key, false)) return;
-            EditorApplication.delayCall += () => { Run(); EditorPrefs.SetBool(key, true); };
-        }
+        public const string ScenePath = "Assets/Graveway/Scenes/Main.unity";
+        const string MaterialsDir = "Assets/Graveway/Resources/Materials";
+        const string PanelPath = "Assets/Graveway/Resources/UI/GravewayPanel.asset";
+        const string ThemePath = "Assets/Graveway/Resources/UI/GravewayTheme.tss";
+        static readonly Color Fog = new Color32(0x0d, 0x14, 0x18, 0xff);
 
         [MenuItem("Graveway/Set up project")]
-        static void Run()
+        public static void Run()
         {
-            PlayerSettings.productName = "Graveway";
-            PlayerSettings.companyName = "The Jump Vault";
-            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "com.thejumpvault.gravewayunity");
-            PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
-            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
-            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
-            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
-
-            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null)
-            {
-                System.IO.Directory.CreateDirectory("Assets/Graveway/Scenes");
-                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-                EditorSceneManager.SaveScene(scene, ScenePath);
-            }
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
-            if (SceneManager.GetActiveScene().path != ScenePath) EditorSceneManager.OpenScene(ScenePath);
-
-            AlwaysInclude(Shaders);
+            Player();
+            Materials();
+            Panel();
+            Scene();
             AssetDatabase.SaveAssets();
-            Debug.Log("Graveway: project set up. Press Play.");
+            Debug.Log("Graveway: project set up.");
         }
 
-        static void AlwaysInclude(string[] names)
+        static void Player()
         {
-            var assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/GraphicsSettings.asset");
-            if (assets == null || assets.Length == 0) return;
-            var so = new SerializedObject(assets[0]);
-            var list = so.FindProperty("m_AlwaysIncludedShaders");
-            foreach (var name in names)
+            var android = NamedBuildTarget.Android;
+            PlayerSettings.productName = "Graveway";
+            PlayerSettings.companyName = "The Jump Vault";
+            PlayerSettings.SetApplicationIdentifier(android, "com.thejumpvault.gravewayunity");
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
+            PlayerSettings.colorSpace = ColorSpace.Linear;
+            PlayerSettings.SetScriptingBackend(android, ScriptingImplementation.IL2CPP);
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+            // Vulkan where the phone has it, OpenGL ES 3 where it doesn't.
+            PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
+            PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.Vulkan, GraphicsDeviceType.OpenGLES3 });
+            PlayerSettings.Android.optimizedFramePacing = true;
+            // Full screen comes from the default "requested visible insets"
+            // (none: no status or navigation bar), with the HUD kept clear of
+            // notches by Hud.SafeArea.
+            PlayerSettings.Android.renderOutsideSafeArea = true;
+        }
+
+        // The base materials Art.cs copies, one per shader setup. Their shader
+        // keywords are set here, in assets, so a phone build keeps the
+        // variants they need.
+        static void Materials()
+        {
+            Directory.CreateDirectory(MaterialsDir);
+            var lit = Shader.Find("Universal Render Pipeline/Lit");
+            var unlit = Shader.Find("Universal Render Pipeline/Unlit");
+            var particles = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+
+            Make("Lit", lit, m =>
             {
-                var shader = Shader.Find(name);
-                if (shader == null) continue;
-                bool has = false;
-                for (int i = 0; i < list.arraySize; i++) if (list.GetArrayElementAtIndex(i).objectReferenceValue == shader) has = true;
-                if (has) continue;
-                list.InsertArrayElementAtIndex(list.arraySize);
-                list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = shader;
+                m.SetFloat("_Smoothness", 0.12f);
+                m.DisableKeyword("_EMISSION");
+            });
+            Make("LitGlow", lit, m =>
+            {
+                m.SetFloat("_Smoothness", 0.12f);
+                m.EnableKeyword("_EMISSION");
+                m.SetColor("_EmissionColor", Color.white);
+                m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            });
+            Make("Unlit", unlit, m => { });
+            // Additive: pools of light, flashes, fire.
+            Make("Glow", particles, m =>
+            {
+                Transparent(m, BlendMode.One, BlendMode.One, blend: 2);
+                m.SetFloat("_Cull", (float)CullMode.Off);
+            });
+            // See-through dark blobs under people and things.
+            Make("Shadow", unlit, m =>
+            {
+                Transparent(m, BlendMode.SrcAlpha, BlendMode.OneMinusSrcAlpha, blend: 0);
+                m.renderQueue = (int)RenderQueue.Transparent - 10;    // under every other see-through thing
+            });
+        }
+
+        static void Make(string name, Shader shader, System.Action<Material> setup)
+        {
+            string path = $"{MaterialsDir}/{name}.mat";
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (m == null)
+            {
+                m = new Material(shader);
+                AssetDatabase.CreateAsset(m, path);
             }
-            so.ApplyModifiedProperties();
+            else m.shader = shader;
+            m.SetColor("_BaseColor", Color.white);
+            m.enableInstancing = true;
+            setup(m);
+            EditorUtility.SetDirty(m);
+        }
+
+        // URP's transparent surface, set up the way its material inspector does.
+        static void Transparent(Material m, BlendMode src, BlendMode dst, int blend)
+        {
+            m.SetFloat("_Surface", 1);
+            m.SetFloat("_Blend", blend);
+            m.SetFloat("_SrcBlend", (float)src);
+            m.SetFloat("_DstBlend", (float)dst);
+            m.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
+            m.SetFloat("_DstBlendAlpha", (float)dst);
+            m.SetFloat("_ZWrite", 0);
+            m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            m.SetOverrideTag("RenderType", "Transparent");
+            m.renderQueue = (int)RenderQueue.Transparent;
+        }
+
+        // The UI's panel settings, scaled to a 390 x 844 phone like the web
+        // version's CSS.
+        static void Panel()
+        {
+            var ps = AssetDatabase.LoadAssetAtPath<PanelSettings>(PanelPath);
+            if (ps == null)
+            {
+                ps = ScriptableObject.CreateInstance<PanelSettings>();
+                AssetDatabase.CreateAsset(ps, PanelPath);
+            }
+            ps.themeStyleSheet = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(ThemePath);
+            ps.scaleMode = PanelScaleMode.ScaleWithScreenSize;
+            ps.referenceResolution = new Vector2Int(390, 844);
+            ps.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
+            ps.match = 0.5f;
+            EditorUtility.SetDirty(ps);
+        }
+
+        // The only scene: empty, with the night's fog and ambient light (the
+        // game sets them too, but a build keeps fog shaders only for the fog
+        // its scenes use).
+        static void Scene()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
+            var scene = AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null
+                ? EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single)
+                : EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogColor = Fog;
+            RenderSettings.fogStartDistance = 14;
+            RenderSettings.fogEndDistance = 50;
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.skybox = null;
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
         }
     }
 }
