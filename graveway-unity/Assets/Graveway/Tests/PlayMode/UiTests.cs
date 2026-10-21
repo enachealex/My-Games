@@ -135,6 +135,43 @@ namespace Graveway.Tests
         }
 
         [UnityTest]
+        public IEnumerator QuittingARunKeepsItsCoins()
+        {
+            game.StartRun();
+            game.invincible = true;
+            yield return Seconds(1);
+            int coins = Save.Data.coins, runs = Save.Data.runs;
+            game.run.coins = 12;
+            game.Pause();
+            yield return null;
+            Click(ui, "Quit");
+            yield return null;
+            Assert.That(Save.Data.coins, Is.EqualTo(coins + 12));
+            Assert.That(Save.Data.runs, Is.EqualTo(runs + 1));
+            Assert.That(Save.Data.running, Is.Null);
+            Save.Reload();
+            Assert.That(Save.Data.coins, Is.EqualTo(coins + 12), "and it's on the disk");
+        }
+
+        [UnityTest]
+        public IEnumerator ARunTheAppClosesOnIsBankedNextTime()
+        {
+            game.StartRun();
+            game.invincible = true;
+            yield return Seconds(1);
+            int coins = Save.Data.coins;
+            game.run.coins = 20;
+            game.SendMessage("OnApplicationPause", true);            // into the background...
+            Assert.That(game.state, Is.EqualTo(Game.State.Paused));
+            game.run.banked = true;                                  // ...and Android closes the app
+            Save.Reload();                                           // it starts again
+            var r = Save.BankUnfinished();
+            Assert.That(r, Is.Not.Null);
+            Assert.That(r.coins, Is.EqualTo(20));
+            Assert.That(Save.Data.coins, Is.EqualTo(coins + 20));
+        }
+
+        [UnityTest]
         public IEnumerator BackUnwindsScreens()
         {
             string run = $"RUN AS {Tunables.Character(Save.Data.character).name.ToUpperInvariant()}";

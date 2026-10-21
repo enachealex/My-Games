@@ -264,6 +264,14 @@ namespace Graveway
         }
 
         // ── The end of a run ─────────────────────────────────────────────
+        // A run's coins kept after a quit or restart, or after the app closed
+        // in the middle of one.
+        public void RunKept(RunRecord r, bool unfinished)
+        {
+            if (unfinished) Banner("Last run saved", $"+{N(r.coins)} coins · {N(r.distance)} m", 3.5f);
+            else if (r.coins > 0) Toast($"Run saved · +{N(r.coins)} coins");
+        }
+
         public void ShowResult(Result r)
         {
             lastResult = r;

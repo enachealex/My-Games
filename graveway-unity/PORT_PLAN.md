@@ -57,6 +57,15 @@ reads, and the Black Market's gun pictures are shot from the other side.
 - **App id `com.thejumpvault.gravewayunity`**, so it installs next to the
   web app. Web progress can't be carried over (different app, different
   storage).
+- **Progress is never lost** (21 October 2026). The save is a file in the
+  app's own storage, written the moment anything changes, swapped in only
+  once it's safely on the disk, with the one before kept as a backup; a
+  file that won't read is set aside, never overwritten. A run's coins and
+  kills are kept however it ends: falling, Quit, Restart, or the app
+  closing mid-run (written down every 10 s and on going to the background,
+  and banked on the next start). Unlike the web version, which threw them
+  away. The app keeps Android's backup on and, when uninstalled, offers to
+  keep its data.
 - **Art: Quaternius's CC0 packs** (21 October 2026): the Zombie Apocalypse
   Kit for the people, props and vehicles, Ultimate Guns for gun parts, the
   Downtown City MegaKit for the street later. One cartoon style, light
@@ -67,9 +76,6 @@ reads, and the Black Market's gun pictures are shot from the other side.
 
 - **Sound:** port the web version's synthesised sounds first. If they jar
   next to real art, swap in recorded CC0 sounds one category at a time.
-- **Leaving a run early:** the web version throws away a run's coins and
-  kills on Restart or Quit, and if the app is killed. Keep that, or bank
-  them?
 - **Gun part prices** still need a playtest verdict.
 
 ## Art pipeline
@@ -181,7 +187,8 @@ Everything but the phone is done. The first APK built on 21 October 2026:
       two are still built in code.
 - [x] Save v2 on Newtonsoft: coins, best, runs, kills, character, owned,
       loadout, parts, survivor upgrades and settings, with notes kept
-      separately (web `save.js`).
+      separately (web `save.js`). Crash-safe files since 21 October 2026,
+      covered by EditMode tests.
 - [x] HUD: stop rebuilding strings and changing widths every frame, and
       split it into one view per screen.
 - **Done when** 64 animated zombies hold 60 fps on the phone.
