@@ -19,8 +19,9 @@ UI uses Bebas Neue. Still to come:
 - **The rest of the real art:** props, vehicles and the street, and a
   grenade launcher and minigun (the other guns are real, with their parts).
   The packs are downloaded (see [CREDITS.md](CREDITS.md)).
-- **The phone** (Phase 0's last item, Phase 7): Android Build Support is
-  installed now; testing needs the phone on USB.
+- **The phone** (Phase 0's last item, Phase 7): the APK builds (38.9 MB,
+  signed with the release key, `build-android.ps1`); trying it needs the
+  phone on USB.
 - **Phase 7's update check** and **Phase 8's** item-by-item comparison.
 
 ### How the port maps the web version's coordinates
@@ -112,8 +113,8 @@ reads, and the Black Market's gun pictures are shot from the other side.
 
 The first slice had never been opened in Unity. This phase gets it
 compiling, running and on the phone, on the foundation the rest needs.
-Everything but the phone is done: the APK build needs Unity's Android
-Build Support module, which isn't installed yet.
+Everything but the phone is done. The first APK built on 21 October 2026:
+38.9 MB, arm64, Android 8.0 (API 26) and up, signed with the release key.
 
 - [x] Open the project in 6000.5.8f1 without a window, fix compile errors, and
       commit the generated `ProjectSettings/`, `.meta` files and
