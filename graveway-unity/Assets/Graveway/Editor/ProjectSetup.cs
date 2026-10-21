@@ -70,25 +70,41 @@ namespace Graveway.EditorTools
             var unlit = Shader.Find("Universal Render Pipeline/Unlit");
             var particles = Shader.Find("Universal Render Pipeline/Particles/Unlit");
 
-            Make("Lit", lit, m =>
+            // Matte like three's Lambert: no highlights or reflections (which
+            // is also cheaper on a phone).
+            void Matte(Material m)
             {
                 m.SetFloat("_Smoothness", 0.12f);
+                m.SetFloat("_SpecularHighlights", 0);
+                m.SetFloat("_EnvironmentReflections", 0);
+                m.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+                m.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+            }
+            Make("Lit", lit, m =>
+            {
+                Matte(m);
                 m.DisableKeyword("_EMISSION");
             });
             Make("LitGlow", lit, m =>
             {
-                m.SetFloat("_Smoothness", 0.12f);
+                Matte(m);
                 m.EnableKeyword("_EMISSION");
                 m.SetColor("_EmissionColor", Color.white);
                 m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
             });
             Make("Unlit", unlit, m => { });
-            // Additive: pools of light, flashes, fire.
+            // Additive like three's AdditiveBlending (src alpha, one): pools
+            // of light, flashes, fire.
             Make("Glow", particles, m =>
             {
-                Transparent(m, BlendMode.One, BlendMode.One, blend: 2);
+                Transparent(m, BlendMode.SrcAlpha, BlendMode.One, blend: 2);
                 m.SetFloat("_Cull", (float)CullMode.Off);
             });
+            // Many copies of a mesh, a colour each (Batches.cs), camera-facing
+            // sprites (Vfx.cs), and the fog of war's shadows (Sight.cs).
+            Make("Instanced", Shader.Find("Graveway/Instanced"), m => { });
+            Make("Sprite", Shader.Find("Graveway/Sprite"), m => { });
+            Make("SightShadow", Shader.Find("Graveway/SightShadow"), m => m.SetColor("_Color", new Color32(0x02, 0x04, 0x06, 178)));
             // See-through dark blobs under people and things.
             Make("Shadow", unlit, m =>
             {

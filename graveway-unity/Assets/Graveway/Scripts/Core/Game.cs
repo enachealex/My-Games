@@ -1,14 +1,18 @@
-// The game: one endless run up the dead road. Ported from graveway/src/
-// game.js, split across files by topic (Game.Zombies.cs, Game.Combat.cs).
-// Game owns the camera, the lights and everything moving, and wires the
-// parts together:
-//   Road      (Road.cs)       streams the street in chunks
-//   Director  (Director.cs)   spawns zombies by distance and time
-//   Weapon    (Weapon.cs)     the guns in your hands
-//   Hud       (Hud.cs)        everything on screen that isn't the world
+// The game: one endless run up the dead road. A port of graveway/src/
+// game.js, split across files by topic (Game.Zombies.cs, Game.Combat.cs,
+// Game.Pickups.cs). Game owns the camera, the lights and everything moving,
+// and wires the parts together:
+//   World      (World.cs)       streams the street in chunks
+//   Director   (Director.cs)    spawns zombies by distance and time
+//   NavGrid    (NavGrid.cs)     zombie pathfinding, rebuilt as the street changes
+//   PropSystem (PropSystem.cs)  destructible props, debris, rubble
+//   Sight      (Sight.cs)       fog of war
+//   Vfx        (Vfx.cs)         fire, smoke, dust and sparks
+//   Weapon     (Weapon.cs)      the guns in your hands
+//   Hud        (Hud.cs)         everything on screen that isn't the world
 //
-// It builds itself: Boot() runs when any scene loads and makes one Game,
-// so the scene can stay empty.
+// It builds itself: Boot() runs when any scene loads and makes one Game, so
+// the scene can stay empty.
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -19,26 +23,31 @@ namespace Graveway
 {
     public sealed class Player
     {
-        public float x, z, yaw, hp, maxHp, armor, speed, radius = Tunables.PlayerRadius;
-        public float magnet, coinMult = 1, explosionResist;
+        public float x, z, yaw, hp, maxHp, armor;
+        public PlayerStats stats;
         public List<Weapon> weapons = new List<Weapon>();
         public int wi;
         public float swapT, kick, walk, moving, hurtT, deadT, furthest;
-        public bool reported;
+        public bool firing, reported;
         public Target target;
+        public readonly Dictionary<string, float> buffs = new Dictionary<string, float>();     // timed power-ups: seconds left
+        public readonly Dictionary<string, float> buffMax = new Dictionary<string, float>();   // and what the timer started at
         public Weapon Weapon => weapons[wi];
     }
 
+    // What the auto-aim picked: a zombie, a barrel to set off, or a spot (the
+    // base of a condemned building).
     public struct Target
     {
         public bool has;
         public float x, z;
         public Zombie zombie;
+        public Prop prop;
     }
 
     public sealed class RunStats
     {
-        public int kills, bonus;
+        public int kills, bonus, startAt;
         public float coins, time, startZ;
         public Zombie boss;
     }
@@ -47,36 +56,42 @@ namespace Graveway
     {
         public enum State { Menu, Playing, Paused, Dying }
 
-        // The survivor's gun sits at the right shoulder, where the camera
-        // behind can see it past the head. Guns are drawn bigger than life.
-        static readonly Vector3 GunMount = new Vector3(0.3f, 1.42f, 0.36f);
-        const float GunScale = 1.7f;
         static readonly Color Fog = Hex.C(0x0d1418);
+        const float Tau = Mathf.PI * 2;
 
         public State state;
         // Playtest tool (web: Settings → Playtest tools → Invincible): hits
         // still land and flinch, but do no damage.
         public bool invincible;
+        bool Invincible => invincible || Save.Data.settings.god;
+
         [System.NonSerialized] public Rng rng = new Rng(7);
-        [System.NonSerialized] public Road road;
+        [System.NonSerialized] public World world;
         [System.NonSerialized] public Player player;
         [System.NonSerialized] public RunStats run;
         public readonly List<Zombie> zombies = new List<Zombie>();
-        public float time;
+        public float time, shake, fps = 60;
 
-        Director director;
-        Hud hud;
+        [System.NonSerialized] public Director director;
+        [System.NonSerialized] public NavGrid nav;
+        [System.NonSerialized] public PropSystem propSys;
+        [System.NonSerialized] public Vfx vfx;
+        [System.NonSerialized] public Sight sight;
+        [System.NonSerialized] public Hud hud;
         StickInput input;
         public StickInput Stick => input;
         public Camera Camera => cam;
+        public CharacterDef Character => character;
+
         Camera cam;
         Light flashlight, muzzleLight, blastLight;
         Transform worldRoot;
         CharacterDef character;
         Humanoid surv;
-        readonly Dictionary<string, GameObject> guns = new Dictionary<string, GameObject>();
-        float shake, flashT, blastT, blastPeak;
-        Vector3 camPos = new Vector3(0, 12, -14), camLook;
+        readonly Dictionary<string, Humanoid> survivors = new Dictionary<string, Humanoid>();
+        Vector3 camPos = new Vector3(0, 12, 14), camLook = new Vector3(0, 0, -4);
+        float groanT, noiseAt = -1, flashT, blastT, blastPeak;
+        uint seed;
 
         static bool booted;
 
@@ -103,16 +118,19 @@ namespace Graveway
             QualitySettings.vSyncCount = 0;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             input = new StickInput();
+            Sfx.Init(transform);
+            Sfx.Enabled = Save.Data.settings.sound;
+            Haptics.Enabled = Save.Data.settings.haptics;
 
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = Fog;
             // The web version's lights, converted: three.js divides diffuse
             // light by pi and Unity doesn't, three's lights fall off as
             // distance^-decay and URP's as distance^-2, and three's ACES
             // brightens by 1/0.6 (made up for by the +0.94 EV exposure in
             // Settings/Graveway_PostFX). The sky light is three's hemisphere
             // light (8aa0c8 over 2a2018, intensity 1.25).
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogColor = Fog;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = Hex.C(0x8aa0c8) * 0.65f;
             RenderSettings.ambientEquatorColor = Hex.C(0x404c5e);
@@ -130,19 +148,15 @@ namespace Graveway
             cam.GetUniversalAdditionalCameraData().renderPostProcessing = true;
 
             // Moonlight from above, the survivor's flashlight, and two lights
-            // that only come on for muzzle flashes and explosions.
+            // that only switch on for muzzle flashes and explosions.
             var moon = new GameObject("Moon").AddComponent<Light>();
             moon.transform.SetParent(transform);
             moon.type = LightType.Directional;
             moon.color = Hex.C(0xb0c4ff);
             moon.intensity = 0.9f / Mathf.PI;
-            moon.transform.rotation = Quaternion.LookRotation(new Vector3(8, -20, 6));
+            moon.transform.rotation = Quaternion.LookRotation(new Vector3(8, -20, -6));
             moon.shadows = LightShadows.None;
-            // Web: intensity 70, decay 1.2, cone 0.6 rad, penumbra 0.55. 70 here
-            // matches its pool of light 4-7 m ahead, where it matters.
             flashlight = MakeLight("Flashlight", LightType.Spot, Hex.C(0xfff0d0), 70, 34);
-            flashlight.spotAngle = 70;
-            flashlight.innerSpotAngle = 70 * (1 - 0.55f);
             // Off until a shot or a blast: a light left on at zero still costs
             // a pass over everything it touches.
             muzzleLight = MakeLight("Muzzle", LightType.Point, Hex.C(0xffc070), 0, 10);
@@ -151,13 +165,17 @@ namespace Graveway
             blastLight.enabled = false;
 
             worldRoot = new GameObject("World").transform;
-            worldRoot.SetParent(transform);
+            nav = new NavGrid();
+            vfx = new Vfx(worldRoot);
+            vfx.SetQuality(Save.Data.settings.quality);
+            sight = new Sight(worldRoot);
+            propSys = new PropSystem(this);
             director = new Director(this);
             hud = new GameObject("HUD").AddComponent<Hud>();
             hud.transform.SetParent(transform);
             hud.Init(this);
             input.overUi = hud.IsOverButton;
-            InitCombat();
+            InitBatches();
             ShowMenu();
         }
 
@@ -174,23 +192,55 @@ namespace Graveway
             return l;
         }
 
-        // ── Setup ───────────────────────────────────────────────────────
+        // ── Setup ────────────────────────────────────────────────────────
+        public void SetQuality(string q)
+        {
+            vfx.SetQuality(q);
+        }
+
+        // Swaps the survivor model to a character from Tunables.Characters.
         void SetCharacter(string id)
         {
-            character = Tunables.Character(id);
-            if (surv != null) Destroy(surv.root);
-            surv = Humanoid.Survivor(character);
-            surv.root.transform.SetParent(transform, false);
-            guns.Clear();
+            var c = Tunables.Character(id);
+            if (!survivors.TryGetValue(c.id, out var m))
+            {
+                m = Models.Survivor(c.look);
+                m.root.name = c.name;
+                m.root.transform.SetParent(transform, false);
+                foreach (var w in Tunables.Weapons)
+                {
+                    var g = Models.Gun(w.model, null);
+                    g.key = "{}";
+                    g.group.transform.SetParent(m.body, false);
+                    g.group.SetActive(false);
+                    m.guns[w.id] = g;
+                }
+                survivors[c.id] = m;
+            }
+            if (surv != null && surv != m) surv.root.SetActive(false);
+            surv = m;
+            surv.root.SetActive(true);
+            character = c;
+            StandUp();
+        }
+
+        void StandUp()
+        {
+            surv.root.SetActive(true);
+            surv.body.localRotation = Quaternion.identity;
+            surv.body.localPosition = Vector3.zero;
         }
 
         void ClearRun()
         {
-            road?.Dispose();
-            road = null;
-            foreach (var z in zombies) Destroy(z.model.root);
+            world?.Dispose();
+            world = null;
+            foreach (var z in zombies) Recycle(z);
             zombies.Clear();
             ClearCombat();
+            propSys.Reset();
+            vfx.Clear();
+            sight.Clear();
             run = null;
         }
 
@@ -201,11 +251,11 @@ namespace Graveway
             state = State.Menu;
             rng = new Rng(7);
             SetCharacter(Save.Data.character);
-            road = new Road(worldRoot, 7, 0);
+            world = new World(worldRoot, 7, World.StartPz);
             player = MakePlayer();
-            player.z = 6;
-            road.Update(player.z);
-            for (int i = 0; i < 9; i++) SpawnZombie("walker", (rng.Next() - 0.5f) * 11, 12 + rng.Next() * 22, 0, calm: true);
+            player.z = -6;
+            world.Update(player.z, 0);
+            for (int i = 0; i < 9; i++) SpawnZombie("walker", (rng.Next() - 0.5f) * 11, -12 - rng.Next() * 22, 0, calm: true);
             input.enabled = false;
             hud.ShowMenu();
             SyncSurvivor();
@@ -214,87 +264,115 @@ namespace Graveway
         Player MakePlayer()
         {
             var c = character;
+            var stats = Tunables.StatsFor(c, Save.Data.pup);
+            // Your survivor's own gun first, then the ones equipped in the
+            // Armory, each with its parts, and the models in their hands to match.
             var p = new Player
             {
-                yaw = 0, maxHp = c.baseHealth, hp = c.baseHealth, speed = c.moveSpeed,
-                armor = Mathf.Min(Tunables.MaxArmor, c.perk.startArmor), magnet = Tunables.PlayerMagnet + c.perk.magnetBonus,
-                coinMult = c.perk.coinMult, explosionResist = c.perk.explosionResist,
+                x = 0, z = World.StartPz, yaw = Mathf.PI, hp = stats.maxHp, maxHp = stats.maxHp,
+                armor = Mathf.Min(Tunables.MaxArmor, stats.startArmor), stats = stats, furthest = World.StartPz,
             };
-            // The survivor's own gun first, then the others they own (the
-            // loadout and parts screens come with the Armory port).
-            var ids = new List<string> { c.startingWeapon };
-            foreach (var w in Tunables.Weapons)
-                if (w.id != c.startingWeapon && Save.Data.owned.Contains(w.id) && ids.Count < Tunables.LoadoutSlots) ids.Add(w.id);
-            foreach (var id in ids)
+            foreach (var id in Save.RunWeapons(c))
             {
-                var w = new Weapon(id, null, c.perk);
+                var w = new Weapon(id, Save.FittedParts(id), c.perk);
+                FitGun(w);
                 p.weapons.Add(w);
-                if (!guns.ContainsKey(id)) guns[id] = MakeGun(w.def);
             }
             return p;
         }
 
-        // A plain gun in the survivor's hands: receiver, grip and a light top
-        // strip, at GunMount. (Fitted parts on the model come with the parts port.)
-        GameObject MakeGun(WeaponDef d)
+        // Rebuilds the survivor's model of a gun when its parts have changed.
+        void FitGun(Weapon w)
         {
-            float len = d.id switch { "pistol" => 0.4f, "smg" => 0.5f, "shotgun" => 0.82f, "rifle" => 0.8f, "launcher" => 0.72f, _ => 0.86f };
-            float w = d.id switch { "minigun" => 0.26f, "launcher" => 0.22f, _ => 0.14f };
-            int color = d.id switch { "shotgun" => 0x8a5a36, "rifle" => 0x5c6a48, "launcher" => 0x6a7a40, _ => 0x585c66 };
-            var g = new GameObject(d.id);
-            g.transform.SetParent(surv.body, false);
-            g.transform.localPosition = GunMount;
-            g.transform.localScale = Vector3.one * GunScale;
-            var mat = Art.Lit(Hex.C(color), 0.22f);
-            surv.Attach(Art.Box(g.transform, new Vector3(w, 0.15f, len), new Vector3(0, 0, len / 2), mat, "receiver"));
-            surv.Attach(Art.Box(g.transform, new Vector3(w * 0.8f, 0.18f, 0.1f), new Vector3(0, -0.12f, 0.08f), mat, "grip"));
-            surv.Attach(Art.Box(g.transform, new Vector3(w * 0.4f, 0.03f, len * 0.85f), new Vector3(0, 0.09f, len * 0.48f), Art.Lit(Hex.C(0x8c929c), 0.12f), "rail"));
-            g.SetActive(false);
-            return g;
+            var m = surv;
+            string key = PartsKey(w.fitted);
+            m.guns.TryGetValue(w.Id, out var old);
+            if (old != null && old.key == key) return;
+            var g = Models.Gun(w.def.model, w.fitted);
+            g.key = key;
+            g.group.transform.SetParent(m.body, false);
+            g.group.SetActive(false);
+            if (old != null)
+            {
+                Destroy(old.group);
+                Art.DestroyAll(old.own);
+            }
+            m.guns[w.Id] = g;
         }
 
-        float GunLength(string id) => GunScale * (id switch { "pistol" => 0.4f, "smg" => 0.5f, "shotgun" => 0.82f, "rifle" => 0.8f, "launcher" => 0.72f, _ => 1.23f });
+        static string PartsKey(IDictionary<string, string> fitted)
+        {
+            if (fitted == null || fitted.Count == 0) return "{}";
+            var keys = new List<string>(fitted.Keys);
+            keys.Sort(System.StringComparer.Ordinal);
+            var sb = new System.Text.StringBuilder();
+            foreach (var k in keys) sb.Append(k).Append(':').Append(fitted[k]).Append(';');
+            return sb.ToString();
+        }
+
+        // Where the current gun's muzzle is, in the world.
+        public Vector3 Muzzle()
+        {
+            var p = player;
+            var gun = surv.guns[p.Weapon.Id];
+            float sin = Mathf.Sin(p.yaw), cos = Mathf.Cos(p.yaw);
+            float reach = Models.GunMount.z + gun.len, gx = Models.GunMount.x;
+            return new Vector3(p.x + sin * reach + gx * cos, Models.GunMount.y + 0.05f, p.z + cos * reach - gx * sin);
+        }
 
         public void StartRun()
         {
             ClearRun();
             SetCharacter(Save.Data.character);
-            uint seed = (uint)(System.DateTime.Now.Ticks & 0xffff) ^ 0x5bd1u;
+            var settings = Save.Data.settings;
+            int startAt = settings.startAt;
+            float startZ = World.StartPz - startAt;
+            seed = (uint)(System.DateTime.Now.Ticks / 10000 & 0xffff) ^ 0x5bd1u;
             rng = new Rng(seed);
-            road = new Road(worldRoot, seed, 0);
+            world = new World(worldRoot, seed, startZ) { lotsOfPowerups = settings.powers };
+            world.onCoins = spots => { foreach (var s in spots) AddCoin(s.x, 0.55f, s.y, 0, 0, 0, true); };
             player = MakePlayer();
-            run = new RunStats { startZ = 0 };
-            director.Reset(0);
-            road.Update(0);
+            player.z = player.furthest = startZ;
+            run = new RunStats { startAt = startAt, startZ = startZ };
+            director.Reset(startAt);
+            nav.Reset(startZ);
+            world.Update(startZ, time);
             shake = 0;
+            groanT = 2;
             state = State.Playing;
-            surv.body.localRotation = Quaternion.identity;
-            surv.body.localPosition = Vector3.zero;
-            camPos = new Vector3(0, 30, -30);
+            StandUp();
+            SyncSurvivor();
+            camPos = new Vector3(0, 30, startZ + 30);
             input.enabled = true;
             hud.ShowHud();
-            hud.Banner(character.name, "Get as far up the road as you can");
+            hud.Banner(character.name, startAt > 0 ? $"Starting at {startAt} m" : "Get as far up the road as you can");
         }
 
-        public float Distance => Mathf.Max(0, player.furthest - (run != null ? run.startZ : 0));
+        // Metres up the road: the furthest point reached this run.
+        public float Distance => Mathf.Max(0, World.StartPz - player.furthest);
         public int Stage => Mathf.FloorToInt(Distance / Tunables.Director.StageLength);
+        public Weapon Weapon => player.Weapon;
 
         public void Pause() { if (state == State.Playing) { state = State.Paused; input.enabled = false; hud.ShowPause(); } }
         public void Resume() { if (state == State.Paused) { state = State.Playing; input.enabled = true; hud.ShowHud(); } }
 
         void OnApplicationPause(bool paused) { if (paused) Pause(); }
+        void OnApplicationFocus(bool focus) { if (!focus) Pause(); }
 
-        // ── Frame ───────────────────────────────────────────────────────
+        // ── Frame ────────────────────────────────────────────────────────
         void Update()
         {
-            float dt = Mathf.Min(Time.deltaTime, 1 / 20f);
+            float raw = Time.deltaTime;
+            float dt = Mathf.Min(raw, 1 / 20f);
+            if (raw > 0) fps += (1 / raw - fps) * 0.05f;
             time += dt;
             input.Update();
             if (GameKeys.Back) hud.Back();
             if (state == State.Playing) Keys();
 
             var p = player;
-            if (road != null && state != State.Paused) road.Update(p.z);
+            if (world != null && state != State.Paused) world.Update(p.z, time);
+
             if (state == State.Playing)
             {
                 run.time += dt;
@@ -305,19 +383,31 @@ namespace Graveway
             {
                 p.deadT += dt;
                 float k = Mathf.Min(p.deadT / 0.6f, 1);
-                surv.body.localRotation = Quaternion.Euler(-90 * k * k, 0, 0);
+                surv.body.localRotation = M.Euler(-Mathf.PI / 2 * k * k, 0, 0);
                 surv.body.localPosition = new Vector3(0, 0.15f * k, 0);
                 if (p.deadT > 1.6f && !p.reported) { p.reported = true; Finish(); }
             }
+
             if (state != State.Paused)
             {
+                if (world.navDirty) { nav.dirty = true; world.navDirty = false; }
+                if (state != State.Menu) nav.Update(dt, p.x, p.z, world.props, world.rough);
+                UpdatePending(dt);
+                UpdateThrows(dt);
                 UpdateZombies(dt);
                 UpdateBullets(dt);
                 UpdateGrenades(dt);
+                propSys.Update(dt);
+                vfx.Update(dt);
+                UpdateCoins(dt);
+                UpdateItems(dt);
+                UpdateParticles(dt);
             }
             UpdateCamera(dt);
             SyncSurvivor();
-            UpdateLights(dt);
+            if (world != null && state != State.Paused) sight.Update(p.x, p.z, world.props);
+            UpdateFx(dt);
+            // While dying too, so the bars show the hit that finished you.
             if (state == State.Playing || state == State.Dying) hud.UpdateHud();
             hud.UpdateStick(input);
         }
@@ -331,28 +421,30 @@ namespace Graveway
             for (int i = 0; i < 9; i++) if (GameKeys.Down(Key.Digit1 + i)) SelectWeapon(i);
         }
 
-        // ── Player ──────────────────────────────────────────────────────
+        // ── Player ───────────────────────────────────────────────────────
         static float Damp(float k, float dt) => 1 - Mathf.Exp(-k * dt);
 
         static float LerpAngle(float a, float b, float t)
         {
-            float d = Mathf.Repeat(b - a + Mathf.PI, Mathf.PI * 2) - Mathf.PI;
+            float d = Mathf.Repeat(b - a + Mathf.PI, Tau) - Mathf.PI;
             return a + d * t;
         }
 
         void UpdatePlayer(float dt, Vector3 mv)
         {
             var p = player;
-            float len = mv.magnitude;
-            p.moving = len;
-            p.x += mv.x * p.speed * dt;
-            p.z += mv.z * p.speed * dt;
+            var props = world.props;
+            float len = Mathf.Sqrt(mv.x * mv.x + mv.z * mv.z);
+            float slow = nav.IsRough(p.x, p.z) ? Tunables.RubbleSlowPlayer : 1;
+            p.moving = len * slow;
+            p.x += mv.x * p.stats.speed * slow * dt;
+            p.z += mv.z * p.stats.speed * slow * dt;
             // Zombies are solid: a crowd blocks the road until you shoot a way
             // through or go round. Bigger ones shove you harder.
             foreach (var z in zombies)
             {
                 if (z.dead) continue;
-                float dx = p.x - z.x, dz = p.z - z.z, min = z.radius + p.radius;
+                float dx = p.x - z.x, dz = p.z - z.z, min = z.radius + p.stats.radius;
                 if (Mathf.Abs(dx) > min || Mathf.Abs(dz) > min) continue;
                 float d = Mathf.Sqrt(dx * dx + dz * dz);
                 if (d < min && d > 1e-4f)
@@ -362,57 +454,120 @@ namespace Graveway
                     z.x -= dx / d * push * (1 - share); z.z -= dz / d * push * (1 - share);
                 }
             }
-            p.x = Mathf.Clamp(p.x, -Road.WalkHalf, Road.WalkHalf);
+            World.ResolveColliders(props, ref p.x, ref p.z, p.stats.radius);
+            p.x = Mathf.Clamp(p.x, -World.WalkHalf, World.WalkHalf);
             // No going back past the start barricade, or more than 20 m back
             // down the road (it's being torn down behind you).
-            p.z = Mathf.Max(p.z, Mathf.Max(run.startZ - 4, p.furthest - 20));
-            p.furthest = Mathf.Max(p.furthest, p.z);
-            p.walk += len * dt * 11;
+            p.z = Mathf.Min(p.z, Mathf.Min(run.startZ + 4, p.furthest + 20));
+            p.furthest = Mathf.Min(p.furthest, p.z);
+            p.walk += len * slow * dt * 11;
 
             var w = p.Weapon;
-            p.target = ChooseTarget(w);
-            float desired = p.yaw;
-            if (p.target.has) desired = Mathf.Atan2(p.target.x - p.x, p.target.z - p.z);
-            else if (len > 0.05f) desired = Mathf.Atan2(mv.x, mv.z);
-            p.yaw = LerpAngle(p.yaw, desired, Damp(p.target.has ? 22 : 12, dt));
+            var target = ChooseTarget(w);
+            p.target = target;
 
+            float desired = p.yaw;
+            if (target.has) desired = Mathf.Atan2(target.x - p.x, target.z - p.z);
+            else if (len > 0.05f) desired = Mathf.Atan2(mv.x, mv.z);
+            p.yaw = LerpAngle(p.yaw, desired, Damp(target.has ? 22 : 12, dt));
+
+            TickBuffs(dt);
             p.kick = Mathf.Max(0, p.kick - dt * 9);
             if (p.swapT > 0) p.swapT -= dt;
-            if (w.Tick(dt, p.target.has)) { /* reload done: sound comes with the audio port */ }
-            if (p.target.has && w.CanFire && p.swapT <= 0)
+            p.firing = false;
+            if (w.Tick(dt, target.has)) Sfx.Reload();
+            if (target.has && w.CanFire && p.swapT <= 0)
             {
                 float off = Mathf.Abs(LerpAngle(0, desired - p.yaw, 1));
-                if (off < 0.3f) Fire(p.target);
+                if (off < 0.3f) { Fire(target); p.firing = true; }
             }
             if (p.hurtT > 0) p.hurtT -= dt;
         }
 
-        // Auto-aim: the nearest zombie in range, preferring ones up the road
-        // and the one already aimed at. (Props, cover and fog come later.)
+        // Is (x, z) inside the rotated box b, grown by pad?
+        static bool InBox(PropSystem.Footprint b, float x, float z, float pad)
+        {
+            float dx = x - b.x, dz = z - b.z;
+            float lx = dx * b.cos - dz * b.sin, lz = dx * b.sin + dz * b.cos;
+            return Mathf.Abs(lx) < b.hw + pad && Mathf.Abs(lz) < b.hd + pad;
+        }
+
+        // Auto-aim. The nearest zombie in range, preferring ones up the road
+        // and ones with a clear line of fire. Zombies behind a wreck you can't
+        // shoot through are skipped; behind something breakable, they're a
+        // last resort. An explosive barrel with a crowd round it beats any
+        // single zombie, and with a launcher, so does a condemned building
+        // that would fall on one.
         Target ChooseTarget(Weapon w)
         {
             var p = player;
             float range = w.stats.range, minRange = w.stats.minRange;
-            Zombie best = null;
+            var props = world.props;
+            Target best = default;
             float bestScore = float.PositiveInfinity;
             foreach (var z in zombies)
             {
-                if (z.dead) continue;
+                if (z.dead || !z.seen) continue;          // can't aim at what you can't see
                 float dx = z.x - p.x, dz = z.z - p.z, d2 = dx * dx + dz * dz;
                 if (d2 > range * range || d2 < minRange * minRange) continue;
                 float d = Mathf.Sqrt(d2);
-                // Building fronts stop bullets: no shots round corners.
-                if (!w.Explosive && road.FacadeT(p.x, p.z, dx / d, dz / d, d) < d) continue;
-                float score = d + (dz < -1 ? 4 : 0) + (p.target.zombie == z ? -1.5f : 0);
-                if (score < bestScore) { bestScore = score; best = z; }
+                float score = d + (dz > 1 ? 4 : 0) + (p.target.zombie == z ? -1.5f : 0);
+                float t = World.RayProps(props, p.x, p.z, dx / d, dz / d, d - z.radius, out var hit);
+                if (!w.Explosive)
+                {
+                    // Round a building corner, into a wreck, or into a car or
+                    // barrel close enough to take you with it: no shot.
+                    if (world.FacadeT(p.x, p.z, dx / d, dz / d, d) < d) continue;
+                    if (hit != null)
+                    {
+                        if (hit.indestructible) continue;
+                        var ex = hit.def.explodes;
+                        if (ex != null && t < ex.radius + 1) continue;
+                        score += 8;
+                    }
+                }
+                else if (hit != null && hit.height > 2 && t < w.stats.blast.radius + 0.5f) continue;   // a grenade's arc clears a car, not a wall beside you
+                if (score < bestScore) { bestScore = score; best = new Target { has = true, x = z.x, z = z.z, zombie = z }; }
             }
-            return best == null ? default : new Target { has = true, x = best.x, z = best.z, zombie = best };
+            // Barrels worth shooting: two or more zombies in the blast, and you clear of it.
+            foreach (var b in props)
+            {
+                if (b.kind != "barrel" || b.destroyed) continue;
+                float dx = b.x - p.x, dz = b.z - p.z, d = Mathf.Sqrt(dx * dx + dz * dz), r = b.def.explodes.radius;
+                if (d > range || d < r + 1) continue;
+                // Bullets have to actually reach it: not through a wreck.
+                if (!w.Explosive) { World.RayProps(props, p.x, p.z, dx / d, dz / d, d, out var first); if (first != b) continue; }
+                int n = 0;
+                foreach (var z in zombies) if (!z.dead && Mathf.Sqrt((z.x - b.x) * (z.x - b.x) + (z.z - b.z) * (z.z - b.z)) < r) n++;
+                if (n < 2) continue;
+                float score = d - n * 3;
+                if (score < bestScore) { bestScore = score; best = new Target { has = true, x = b.x, z = b.z, prop = b }; }
+            }
+            if (w.Explosive)
+            {
+                foreach (var b in props)
+                {
+                    if (b.kind != "condemned" || b.destroyed) continue;
+                    float d = Mathf.Sqrt((b.x - p.x) * (b.x - p.x) + (b.z - p.z) * (b.z - p.z));
+                    if (d > range + 4) continue;
+                    var fp = propSys.FootprintOf(b, b.cos, -b.sin);
+                    if (InBox(fp, p.x, p.z, 1)) continue;
+                    int n = 0;
+                    foreach (var z in zombies) if (!z.dead && InBox(fp, z.x, z.z, 0)) n++;
+                    if (n < 3) continue;
+                    // aim at its base, on the road side
+                    float tx = b.x + b.cos * 1.6f, tz = b.z - b.sin * 1.6f;
+                    float score = Mathf.Sqrt((tx - p.x) * (tx - p.x) + (tz - p.z) * (tz - p.z)) - n * 3;
+                    if (score < bestScore) { bestScore = score; best = new Target { has = true, x = tx, z = tz, prop = b }; }
+                }
+            }
+            return best;
         }
 
         public void Reload()
         {
             if (state != State.Playing) return;
-            player.Weapon.StartReload();
+            if (player.Weapon.StartReload()) Sfx.Reload();
         }
 
         public void SelectWeapon(int i)
@@ -423,6 +578,7 @@ namespace Graveway
             p.wi = i;
             p.swapT = 0.25f;
             if (p.Weapon.ammo <= 0) Reload();
+            Sfx.Swap();
         }
 
         public void SwapWeapon(int dir)
@@ -435,8 +591,8 @@ namespace Graveway
         {
             var p = player;
             if (state != State.Playing) return;
-            if (invincible) dmg = 0;
-            if (blast) dmg *= 1 - p.explosionResist;
+            if (Invincible) dmg = 0;     // playtest tool: still flinch, never hurt
+            if (blast) dmg *= 1 - p.stats.explosionResist;
             if (p.armor > 0)
             {
                 float soak = Mathf.Min(p.armor, dmg * Tunables.ArmorAbsorb);
@@ -447,8 +603,12 @@ namespace Graveway
             p.hurtT = 0.35f;
             shake = Mathf.Max(shake, 0.35f);
             hud.FlashHurt();
-            Blood(new Vector3(p.x, 1.3f, p.z), 6, 2.5f);
-            float dx = p.x - fromX, dz = p.z - fromZ, l = Mathf.Max(0.001f, Mathf.Sqrt(dx * dx + dz * dz));
+            Sfx.Hurt();
+            Haptics.Vibrate(45);
+            Burst(p.x, 1.3f, p.z, 6, Hex.C(0x8a0d0d), speed: 2.5f);
+            // a shove away from the attacker
+            float dx = p.x - fromX, dz = p.z - fromZ, l = Mathf.Sqrt(dx * dx + dz * dz);
+            if (l == 0) l = 1;
             p.x += dx / l * (blast ? 0.8f : 0.35f);
             p.z += dz / l * (blast ? 0.8f : 0.35f);
             if (p.hp <= 0)
@@ -457,40 +617,30 @@ namespace Graveway
                 state = State.Dying;
                 p.deadT = 0;
                 input.enabled = false;
+                Sfx.Lose();
             }
-        }
-
-        Vector3 Muzzle()
-        {
-            var p = player;
-            float sin = Mathf.Sin(p.yaw), cos = Mathf.Cos(p.yaw);
-            float reach = GunMount.z + GunLength(p.Weapon.Id), gx = GunMount.x;
-            // body-local (x right, z forward) turned by the yaw
-            return new Vector3(p.x + sin * reach + gx * cos, GunMount.y + 0.05f, p.z + cos * reach - gx * sin);
         }
 
         void SyncSurvivor()
         {
             var p = player;
             if (p == null || surv == null) return;
-            surv.root.transform.position = new Vector3(p.x, 0, p.z);
-            surv.root.transform.rotation = Quaternion.Euler(0, p.yaw * Mathf.Rad2Deg, 0);
+            var m = surv;
+            m.root.transform.localPosition = new Vector3(p.x, 0, p.z);
+            m.root.transform.localRotation = M.Yaw(p.yaw);
             string id = p.Weapon.Id;
-            foreach (var kv in guns)
-            {
-                if (kv.Value.activeSelf != (kv.Key == id)) kv.Value.SetActive(kv.Key == id);
-            }
-            if (guns.TryGetValue(id, out var gun)) gun.transform.localPosition = GunMount - new Vector3(0, 0, p.kick * 0.12f);
-            float sw = Mathf.Sin(p.walk) * 0.7f * Mathf.Min(p.moving * 1.5f, 1) * Mathf.Rad2Deg;
-            surv.legL.localRotation = Quaternion.Euler(sw, 0, 0);
-            surv.legR.localRotation = Quaternion.Euler(-sw, 0, 0);
-            if (state != State.Dying) surv.body.localPosition = new Vector3(0, Mathf.Abs(Mathf.Cos(p.walk)) * 0.06f * p.moving, 0);
+            foreach (var kv in m.guns) if (kv.Value.group.activeSelf != (kv.Key == id)) kv.Value.group.SetActive(kv.Key == id);
+            var gun = m.guns[id].group.transform;
+            gun.localPosition = new Vector3(Models.GunMount.x, Models.GunMount.y, Models.GunMount.z - p.kick * 0.12f);
+            float sw = Mathf.Sin(p.walk) * 0.7f * Mathf.Min(p.moving * 1.5f, 1);
+            m.legL.localRotation = M.Euler(sw, 0, 0);
+            m.legR.localRotation = M.Euler(-sw, 0, 0);
+            if (state != State.Dying) m.body.localPosition = new Vector3(0, Mathf.Abs(Mathf.Cos(p.walk)) * 0.06f * p.moving, 0);
             bool reloading = p.Weapon.Reloading;
-            // Arms forward and a little down, so the hands meet the gun at the
-            // right shoulder; the left one reaches across.
-            float aim = (-90 + 7 + p.kick * 10 + (reloading ? 34 : 0));
-            surv.armR.localRotation = Quaternion.Euler(0, -6, 0) * Quaternion.Euler(aim, 0, 0);
-            surv.armL.localRotation = Quaternion.Euler(0, 28, 0) * Quaternion.Euler(aim + (reloading ? Mathf.Sin(time * 18) * 17 : 0), 0, 0);
+            // Arms angled a little down, so the hands meet the gun.
+            float aim = -Mathf.PI / 2 + 0.12f + p.kick * 0.18f + (reloading ? 0.6f : 0);
+            m.armR.localRotation = M.Euler(aim, 0, 0.3f);
+            m.armL.localRotation = M.Euler(aim + (reloading ? Mathf.Sin(time * 18) * 0.3f : 0), 0, -0.62f);
         }
 
         // ── Camera and lights ────────────────────────────────────────────
@@ -500,19 +650,23 @@ namespace Graveway
             if (p == null) return;
             // The camera's own shape, not the screen's: they differ when it
             // renders to a texture (screenshots).
-            bool portrait = cam.aspect <= 1;
-            cam.fieldOfView = portrait ? 68 : 52;
+            cam.fieldOfView = cam.aspect <= 1 ? 68 : 52;
             float tanH = Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * cam.aspect;
             float dist = Mathf.Clamp(5.8f / tanH, 13, 20), lookAhead = 4;
-            if (state == State.Menu) { dist = 14; lookAhead = 3; p.yaw = 0; }
+            if (state == State.Menu)
+            {
+                dist = 14;
+                lookAhead = 3;                 // puts the survivor just above the menu buttons
+                p.yaw = Mathf.PI;
+            }
             RenderSettings.fogStartDistance = dist * 0.85f;
             RenderSettings.fogEndDistance = dist + 36;
             const float el = 0.92f;
-            float tx = p.x * 0.55f, tz = p.z + lookAhead;
+            float tx = p.x * 0.55f, tz = p.z - lookAhead;
             camLook.x += (tx - camLook.x) * Damp(5, dt);
             camLook.z += (tz - camLook.z) * Damp(5, dt);
             camLook.y = 0.8f;
-            var want = new Vector3(tx, Mathf.Sin(el) * dist, tz - Mathf.Cos(el) * dist - lookAhead * 0.4f);
+            var want = new Vector3(tx, Mathf.Sin(el) * dist, tz + Mathf.Cos(el) * dist + lookAhead * 0.4f);
             camPos = Vector3.Lerp(camPos, want, Damp(state == State.Playing ? 4.5f : 2, dt));
             var pos = camPos;
             if (shake > 0)
@@ -527,29 +681,13 @@ namespace Graveway
             cam.transform.LookAt(camLook);
         }
 
-        void UpdateLights(float dt)
-        {
-            var p = player;
-            float sin = Mathf.Sin(p.yaw), cos = Mathf.Cos(p.yaw);
-            flashlight.transform.position = new Vector3(p.x + sin * 0.3f, 2.3f, p.z + cos * 0.3f);
-            flashlight.transform.LookAt(new Vector3(p.x + sin * 9, 0, p.z + cos * 9));
-            flashlight.enabled = state != State.Dying;
-            if (flashT > 0) { flashT -= dt; if (flashT <= 0) { muzzleLight.enabled = false; muzzleFlash.SetActive(false); } }
-            if (blastT > 0)
-            {
-                blastT -= dt;
-                float k = Mathf.Max(0, blastT / 0.3f);
-                blastLight.intensity = blastPeak * k * k;
-                if (blastT <= 0) blastLight.enabled = false;
-            }
-        }
-
         // ── Stages and the end ───────────────────────────────────────────
         public void OnStage(int stage)
         {
             int bonus = Tunables.Director.StageBonus(stage);
             run.bonus += bonus;
             hud.Banner($"Stage {stage + 1}", $"{stage * Tunables.Director.StageLength:0} m · +{bonus} coins · they're getting tougher", 1.8f);
+            Sfx.Milestone();
         }
 
         void Finish()
@@ -557,21 +695,24 @@ namespace Graveway
             var r = run;
             var s = Save.Data;
             int distance = Mathf.FloorToInt(Distance), coins = Mathf.FloorToInt(r.coins);
-            bool best = distance > s.best;
+            var result = new Hud.Result
+            {
+                character = character.name, distance = distance, stage = Stage, kills = r.kills, coins = coins, bonus = r.bonus,
+                time = r.time, best = distance > s.best, startAt = r.startAt,
+            };
             s.coins += coins + r.bonus;
             s.kills += r.kills;
             s.runs++;
-            s.best = Mathf.Max(s.best, distance);
+            // A run started further up the road (playtest tool) doesn't set records.
+            if (r.startAt == 0) s.best = Mathf.Max(s.best, distance);
+            else result.best = false;
+            result.wallet = s.coins;
+            result.bestEver = s.best;
             Save.Persist();
-            hud.ShowResult(new Hud.Result
-            {
-                character = character.name, distance = distance, stage = Stage, kills = r.kills, coins = coins,
-                bonus = r.bonus, time = r.time, best = best, wallet = s.coins, bestEver = s.best,
-            });
+            hud.ShowResult(result);
         }
 
-        // For the HUD
-        public CharacterDef Character => character;
         public int AliveCount() { int n = 0; foreach (var z in zombies) if (!z.dead) n++; return n; }
+        public bool BuffOn(string id) => player.buffs.TryGetValue(id, out var t) && t > 0;
     }
 }

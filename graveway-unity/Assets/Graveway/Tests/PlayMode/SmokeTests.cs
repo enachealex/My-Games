@@ -61,7 +61,7 @@ namespace Graveway.Tests
         {
             game.StartRun();
             game.invincible = true;
-            game.Stick.autopilot = new Vector3(0, 0, 1);
+            game.Stick.autopilot = new Vector3(0, 0, -1);      // up the road is -z
             yield return Seconds(60);
             Assert.That(game.state, Is.EqualTo(Game.State.Playing));
             Assert.That(game.Distance, Is.GreaterThan(100), "didn't get far up the road");
@@ -94,7 +94,7 @@ namespace Graveway.Tests
             game.invincible = true;
             yield return Seconds(4);
             Shot(rt, "2-run-start");
-            game.Stick.autopilot = new Vector3(0.3f, 0, 1);
+            game.Stick.autopilot = new Vector3(0.3f, 0, -1);
             yield return Seconds(25);
             Assert.That(game.state, Is.EqualTo(Game.State.Playing));
             Shot(rt, "3-run-25s");

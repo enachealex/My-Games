@@ -10,6 +10,7 @@
 //   Runners and tanks join at their unlock stage; the boss arrives at its
 //   unlock stage and every BossEvery stages after.
 
+using System.Collections.Generic;
 using UnityEngine;
 using D = Graveway.Tunables.Director;
 
@@ -20,6 +21,7 @@ namespace Graveway
         public const float SpawnAhead = 52;            // metres up the road, inside the fog
 
         readonly Game game;
+        readonly List<Alley> near = new List<Alley>();
         int stage, nextBoss;
         float nextHordeAt, trickleT;
 
@@ -30,8 +32,16 @@ namespace Graveway
             stage = Mathf.FloorToInt(distance / D.StageLength);
             nextHordeAt = distance + 6;
             trickleT = 4;
+            // Starting a run on a boss stage (playtest tool) brings that boss at once.
             nextBoss = D.UnlockBoss;
             while (nextBoss < stage) nextBoss += D.BossEvery;
+        }
+
+        List<Alley> AlleysWhere(System.Predicate<Alley> keep)
+        {
+            near.Clear();
+            foreach (var a in game.world.alleys) if (keep(a)) near.Add(a);
+            return near;
         }
 
         public void Update(float dt, float distance)
@@ -48,11 +58,11 @@ namespace Graveway
                 nextHordeAt = distance + D.HordeEvery(s) * (0.75f + rng.Next() * 0.5f);
                 int lo = D.HordeMin(s), hi = D.HordeMax(s);
                 int count = lo + (int)(rng.Next() * (hi - lo + 1));
-                var alleys = game.road.alleys.FindAll(a => a.z > pz + 12 && a.z < pz + 40);
+                var alleys = AlleysWhere(a => a.z < pz - 12 && a.z > pz - 40);
                 if (alleys.Count > 0 && rng.Next() < D.SideAmbush(s))
                     game.SpawnGroup(count, s, alley: alleys[(int)(rng.Next() * alleys.Count)]);
                 else
-                    game.SpawnGroup(count, s, z: pz + SpawnAhead + rng.Next() * 8);
+                    game.SpawnGroup(count, s, z: pz - SpawnAhead - rng.Next() * 8);
             }
 
             // Stragglers, by time.
@@ -61,10 +71,10 @@ namespace Graveway
             {
                 trickleT = D.TrickleEvery(s) * (0.7f + rng.Next() * 0.6f);
                 float r = rng.Next();
-                var alleys = game.road.alleys.FindAll(a => Mathf.Abs(a.z - pz) < 30);
-                if (r < 0.2f && s >= 1) game.SpawnGroup(1, s, z: pz - 22, behind: true);
+                var alleys = AlleysWhere(a => Mathf.Abs(a.z - pz) < 30);
+                if (r < 0.2f && s >= 1) game.SpawnGroup(1, s, z: pz + 22, behind: true);
                 else if (r < 0.45f && alleys.Count > 0) game.SpawnGroup(1, s, alley: alleys[(int)(rng.Next() * alleys.Count)]);
-                else game.SpawnGroup(1 + (rng.Next() < 0.3f ? 1 : 0), s, z: pz + SpawnAhead - rng.Next() * 6);
+                else game.SpawnGroup(1 + (rng.Next() < 0.3f ? 1 : 0), s, z: pz - SpawnAhead + rng.Next() * 6);
             }
         }
 

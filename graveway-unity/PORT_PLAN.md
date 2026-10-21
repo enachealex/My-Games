@@ -222,6 +222,35 @@ Build Support module, which isn't installed yet.
 - [ ] Go through `docs/web-version-reference.md` item by item.
 - [ ] Playtest, then retire the web APK. The web version stays in the repo.
 
+## After the port: playtest notes (20 October 2026)
+
+From playtesting web build 0.8.1 (build 13), to do once the port is
+complete. The web version stays frozen, so these land in Unity only.
+
+1. **Bullets come out of the survivor's chest, not the barrel.** The web
+   version starts each bullet at the survivor's centre on purpose (so a
+   gun pressed against a wall can't shoot through it). The Unity port
+   keeps that hit test but draws the tracer and muzzle flash from the
+   barrel, so it looks right. *(Done during the port, Phase 4.)*
+2. **New power-up: mines.** Lays down 3 mines staggered behind the
+   survivor, thrown out like grenades.
+3. **Weapon pickups:** temporary boosts to damage, accuracy, rate of fire,
+   reload speed and range.
+4. **A shop for coins**, for when favourite guns are maxed out. Bought
+   items go in a **backpack on the left of the screen**, within thumb
+   reach, and are used from there:
+   - airstrikes: cluster strike, strafing run, incendiary
+   - helicopter air support for 30 s (the timer starts at its first shot)
+   - extra survivors to fight alongside you, each with a random weapon
+   - skip the next boss
+
+   None of them are immediate: you hear the plane or helicopter coming
+   first.
+5. **New weapons:** sniper rifle and rocket launcher.
+6. **New environments after every 2 bosses.** A helicopter lands about
+   25 m ahead; walking up to it plays a cut scene of the survivor climbing
+   aboard and being dropped off in the new environment.
+
 ## How work gets checked
 
 - Unity runs without a window on the dev PC (`-batchmode`), so builds,

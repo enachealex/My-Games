@@ -20,7 +20,7 @@ namespace Graveway
         public struct Result
         {
             public string character;
-            public int distance, stage, kills, coins, bonus, wallet, bestEver;
+            public int distance, stage, kills, coins, bonus, wallet, bestEver, startAt;
             public float time;
             public bool best;
         }
@@ -263,6 +263,28 @@ namespace Graveway
 
         public void FlashHurt() => hurtT = 0.45f;
 
+        // A short line at the top: "+35 health", a power-up's name.
+        Label toast;
+        float toastT;
+        public void Toast(string text, string kind, Color? color = null)
+        {
+            if (toast == null)
+            {
+                toast = Text("toast", root);
+                toast.style.position = Position.Absolute;
+                toast.style.top = Length.Percent(13);
+                toast.style.left = 0;
+                toast.style.right = 0;
+                toast.style.unityTextAlign = TextAnchor.MiddleCenter;
+                toast.style.fontSize = 20;
+                toast.style.unityFontStyleAndWeight = FontStyle.Bold;
+            }
+            toast.text = text;
+            toast.style.color = color ?? (kind == "heal" ? Hex.C(0x6dff8a) : kind == "armor" ? Hex.C(0x7ac8ff) : Color.white);
+            toast.style.display = DisplayStyle.Flex;
+            toastT = 1.3f;
+        }
+
         void BuildWeaponBar()
         {
             wbar.Clear();
@@ -335,6 +357,12 @@ namespace Graveway
         void Update()
         {
             if (banner.style.display == DisplayStyle.Flex && Time.time > bannerT0) banner.style.display = DisplayStyle.None;
+            if (toast != null && toastT > 0)
+            {
+                toastT -= Time.deltaTime;
+                toast.style.opacity = Mathf.Clamp01(toastT / 0.3f);
+                if (toastT <= 0) toast.style.display = DisplayStyle.None;
+            }
             // Red flash when hurt; a slow pulse when health is low.
             hurtT = Mathf.Max(0, hurtT - Time.deltaTime);
             var p = game.player;
