@@ -12,16 +12,14 @@ Each phase is one or more PRs. Tick items off here as they land.
 
 The whole game is ported in code: the street, props and destruction, the
 zombie AI and fog of war, combat, power-ups, effects, sound, haptics, and
-every menu (Black Market, notes, settings). It is still drawn with the web
-version's own box models, built in code. What's left needs things from
-outside the repo:
+every menu (Black Market, notes, settings). The survivors and zombies are
+real animated models now (Quaternius's Zombie Apocalypse Kit, CC0), and the
+UI uses Bebas Neue. Still to come:
 
-- **Real art** (Phase 1's characters and guns, and the street): the packs
-  need downloading, which needs a yes for each one.
-- **The phone** (Phase 0's last item, Phase 7): the APK build needs Unity's
-  Android Build Support module, and testing needs the phone on USB.
-- **The Bebas Neue font:** the UI uses Unity's default font until its TTF
-  is downloaded.
+- **The rest of the real art:** guns with their parts, then props, vehicles
+  and the street. The packs are downloaded (see [CREDITS.md](CREDITS.md)).
+- **The phone** (Phase 0's last item, Phase 7): Android Build Support is
+  installed now; testing needs the phone on USB.
 - **Phase 7's update check** and **Phase 8's** item-by-item comparison.
 
 ### How the port maps the web version's coordinates
@@ -57,16 +55,14 @@ reads, and the Black Market's gun pictures are shot from the other side.
 - **App id `com.thejumpvault.gravewayunity`**, so it installs next to the
   web app. Web progress can't be carried over (different app, different
   storage).
+- **Art: Quaternius's CC0 packs** (21 October 2026): the Zombie Apocalypse
+  Kit for the people, props and vehicles, Ultimate Guns for gun parts, the
+  Downtown City MegaKit for the street later. One cartoon style, light
+  enough for a phone, and free to keep in a public repo.
+  [CREDITS.md](CREDITS.md) lists every pack with its source.
 
 ## Open decisions
 
-- **Where the art comes from** (needed before Phase 1). The recommendation is
-  free CC0 low-poly packs (Quaternius, Kenney): one consistent stylised
-  look, light enough for 64 animated zombies on a phone, and no licence
-  worries. The alternatives are paid stylised packs (for example Synty's
-  POLYGON apocalypse and military sets), which are richer and still
-  consistent, or more realistic Asset Store art, which is heavier and harder
-  to keep consistent.
 - **Sound:** port the web version's synthesised sounds first. If they jar
   next to real art, swap in recorded CC0 sounds one category at a time.
 - **Leaving a run early:** the web version throws away a run's coins and
@@ -168,7 +164,12 @@ Build Support module, which isn't installed yet.
       chunk, as on the web.
 - [x] Bullets, coins, particles and debris drawn instanced from the
       simulation arrays.
-- [ ] Animated survivors and zombies replace the box people (Humanoid.cs).
+- [x] Animated survivors and zombies replace the box people (Humanoid.cs).
+      Rook, Bram, Juno and Wren are the kit's Shaun, Matt, Sam and Lis;
+      walkers, runners, tanks and the boss are its Basic, Ribcage, Chubby and
+      Arm zombies (`Scripts/Art/Rigs.cs`). Each model gets an Animator
+      controller with a state per clip, made by Set up project
+      (`Editor/ArtImport.cs`).
       Animator parameters come from the simulation (speed, aiming,
       reloading, attacking, dying).
 - [ ] Real gun models with part sockets. (For now the web's gun models,
@@ -248,7 +249,7 @@ CSS). Portraits and gun pictures are rendered from the 3D models
 - [x] Results with tips, pause, settings, playtest tools.
 - [x] Playtest notes, and Send to Claude as a GitHub issue on My-Games.
 - [x] Back-button stack, safe areas, banners and toasts.
-- [ ] Bebas Neue font (needs its TTF downloaded).
+- [x] Bebas Neue font, wherever the web version uses it.
 - [x] PlayMode tests that work the menus by their buttons, and pictures of
       every screen with the UI over the street.
 

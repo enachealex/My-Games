@@ -298,7 +298,7 @@ namespace Graveway
             "Keep moving: stragglers keep coming even when you stand still.",
             "Red barrels go up with a crowd round them. Your aim knows that.",
             "Armor takes every hit until it's gone. Grab the blue vests.",
-            "Runners have red eyes. Deal with them first.",
+            "Runners are the bony ones. Deal with them first.",
             "Tanks smash straight through barricades. Don't hide behind one.",
             "Rubble slows everything that crosses it, including you.",
             "Coins you pick up are yours to keep, even if you fall.",
@@ -428,7 +428,7 @@ namespace Graveway
             sNotesN.text = Save.Notes.Count.ToString(CultureInfo.InvariantCulture);
             sReset.text = resetArmed ? "Tap again to erase everything" : "Reset progress";
             sReset.EnableInClassList("armed", resetArmed);
-            sVersion.text = $"Graveway · {BuildLabel}\nEverything is drawn and synthesised in code for now. Bebas Neue font (OFL) comes with the art.";
+            sVersion.text = $"Graveway · {BuildLabel}\n3D art by Quaternius (CC0). Bebas Neue font (OFL). Sounds are synthesised in code.";
         }
 
         static string BuildLabel => $"v{Application.version} · {(Application.platform == RuntimePlatform.Android ? "Android" : Application.isEditor ? "Editor" : Application.platform.ToString())}";

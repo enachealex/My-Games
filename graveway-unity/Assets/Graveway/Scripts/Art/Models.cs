@@ -1,45 +1,14 @@
-// Everything you see, built from boxes and cylinders: a port of models.js.
-// Shared meshes and cached materials wherever copies can share them. This is
-// the placeholder art; real models replace these functions one at a time,
-// keeping what they return (the pivots a character animates, the parts a
-// hit flashes, a prop's collider size).
+// Guns, props and pickups built from boxes and cylinders: a port of
+// models.js. Shared meshes and cached materials wherever copies can share
+// them. This is the placeholder art; real models replace these functions one
+// at a time, keeping what they return (a gun's length, a prop's collider
+// size). The people are real already: see Rigs.cs.
 
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Graveway
 {
-    // A person: survivor or zombie. Faces +z. Pivots sit at the hips,
-    // shoulders and neck so limbs swing; `body` is what tips over on death.
-    public sealed class Humanoid
-    {
-        public GameObject root;
-        public Transform body, legL, legR, armL, armR, head;
-        public readonly List<MeshRenderer> meshes = new List<MeshRenderer>();   // flashed when hit
-        readonly List<Material> mats = new List<Material>();
-        public MeshRenderer eyes, torso;
-        public readonly Dictionary<string, GunModel> guns = new Dictionary<string, GunModel>();
-        bool flashing;
-
-        public void Keep(MeshRenderer r) { meshes.Add(r); mats.Add(r.sharedMaterial); }
-
-        public void SetFlash(bool on)
-        {
-            if (on == flashing) return;
-            flashing = on;
-            for (int i = 0; i < meshes.Count; i++) meshes[i].sharedMaterial = on ? Art.Flash : mats[i];
-        }
-
-        // Pooled zombies get new clothes each time they come back.
-        public void Recolor(Material skin, Material shirt, Material pants, Material sleeves, Material eyeMat)
-        {
-            var set = new[] { shirt, pants, pants, skin, sleeves, sleeves, skin, skin };
-            for (int i = 0; i < meshes.Count && i < set.Length; i++) { mats[i] = set[i]; meshes[i].sharedMaterial = set[i]; }
-            if (eyes) eyes.sharedMaterial = eyeMat;
-            flashing = false;
-        }
-    }
-
     public sealed class GunModel
     {
         public GameObject group;
@@ -79,12 +48,11 @@ namespace Graveway
     public static class Models
     {
         public const float GunScale = 1.7f;
-        public static readonly Vector3 GunMount = new Vector3(-0.3f, 1.42f, 0.36f);
 
         // ── Shared geometry ──────────────────────────────────────────────
         sealed class Shared
         {
-            public Mesh leg, arm, hand, armHand, torso, head, eyes, pack, cap, helmet, goggles, hood, grenade, coin, tracer, particle, billboard;
+            public Mesh grenade, coin, tracer, particle, billboard;
         }
         static Shared g;
 
@@ -95,20 +63,6 @@ namespace Graveway
                 if (g != null) return g;
                 g = new Shared
                 {
-                    leg = new GeoBuilder().Box(0.24f, 0.82f, 0.26f, 0, -0.41f, 0).Build("leg"),
-                    arm = new GeoBuilder().Box(0.19f, 0.72f, 0.2f, 0, -0.34f, 0).Build("arm"),
-                    hand = new GeoBuilder().Box(0.16f, 0.16f, 0.18f, 0, -0.76f, 0.01f).Build("hand"),
-                    armHand = new GeoBuilder().Box(0.19f, 0.72f, 0.2f, 0, -0.34f, 0).Box(0.16f, 0.16f, 0.18f, 0, -0.76f, 0.01f).Build("arm and hand"),
-                    torso = new GeoBuilder().Box(0.62f, 0.72f, 0.36f).Build("torso"),
-                    head = new GeoBuilder().Box(0.4f, 0.42f, 0.4f, 0, 0.21f, 0).Build("head"),
-                    eyes = new GeoBuilder().Box(0.09f, 0.06f, 0.03f, -0.09f, 0.25f, 0.205f).Box(0.09f, 0.06f, 0.03f, 0.09f, 0.25f, 0.205f).Build("eyes"),
-                    pack = new GeoBuilder().Box(0.46f, 0.5f, 0.2f, 0, 1.2f, -0.27f).Build("pack"),
-                    cap = new GeoBuilder().Box(0.44f, 0.12f, 0.5f, 0, 0.46f, 0.04f).Build("cap"),
-                    helmet = new GeoBuilder().Box(0.5f, 0.26f, 0.5f, 0, 0.42f, 0).Box(0.44f, 0.08f, 0.06f, 0, 0.3f, 0.24f).Build("helmet"),
-                    goggles = new GeoBuilder().Box(0.44f, 0.06f, 0.44f, 0, 0.3f, 0).Box(0.12f, 0.1f, 0.05f, -0.09f, 0.3f, 0.215f)
-                        .Box(0.12f, 0.1f, 0.05f, 0.09f, 0.3f, 0.215f).Build("goggles"),
-                    hood = new GeoBuilder().Box(0.48f, 0.12f, 0.48f, 0, 0.47f, -0.02f).Box(0.06f, 0.4f, 0.46f, -0.23f, 0.22f, -0.02f)
-                        .Box(0.06f, 0.4f, 0.46f, 0.23f, 0.22f, -0.02f).Box(0.48f, 0.4f, 0.06f, 0, 0.22f, -0.23f).Build("hood"),
                     grenade = new GeoBuilder().Sphere(0.13f, 10, 8, M.I).Build("grenade"),
                     coin = new GeoBuilder().Cylinder(0.24f, 0.24f, 0.07f, 14, M.Rx(Mathf.PI / 2)).Build("coin"),
                     tracer = new GeoBuilder().Box(0.06f, 0.06f, 1.1f).Build("tracer"),
@@ -150,78 +104,6 @@ namespace Graveway
             var r = Art.Show(parent, mesh, mat, name);
             r.transform.localPosition = new Vector3(x, y, z);
             return r;
-        }
-
-        // ── Characters ───────────────────────────────────────────────────
-        public static Humanoid Humanoid(string name, Material skin, Material shirt, Material pants, Material sleeves, Material eyes,
-            float shadow = 1.1f, bool splitArms = false)
-        {
-            var h = new Humanoid { root = new GameObject(name) };
-            h.body = Group("body", h.root.transform);
-            Transform Pivot(string n, float x, float y, float z) { var t = Group(n, h.body); t.localPosition = new Vector3(x, y, z); return t; }
-            h.legL = Pivot("leg L", 0.15f, 0.82f, 0);
-            h.legR = Pivot("leg R", -0.15f, 0.82f, 0);
-            h.armL = Pivot("arm L", 0.42f, 1.48f, 0);
-            h.armR = Pivot("arm R", -0.42f, 1.48f, 0);
-            h.head = Pivot("head", 0, 1.54f, 0);
-
-            h.Keep(h.torso = At(h.body, G.torso, shirt, 0, 1.18f, 0, "torso"));
-            h.Keep(At(h.legL, G.leg, pants, name: "leg"));
-            h.Keep(At(h.legR, G.leg, pants, name: "leg"));
-            h.Keep(At(h.head, G.head, skin, name: "head"));
-            // Bare arms take their hands in the same mesh; sleeves need a second
-            // one. Pooled zombies always have the second, since their clothes change.
-            if (sleeves == skin && !splitArms)
-            {
-                h.Keep(At(h.armL, G.armHand, skin, name: "arm"));
-                h.Keep(At(h.armR, G.armHand, skin, name: "arm"));
-            }
-            else
-            {
-                h.Keep(At(h.armL, G.arm, sleeves, name: "arm"));
-                h.Keep(At(h.armR, G.arm, sleeves, name: "arm"));
-                h.Keep(At(h.armL, G.hand, skin, name: "hand"));
-                h.Keep(At(h.armR, G.hand, skin, name: "hand"));
-            }
-            if (eyes) h.eyes = At(h.head, G.eyes, eyes, name: "eyes");
-            if (shadow > 0) Art.BlobShadow(h.root.transform, shadow);
-            return h;
-        }
-
-        static readonly int[] ZSkin = { 0x7d9a6a, 0x8aa07a, 0x6b8560, 0x95a487, 0x7a8f74 };
-        static readonly int[] ZShirt = { 0x5a4a3a, 0x3a4a5a, 0x6a3434, 0x4a4a4a, 0x7a6a4a, 0x2f4a3a, 0x6a5a6e };
-        static readonly int[] ZPants = { 0x2f2f3a, 0x3a3226, 0x26303a, 0x403a30 };
-
-        // A zombie's clothes and eyes for its kind (makeZombie's palette).
-        public static (Material skin, Material shirt, Material pants, Material sleeves, Material eyes) ZombieLook(string kind, Rng rng, Color eyeColor)
-        {
-            int Pick(int[] a) => a[(int)(rng.Next() * a.Length)];
-            int skin = Pick(ZSkin), shirt = Pick(ZShirt), pants = Pick(ZPants);
-            if (kind == "runner") { skin = 0xa9b49c; shirt = Pick(new[] { 0x6a3434, 0x4a4a4a, 0x3a3a5a }); }
-            if (kind == "tank") { skin = 0x5f7a50; shirt = skin; pants = 0x2a2a26; }
-            if (kind == "boss") { skin = 0x7a5a50; shirt = 0x5a3a34; pants = 0x231c1a; }
-            int sleeves = kind == "walker" && rng.Next() < 0.5f ? shirt : skin;
-            return (Art.Lit(skin), Art.Lit(shirt), Art.Lit(pants), Art.Lit(sleeves), Art.Unlit(eyeColor));
-        }
-
-        public static Humanoid Zombie(string kind, Rng rng, Color eyeColor)
-        {
-            var l = ZombieLook(kind, rng, eyeColor);
-            return Humanoid(kind, l.skin, l.shirt, l.pants, l.sleeves, l.eyes, splitArms: true);
-        }
-
-        // A survivor: their colours, headgear and build, plus a bright ring
-        // underfoot so you never lose yourself in a crowd.
-        public static Humanoid Survivor(Look look, bool ring = true)
-        {
-            var shirt = Art.Lit(look.shirt);
-            var h = Humanoid("survivor", Art.Lit(look.skin), shirt, Art.Lit(look.pants), shirt, Art.Unlit(Hex.C(0x111111)));
-            if (ring) Art.GlowDecal(h.root.transform, 0x9be15d, 2.1f, 0.4f, Tex.Ring);
-            At(h.body, G.pack, Art.Lit(0x3d3226), name: "pack");
-            Mesh hat = look.hat switch { "cap" => G.cap, "helmet" => G.helmet, "goggles" => G.goggles, "hood" => G.hood, _ => null };
-            if (hat) At(h.head, hat, look.hat == "goggles" ? Art.Unlit(look.hatColor) : Art.Lit(look.hatColor), name: look.hat);
-            if (look.bulk != 1) h.torso.transform.localScale = new Vector3(look.bulk, 1, look.bulk);
-            return h;
         }
 
         // ── Guns ─────────────────────────────────────────────────────────
@@ -352,7 +234,6 @@ namespace Graveway
             }
 
             t.localScale = Vector3.one * GunScale;
-            t.localPosition = GunMount;
             gun.len = muzzle * GunScale;
             return gun;
         }

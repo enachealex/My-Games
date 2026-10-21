@@ -29,20 +29,18 @@ namespace Graveway
             Shoot(size, size, (set, cam) =>
             {
                 cam.fieldOfView = 30;
-                cam.transform.localPosition = new Vector3(-1.1f, 1.75f, 3.2f);
-                cam.transform.LookAt(set.position + new Vector3(0, 1.45f, 0));
+                cam.transform.localPosition = new Vector3(-1.1f, 1.45f, 3.2f);
+                cam.transform.LookAt(set.position + new Vector3(0, 1.15f, 0));
                 Key(set, Hex.C(0xfff0dd), 2.2f, new Vector3(-2, 3, 4));
                 Key(set, Hex.C(0x9be15d), 1.6f, new Vector3(3, 2, -3));
                 Ambient(Hex.C(0xc8d8ff), Hex.C(0x3a2a20), 1.6f);
                 foreach (var c in Tunables.Characters)
                 {
-                    var m = Models.Survivor(c.look, ring: false);
+                    var m = Rigs.Survivor(c, ring: false);
                     var w = Tunables.Weapon(c.startingWeapon);
                     var gun = Models.Gun(w.model, Save.FittedParts(w.id));
-                    gun.group.transform.SetParent(m.body, false);
+                    gun.group.transform.SetParent(m.gunMount, false);
                     gun.group.transform.localScale *= 0.7f;       // full size hides the chest face-on
-                    m.armR.localRotation = M.Euler(-1.3f, 0, 0.3f);
-                    m.armL.localRotation = M.Euler(-1.2f, 0, -0.62f);
                     m.root.transform.SetParent(set, false);
                     m.root.transform.localRotation = M.Yaw(-0.7f);  // three-quarters, so the gun shows side-on
                     output[c.id] = Capture(cam, size, size, "portrait " + c.id);

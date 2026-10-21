@@ -14,11 +14,11 @@ namespace Graveway
 
         public string kind;
         public ZombieKind t;
-        public Humanoid model;
+        public Rig model;
         public float x, z, yaw, scale, hp, maxHp, speed, damage, radius;
         public int stage;
         public Mode state;
-        public float attackT, wanderT, wx, wz, kx, kz, flash, phase, deadT, lean, headTilt;
+        public float attackT, wanderT, wx, wz, kx, kz, flash, deadT;
         public bool hitDone, dead, calm, emerging, los, stuck, seen = true;
         public float losT, seeT, hidT, burnT, burnDps, burnTick;
         public Prop smash;
@@ -28,7 +28,7 @@ namespace Graveway
 
     public sealed partial class Game
     {
-        readonly Dictionary<string, Stack<Humanoid>> zombiePool = new Dictionary<string, Stack<Humanoid>>();
+        readonly Dictionary<string, Stack<Rig>> zombiePool = new Dictionary<string, Stack<Rig>>();
 
         public Zombie SpawnZombie(string kind, float x, float z, int stage, bool calm = false, Alley alley = null, bool chase = false)
         {
@@ -44,34 +44,28 @@ namespace Graveway
                 hp = hp, maxHp = hp, speed = (t.speedMin + rng.Next() * (t.speedMax - t.speedMin)) * sc.speed,
                 damage = t.damage * sc.damage, radius = t.radius * (scale / t.scale),
                 state = chase ? Zombie.Mode.Chase : Zombie.Mode.Idle, calm = calm, emerging = alley != null,
-                phase = rng.Next() * 10, losT = rng.Next() * 0.3f,
-                lean = 0.1f + rng.Next() * 0.25f, headTilt = (rng.Next() - 0.5f) * 0.6f,
+                losT = rng.Next() * 0.3f,
             };
             zombies.Add(zb);
             return zb;
         }
 
-        Humanoid TakeModel(string kind)
+        Rig TakeModel(string kind)
         {
-            var t = Tunables.Zombies[kind];
-            if (!zombiePool.TryGetValue(kind, out var pool)) zombiePool[kind] = pool = new Stack<Humanoid>();
-            Humanoid m;
+            if (!zombiePool.TryGetValue(kind, out var pool)) zombiePool[kind] = pool = new Stack<Rig>();
+            Rig m;
             if (pool.Count > 0)
             {
                 m = pool.Pop();
-                var look = Models.ZombieLook(kind, rng, t.eyes);
-                m.Recolor(look.skin, look.shirt, look.pants, look.sleeves, look.eyes);
                 m.root.SetActive(true);
             }
             else
             {
-                m = Models.Zombie(kind, rng, t.eyes);
+                m = Rigs.Zombie(kind);
                 m.root.transform.SetParent(worldRoot, false);
             }
-            var r = m.root.transform;
-            r.localRotation = Quaternion.identity;
-            m.body.localRotation = Quaternion.identity;
-            m.body.localPosition = Vector3.zero;
+            m.root.transform.localRotation = Quaternion.identity;
+            m.Snap("Idle", rng.Next());                 // out of step with the rest
             m.SetFlash(false);
             return m;
         }
@@ -126,11 +120,6 @@ namespace Graveway
                 if (z.dead)
                 {
                     z.deadT += dt;
-                    float k = Mathf.Min(z.deadT / 0.45f, 1);
-                    m.body.localRotation = M.Euler(-Mathf.PI / 2 * k * k, 0, 0);
-                    m.body.localPosition = new Vector3(0, 0.12f * k, 0);
-                    var arms = M.Euler(-Mathf.PI / 2 - k * 0.6f, 0, 0);
-                    m.armL.localRotation = arms; m.armR.localRotation = arms;
                     z.x += z.kx * dt; z.z += z.kz * dt;
                     float y = root.localPosition.y;
                     if (z.flying)
@@ -320,23 +309,17 @@ namespace Graveway
                 }
                 if (faceYaw.HasValue) z.yaw = LerpAngle(z.yaw, faceYaw.Value, Damp(z.state == Zombie.Mode.Idle ? 3 : 8, dt));
 
-                // Animation: legs shuffle, arms reach, heavier lurch for big ones.
-                float moveSpeed = Mathf.Sqrt(vx * vx + vz * vz);
-                z.phase += dt * (1.2f + moveSpeed * 2.2f) / (z.scale / z.t.scale);
-                float sw = Mathf.Sin(z.phase) * Mathf.Min(0.15f + moveSpeed * 0.18f, 0.75f);
-                m.legL.localRotation = M.Euler(sw, 0, 0);
-                m.legR.localRotation = M.Euler(-sw, 0, 0);
-                m.body.localRotation = M.Euler(z.lean + (z.kind == "runner" ? 0.25f : 0), 0, Mathf.Sin(z.phase * 0.5f) * 0.06f);
-                m.body.localPosition = new Vector3(0, Mathf.Abs(Mathf.Cos(z.phase)) * 0.05f, 0);
-                m.head.localRotation = M.Euler(0, 0, z.headTilt + Mathf.Sin(z.phase * 0.7f) * 0.1f);
-                float armX = -Mathf.PI / 2 + 0.25f + Mathf.Sin(z.phase * 1.3f) * 0.12f;
+                // Animation: a swing for each attack, otherwise shamble or run
+                // at a pace to match (the clips cover about 1.1 and 3 m/s at
+                // walker size). Runners are the bony ones, and always run.
+                float moveSpeed = Mathf.Sqrt(vx * vx + vz * vz), big = z.scale;
                 if (z.state == Zombie.Mode.Attack || z.state == Zombie.Mode.Smash)
                 {
-                    float k = z.attackT / Mathf.Min(0.42f, 0.5f / z.t.attackRate);
-                    armX = k < 1 ? -Mathf.PI / 2 - 0.9f * k : -Mathf.PI / 2 + 0.5f;
+                    if (z.attackT < dt * 0.5f) m.Restart(m.Has("Punch") ? "Punch" : "Jump", 0.08f, Mathf.Max(0.6f, 0.77f * z.t.attackRate));
                 }
-                m.armL.localRotation = M.Euler(armX, 0, 0);
-                m.armR.localRotation = M.Euler(armX + Mathf.Sin(z.phase) * 0.15f, 0, 0);
+                else if (moveSpeed < 0.25f) m.Play("Idle");
+                else if (z.kind == "runner" || moveSpeed > 2.8f * big) m.Play("Run", 0.2f, Mathf.Clamp(moveSpeed / (3 * big), 0.6f, 1.8f));
+                else m.Play("Walk", 0.2f, Mathf.Clamp(moveSpeed / (1.1f * big), 0.5f, 1.8f));
 
                 if (z.flash > 0) { z.flash -= dt; if (z.flash <= 0) m.SetFlash(false); }
                 root.localPosition = new Vector3(z.x, 0, z.z);
@@ -395,6 +378,7 @@ namespace Graveway
             z.model.root.transform.localRotation = M.Yaw(z.yaw);
             z.model.SetFlash(false);
             if (!z.model.root.activeSelf) z.model.root.SetActive(true);
+            z.model.Restart("Death", 0.05f);
             z.flash = 0;
             Burst(z.x, 1.1f * z.scale, z.z, (int)(10 + z.scale * 6), Hex.C(0x5a0909), speed: 3.5f * z.scale, size: 0.11f * z.scale);
             Sfx.Die(Pan(z.x));

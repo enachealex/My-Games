@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca19ae46ecc324045876d6e0919d9662, type: 3}
+  m_Name: Catalog
+  m_EditorClassIdentifier: Graveway::Graveway.ArtCatalog
+  models:
+  - id: Characters_Lis
+    model: {fileID: 919132149155446097, guid: 62501b66331a90145b9752b37ac25870, type: 3}
+    controller: {fileID: 9100000, guid: f130e6d7d4283ca47ba3a5e142eac59c, type: 2}
+  - id: Characters_Matt
+    model: {fileID: 919132149155446097, guid: 686ac61f453742146b68a85f56f5615c, type: 3}
+    controller: {fileID: 9100000, guid: fd056309bd7c64c44b485cfbaf3d5a62, type: 2}
+  - id: Characters_Sam
+    model: {fileID: 919132149155446097, guid: 6dd1a9ae7b300ad4885217a14d82a290, type: 3}
+    controller: {fileID: 9100000, guid: 609d8d19067147345ae06a6851d8c9a2, type: 2}
+  - id: Characters_Shaun
+    model: {fileID: 919132149155446097, guid: d2b2e4da207f3f64faa59a78b633e022, type: 3}
+    controller: {fileID: 9100000, guid: 9c71000179434a34fb91f41b2e069465, type: 2}
+  - id: Zombie_Basic
+    model: {fileID: 919132149155446097, guid: a6570cfca12188342b66ffc569296c5d, type: 3}
+    controller: {fileID: 9100000, guid: e7d64f6ca0a7863479df6e23586ddac4, type: 2}
+  - id: Zombie_Ribcage
+    model: {fileID: 919132149155446097, guid: ab31bc870498c2c43b643ac4abaa0259, type: 3}
+    controller: {fileID: 9100000, guid: 49f07f6bc77d521479cc286ec64d2150, type: 2}
+  - id: Zombie_Chubby
+    model: {fileID: 919132149155446097, guid: 6518621c3a116c049994d5a2e0a9b957, type: 3}
+    controller: {fileID: 9100000, guid: 438941419dccde74f99333efb1897b97, type: 2}
+  - id: Zombie_Arm
+    model: {fileID: 919132149155446097, guid: c019bc796b73a944e974dcf45e3dd6d5, type: 3}
+    controller: {fileID: 9100000, guid: f10a771411fc43d4f9d500f47c9feefc, type: 2}
+  zombieAtlas: {fileID: 2800000, guid: cc5120ad36d94ad46a315ba3181fca55, type: 3}

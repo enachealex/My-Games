@@ -1,6 +1,6 @@
 // Puts the project's settings and generated assets in place: the app's name
 // and Android settings, the base materials Art.cs copies, the UI's
-// PanelSettings, and the main scene (empty apart from its lighting and fog;
+// PanelSettings, the art catalog (ArtImport.cs), and the main scene (empty apart from its lighting and fog;
 // the game builds itself in code). Everything it makes is committed, so this
 // only needs running again after changing it.
 //
@@ -35,6 +35,7 @@ namespace Graveway.EditorTools
             Player();
             Materials();
             Panel();
+            ArtImport.BuildCatalog();
             Scene();
             AssetDatabase.SaveAssets();
             Debug.Log("Graveway: project set up.");

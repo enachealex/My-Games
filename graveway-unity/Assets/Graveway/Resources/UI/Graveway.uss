@@ -82,7 +82,7 @@
 .menu-top { flex-direction: row; justify-content: space-between; align-items: center; }
 .title { align-items: center; margin-top: 30px; }
 .title-row { flex-direction: row; }
-.title-main { font-size: 88px; -unity-font-style: bold; letter-spacing: 2px; color: rgb(233, 239, 226);
+.title-main { font-size: 96px; -unity-font-style: bold; letter-spacing: 3px; color: rgb(233, 239, 226);
     text-shadow: 0 4px 0 rgb(58, 12, 12); }
 .title-main.red { color: rgb(255, 77, 77); }
 .title-sub { margin-top: 10px; color: rgb(154, 166, 160); font-size: 15px; text-shadow: 0 2px 8px rgb(0, 0, 0); }
@@ -198,7 +198,7 @@
 /* ── HUD ──────────────────────────────────────────────────────────────── */
 .hud { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
 .h-top { flex-direction: row; align-items: center; padding: 10px 12px 0 12px; }
-.h-dist { font-size: 26px; -unity-font-style: bold; padding: 6px 10px; border-radius: 10px; background-color: rgba(14, 20, 24, 0.86);
+.h-dist { font-size: 30px; -unity-font-style: bold; padding: 6px 10px; border-radius: 10px; background-color: rgba(14, 20, 24, 0.86);
     border-width: 1px; border-color: rgba(255, 255, 255, 0.1); margin-right: 10px; }
 .h-stage { flex-grow: 1; margin-right: 10px; }
 .h-stage-label { font-size: 11px; color: rgb(155, 225, 93); -unity-font-style: bold; letter-spacing: 1.5px; margin-bottom: 4px;
@@ -248,7 +248,7 @@
     background-color: rgba(14, 20, 24, 0.86); align-items: flex-end; overflow: hidden; }
 .wname { font-size: 12px; -unity-font-style: bold; color: rgb(154, 166, 160); letter-spacing: 1px; }
 .ammo-row { flex-direction: row; align-items: flex-end; }
-.ammo { font-size: 32px; -unity-font-style: bold; }
+.ammo { font-size: 34px; -unity-font-style: bold; }
 .mag { font-size: 14px; color: rgb(154, 166, 160); margin-left: 4px; margin-bottom: 5px; }
 .wcard-hud.empty .ammo { color: rgb(255, 77, 77); }
 .wcard-hud.reloading .ammo { color: rgb(155, 225, 93); }
@@ -261,7 +261,7 @@
 
 .banner { position: absolute; left: 0; right: 0; top: 30%; align-items: center;
     transition-property: scale, opacity; transition-duration: 0.35s; transition-timing-function: ease-out-back; }
-.banner-t { font-size: 48px; -unity-font-style: bold; letter-spacing: 2px; -unity-text-align: middle-center; white-space: normal;
+.banner-t { font-size: 54px; -unity-font-style: bold; letter-spacing: 2px; -unity-text-align: middle-center; white-space: normal;
     text-shadow: 0 4px 0 rgba(60, 10, 10, 0.9); }
 .banner-s { margin-top: 6px; -unity-font-style: bold; color: rgb(213, 221, 210); text-shadow: 0 2px 6px rgb(0, 0, 0);
     -unity-text-align: middle-center; white-space: normal; padding: 0 20px; }
@@ -277,12 +277,12 @@
 .card { width: 100%; max-width: 380px; max-height: 100%; padding: 22px; border-radius: 22px; background-color: rgb(18, 26, 31);
     border-width: 1px; border-color: rgba(255, 255, 255, 0.1); }
 .card-scroll { flex-shrink: 1; }
-.card-title { font-size: 40px; -unity-font-style: bold; letter-spacing: 2px; -unity-text-align: middle-center; }
+.card-title { font-size: 42px; -unity-font-style: bold; letter-spacing: 2px; -unity-text-align: middle-center; }
 .card-title.red { color: rgb(255, 77, 77); }
 .card-sub { margin: 6px 0 16px 0; color: rgb(154, 166, 160); -unity-text-align: middle-center; white-space: normal; }
 .card-sub.gold { color: rgb(255, 201, 40); -unity-font-style: bold; letter-spacing: 1px; }
 .card-sub.ctx { font-size: 12px; }
-.r-dist { font-size: 60px; -unity-font-style: bold; -unity-text-align: middle-center; margin-top: 4px; }
+.r-dist { font-size: 64px; -unity-font-style: bold; -unity-text-align: middle-center; margin-top: 4px; }
 .r-row { flex-direction: row; justify-content: space-between; padding: 9px 0; border-bottom-width: 1px; border-color: rgba(255, 255, 255, 0.1); }
 .r-row.total { border-bottom-width: 0; font-size: 18px; }
 .r-row-k { color: rgb(154, 166, 160); }
@@ -313,3 +313,10 @@
 .notes-text { margin: 0; height: 220px; }
 .notes-text > .unity-text-field__input { padding: 12px; border-radius: 12px; border-width: 1px; border-color: rgba(255, 255, 255, 0.1);
     background-color: rgba(0, 0, 0, 0.35); color: rgb(207, 216, 210); font-size: 12px; white-space: normal; -unity-text-align: upper-left; }
+
+/* ── Bebas Neue, wherever the web version uses it (its var(--display)) ─── */
+.display, .btn.big, .title-main, .m-big, .portrait-letter, .a-head-title, .c-name-text, .wd-title,
+.h-dist, .h-boss-label, .ammo, .banner-t, .toast-pill.power, .card-title, .r-dist {
+    -unity-font-definition: url("Fonts/BebasNeue-Regular.ttf");
+    -unity-font-style: normal;
+}

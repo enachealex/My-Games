@@ -87,8 +87,8 @@ namespace Graveway
         Light flashlight, muzzleLight, blastLight;
         Transform worldRoot;
         CharacterDef character;
-        Humanoid surv;
-        readonly Dictionary<string, Humanoid> survivors = new Dictionary<string, Humanoid>();
+        Rig surv;
+        readonly Dictionary<string, Rig> survivors = new Dictionary<string, Rig>();
         Vector3 camPos = new Vector3(0, 12, 14), camLook = new Vector3(0, 0, -4);
         float groanT, noiseAt = -1, flashT, blastT, blastPeak;
         uint seed;
@@ -212,14 +212,13 @@ namespace Graveway
             var c = Tunables.Character(id);
             if (!survivors.TryGetValue(c.id, out var m))
             {
-                m = Models.Survivor(c.look);
-                m.root.name = c.name;
+                m = Rigs.Survivor(c);
                 m.root.transform.SetParent(transform, false);
                 foreach (var w in Tunables.Weapons)
                 {
                     var g = Models.Gun(w.model, null);
                     g.key = "{}";
-                    g.group.transform.SetParent(m.body, false);
+                    g.group.transform.SetParent(m.gunMount, false);
                     g.group.SetActive(false);
                     m.guns[w.id] = g;
                 }
@@ -235,8 +234,7 @@ namespace Graveway
         void StandUp()
         {
             surv.root.SetActive(true);
-            surv.body.localRotation = Quaternion.identity;
-            surv.body.localPosition = Vector3.zero;
+            surv.Snap("Idle_Gun");
         }
 
         void ClearRun()
@@ -297,7 +295,7 @@ namespace Graveway
             if (old != null && old.key == key) return;
             var g = Models.Gun(w.def.model, w.fitted);
             g.key = key;
-            g.group.transform.SetParent(m.body, false);
+            g.group.transform.SetParent(m.gunMount, false);
             g.group.SetActive(false);
             if (old != null)
             {
@@ -317,14 +315,12 @@ namespace Graveway
             return sb.ToString();
         }
 
-        // Where the current gun's muzzle is, in the world.
+        // Where the current gun's muzzle is, in the world: wherever the hand
+        // holding it has got to.
         public Vector3 Muzzle()
         {
-            var p = player;
-            var gun = surv.guns[p.Weapon.Id];
-            float sin = Mathf.Sin(p.yaw), cos = Mathf.Cos(p.yaw);
-            float reach = Models.GunMount.z + gun.len, gx = Models.GunMount.x;
-            return new Vector3(p.x + sin * reach + gx * cos, Models.GunMount.y + 0.05f, p.z + cos * reach - gx * sin);
+            var gun = surv.guns[player.Weapon.Id];
+            return gun.group.transform.TransformPoint(0, 0.03f, gun.len / Models.GunScale);
         }
 
         public void StartRun()
@@ -389,9 +385,6 @@ namespace Graveway
             else if (state == State.Dying)
             {
                 p.deadT += dt;
-                float k = Mathf.Min(p.deadT / 0.6f, 1);
-                surv.body.localRotation = M.Euler(-Mathf.PI / 2 * k * k, 0, 0);
-                surv.body.localPosition = new Vector3(0, 0.15f * k, 0);
                 if (p.deadT > 1.6f && !p.reported) { p.reported = true; Finish(); }
             }
 
@@ -637,17 +630,18 @@ namespace Graveway
             m.root.transform.localRotation = M.Yaw(p.yaw);
             string id = p.Weapon.Id;
             foreach (var kv in m.guns) if (kv.Value.group.activeSelf != (kv.Key == id)) kv.Value.group.SetActive(kv.Key == id);
+            // The gun kicks back and up, and dips while it reloads.
             var gun = m.guns[id].group.transform;
-            gun.localPosition = new Vector3(Models.GunMount.x, Models.GunMount.y, Models.GunMount.z - p.kick * 0.12f);
-            float sw = Mathf.Sin(p.walk) * 0.7f * Mathf.Min(p.moving * 1.5f, 1);
-            m.legL.localRotation = M.Euler(sw, 0, 0);
-            m.legR.localRotation = M.Euler(-sw, 0, 0);
-            if (state != State.Dying) m.body.localPosition = new Vector3(0, Mathf.Abs(Mathf.Cos(p.walk)) * 0.06f * p.moving, 0);
             bool reloading = p.Weapon.Reloading;
-            // Arms angled a little down, so the hands meet the gun.
-            float aim = -Mathf.PI / 2 + 0.12f + p.kick * 0.18f + (reloading ? 0.6f : 0);
-            m.armR.localRotation = M.Euler(aim, 0, 0.3f);
-            m.armL.localRotation = M.Euler(aim + (reloading ? Mathf.Sin(time * 18) * 0.3f : 0), 0, -0.62f);
+            gun.localPosition = new Vector3(0, 0, -p.kick * 0.12f);
+            gun.localRotation = M.Euler(-p.kick * 0.18f + (reloading ? 0.6f + Mathf.Sin(time * 18) * 0.12f : 0), 0, 0);
+            // Walk or run to match the speed; the clips cover about 1.4 and
+            // 4.5 m/s at this size.
+            float speed = p.moving * p.stats.speed;
+            if (state == State.Dying) m.Play("Death", 0.1f);
+            else if (speed < 0.3f) m.Play("Idle_Gun");
+            else if (speed < 2.6f) m.Play("Walk_Gun", 0.15f, Mathf.Clamp(speed / 1.4f, 0.6f, 1.6f));
+            else m.Play("Run_Gun", 0.15f, Mathf.Clamp(speed / 4.5f, 0.7f, 1.5f));
         }
 
         // ── Camera and lights ────────────────────────────────────────────

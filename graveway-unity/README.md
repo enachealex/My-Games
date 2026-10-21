@@ -1,9 +1,10 @@
 # Graveway for Unity
 
 The Unity version of [Graveway](../graveway/README.md). The whole game is
-ported in code; it's still drawn with the web version's box models until
-the real art arrives, and it hasn't been on a phone yet. The web version
-stays the one you play and test until this one catches up.
+ported in code, the survivors and zombies are real animated models, and
+guns, props and the street are on their way. It hasn't been on a phone
+yet. The web version stays the one you play and test until this one
+catches up.
 
 ## Opening it
 
@@ -52,11 +53,14 @@ their progress) before the next build will install.
 
 ## How it's put together
 
-Everything is made in code at start-up, the way the web version is: no
-prefabs and no scene set-up. Models, textures and sounds are built in code
-from the web version's recipes until real art arrives. `Models` is the one
-place a model's look lives, and `Art` the one place materials come from,
-so real models can replace them without touching the game logic.
+Everything is put together in code at start-up, the way the web version
+is: no prefabs and no scene set-up. The survivors and zombies are
+Quaternius models (`Assets/ThirdParty/`, listed in [CREDITS.md](CREDITS.md))
+that `Rigs` loads through the catalog `Editor/ArtImport.cs` makes. The rest
+is still built in code from the web version's recipes until its real
+models arrive: `Models` is the one place a model's look lives, and `Art`
+the one place materials come from, so real models replace them without
+touching the game logic.
 
 | File | What's in it | Web version |
 | --- | --- | --- |
@@ -72,7 +76,8 @@ so real models can replace them without touching the game logic.
 | `Scripts/World/NavGrid.cs` | The zombies' flow-field pathfinding | `src/nav.js` |
 | `Scripts/World/Sight.cs` | Fog of war and its ground shadows | `src/fog.js` |
 | `Scripts/Fx/Vfx.cs` | Particles: explosions, sparks, dust, smoke, fire | `src/vfx.js` |
-| `Scripts/Art/` | Models, meshes and painted textures made in code | `src/models.js` |
+| `Scripts/Art/Rigs.cs`, `ArtCatalog.cs` | The animated survivors and zombies, from the art catalog | `src/models.js` |
+| `Scripts/Art/` (the rest) | Guns, props and pickups built in code, and painted textures | `src/models.js` |
 | `Scripts/Render/Batches.cs` + `Shaders/` | Instanced drawing of coins, bullets, particles and debris; the fog shadow shader | |
 | `Scripts/Audio/Sfx.cs`, `Haptics.cs` | The 29 sounds, synthesised at start-up; vibration | `src/audio.js` |
 | `Scripts/Core/StickInput.cs` | The floating joystick, any number of fingers, and keyboard keys (Input System) | `src/input.js` |
@@ -86,6 +91,7 @@ so real models can replace them without touching the game logic.
 | `Scripts/Core/Save.cs` | Progress and notes in PlayerPrefs | `src/save.js` |
 | `Settings/` | The URP pipeline (mobile renderer, no shadow maps) and its post-processing: ACES and +0.94 EV, the web version's look | `game.js` renderer |
 | `Editor/ProjectSetup.cs` | App and Android settings, base materials, panel settings, the scene (menu: Graveway → Set up project) | `android.json` |
+| `Editor/ArtImport.cs` | How third-party models import, the art catalog with an Animator controller per character, and a report of every model's clips, bones and size | |
 | `Editor/BuildScript.cs` + `build-android.ps1` | The APK build with no window, and installing it over USB | `tools/android/build-apk.mjs` |
 | `Tests/` | EditMode tests against the web version's numbers; PlayMode tests of the game and its menus | |
 
