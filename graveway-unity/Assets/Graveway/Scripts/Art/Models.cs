@@ -12,7 +12,8 @@ namespace Graveway
     public sealed class GunModel
     {
         public GameObject group;
-        public float len;                    // grip to muzzle, in the survivor's units
+        public Vector3 muzzle;               // where bullets leave, in the gun's own space
+        public Bounds bounds;                // its outline in its own space, when known (for pictures)
         public string key;                   // the fitted parts it was built with
         public readonly List<Object> own = new List<Object>();
     }
@@ -113,7 +114,7 @@ namespace Graveway
         // outline shows: barrel length, muzzle, magazine, sight, stock, and
         // what hangs under the handguard.
         sealed class GunShape { public float len, w, h; public int color, barrel; public bool mag, barrels, drum; }
-        static readonly Dictionary<string, GunShape> Guns = new Dictionary<string, GunShape>
+        static readonly Dictionary<string, GunShape> Shapes = new Dictionary<string, GunShape>
         {
             { "pistol", new GunShape { len = 0.4f, w = 0.15f, h = 0.16f, color = 0x5a5e68 } },
             { "smg", new GunShape { len = 0.5f, w = 0.15f, h = 0.16f, color = 0x52565f, mag = true } },
@@ -126,7 +127,8 @@ namespace Graveway
 
         public static GunModel Gun(string model, IDictionary<string, string> fitted)
         {
-            var s = Guns.TryGetValue(model, out var shape) ? shape : Guns["pistol"];
+            if (Guns.Has(model)) return Guns.Build(model, fitted);
+            var s = Shapes.TryGetValue(model, out var shape) ? shape : Shapes["pistol"];
             var gun = new GunModel { group = new GameObject("gun " + model) };
             var t = gun.group.transform;
             // What it comes with for every slot it has, and nothing for the rest.
@@ -234,7 +236,7 @@ namespace Graveway
             }
 
             t.localScale = Vector3.one * GunScale;
-            gun.len = muzzle * GunScale;
+            gun.muzzle = new Vector3(0, 0.02f, muzzle);
             return gun;
         }
 

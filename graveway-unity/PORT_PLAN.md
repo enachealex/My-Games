@@ -16,8 +16,9 @@ every menu (Black Market, notes, settings). The survivors and zombies are
 real animated models now (Quaternius's Zombie Apocalypse Kit, CC0), and the
 UI uses Bebas Neue. Still to come:
 
-- **The rest of the real art:** guns with their parts, then props, vehicles
-  and the street. The packs are downloaded (see [CREDITS.md](CREDITS.md)).
+- **The rest of the real art:** props, vehicles and the street, and a
+  grenade launcher and minigun (the other guns are real, with their parts).
+  The packs are downloaded (see [CREDITS.md](CREDITS.md)).
 - **The phone** (Phase 0's last item, Phase 7): Android Build Support is
   installed now; testing needs the phone on USB.
 - **Phase 7's update check** and **Phase 8's** item-by-item comparison.
@@ -172,8 +173,11 @@ Build Support module, which isn't installed yet.
       (`Editor/ArtImport.cs`).
       Animator parameters come from the simulation (speed, aiming,
       reloading, attacking, dying).
-- [ ] Real gun models with part sockets. (For now the web's gun models,
-      with every part showing, are built in code.)
+- [x] Real gun models with part sockets: the kit's pistol, SMG, shotgun
+      and rifle (`Scripts/Art/Guns.cs`), wearing Ultimate Guns accessories
+      for the parts that show, at points measured from each gun's mesh.
+- [ ] Grenade launcher and minigun models: neither pack has one, so these
+      two are still built in code.
 - [x] Save v2 on Newtonsoft: coins, best, runs, kills, character, owned,
       loadout, parts, survivor upgrades and settings, with notes kept
       separately (web `save.js`).

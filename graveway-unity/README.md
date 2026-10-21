@@ -1,8 +1,8 @@
 # Graveway for Unity
 
 The Unity version of [Graveway](../graveway/README.md). The whole game is
-ported in code, the survivors and zombies are real animated models, and
-guns, props and the street are on their way. It hasn't been on a phone
+ported in code, the survivors, zombies and most guns are real models, and
+props and the street are on their way. It hasn't been on a phone
 yet. The web version stays the one you play and test until this one
 catches up.
 
@@ -77,6 +77,7 @@ touching the game logic.
 | `Scripts/World/Sight.cs` | Fog of war and its ground shadows | `src/fog.js` |
 | `Scripts/Fx/Vfx.cs` | Particles: explosions, sparks, dust, smoke, fire | `src/vfx.js` |
 | `Scripts/Art/Rigs.cs`, `ArtCatalog.cs` | The animated survivors and zombies, from the art catalog | `src/models.js` |
+| `Scripts/Art/Guns.cs` | The real guns, with their fitted parts | `src/models.js`, `src/preview.js` |
 | `Scripts/Art/` (the rest) | Guns, props and pickups built in code, and painted textures | `src/models.js` |
 | `Scripts/Render/Batches.cs` + `Shaders/` | Instanced drawing of coins, bullets, particles and debris; the fog shadow shader | |
 | `Scripts/Audio/Sfx.cs`, `Haptics.cs` | The 29 sounds, synthesised at start-up; vibration | `src/audio.js` |

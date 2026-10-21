@@ -72,8 +72,8 @@ namespace Graveway.EditorTools
         };
 
         // Each character, and an Animator controller with a state for each of
-        // its clips (Idle by default). Rebuilt in place, so the controllers
-        // keep their GUIDs and the catalog doesn't churn.
+        // its clips (Idle by default). Rebuilt in place, and only when its
+        // clips change, so the files don't churn.
         public static void BuildCatalog()
         {
             Directory.CreateDirectory(ControllersDir);
@@ -92,14 +92,19 @@ namespace Graveway.EditorTools
                 var ctrl = AssetDatabase.LoadAssetAtPath<UnityEditor.Animations.AnimatorController>(cpath)
                            ?? UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(cpath);
                 var sm = ctrl.layers[0].stateMachine;
-                foreach (var s in sm.states.ToArray()) sm.RemoveState(s.state);
-                foreach (var clip in clips)
+                bool same = sm.states.Length == clips.Count
+                            && clips.All(c => sm.states.Any(s => s.state.name == Rigs.Short(c.name) && s.state.motion == c));
+                if (!same)
                 {
-                    var st = sm.AddState(Rigs.Short(clip.name));
-                    st.motion = clip;
-                    if (st.name == "Idle") sm.defaultState = st;
+                    foreach (var s in sm.states.ToArray()) sm.RemoveState(s.state);
+                    foreach (var clip in clips)
+                    {
+                        var st = sm.AddState(Rigs.Short(clip.name));
+                        st.motion = clip;
+                        if (st.name == "Idle") sm.defaultState = st;
+                    }
+                    EditorUtility.SetDirty(ctrl);
                 }
-                EditorUtility.SetDirty(ctrl);
                 entries.Add(new ArtCatalog.Entry { id = id, model = model, controller = ctrl });
             }
             var cat = AssetDatabase.LoadAssetAtPath<ArtCatalog>(CatalogPath);
@@ -109,10 +114,136 @@ namespace Graveway.EditorTools
                 AssetDatabase.CreateAsset(cat, CatalogPath);
             }
             cat.models = entries.ToArray();
+            cat.guns = BuildGuns();
+            cat.parts = BuildParts();
             cat.zombieAtlas = AssetDatabase.LoadAssetAtPath<Texture2D>(Kit + "Zombie_Atlas.png");
             EditorUtility.SetDirty(cat);
             AssetDatabase.SaveAssets();
         }
+
+        // The kit's guns as a survivor holds them: Matt (any of the four would
+        // do: they share a skeleton and hold the same way) in Idle_Gun, at his
+        // in-game size, measured from the gun mount Rigs.Survivor makes
+        // (grip in the hand, barrel along +z, metres). They're drawn big for
+        // the kit's cartoon style; Guns.Build sizes them for this game.
+        static readonly string[] KitGuns = { "Pistol", "SMG", "Shotgun", "Rifle" };
+
+        static ArtCatalog.Gun[] BuildGuns()
+        {
+            const string who = "Characters_Matt";
+            string path = $"{Kit}Characters/{who}.fbx";
+            var inst = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path));
+            inst.transform.localScale = Vector3.one * Rigs.SizeOf(who);
+            AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().First(c => Rigs.Short(c.name) == "Idle_Gun").SampleAnimation(inst, 0);
+            var hand = inst.GetComponentsInChildren<Transform>().First(t => t.name == "Middle1.L");
+            var toMount = Matrix4x4.Translate(-hand.position);
+            var guns = new System.Collections.Generic.List<ArtCatalog.Gun>();
+            foreach (var name in KitGuns)
+            {
+                var w = hand.Find(name);
+                var mesh = w.GetComponent<MeshFilter>().sharedMesh;
+                var m = toMount * w.localToWorldMatrix;
+                var g = new ArtCatalog.Gun { body = Placed(name, mesh, null, m) };
+                Sockets(g, mesh.vertices.Select(v => m.MultiplyPoint3x4(v)).ToArray());
+                guns.Add(g);
+            }
+            Object.DestroyImmediate(inst);
+            return guns.ToArray();
+        }
+
+        // Where parts go, from the gun's own shape: the tip of the barrel, the
+        // top of the receiver, under the handguard, the back end, and the
+        // lowest point ahead of the grip (the magazine).
+        static void Sockets(ArtCatalog.Gun g, Vector3[] p)
+        {
+            float z0 = p.Min(v => v.z), z1 = p.Max(v => v.z), len = z1 - z0;
+            Vector3[] Slab(float a, float b) => p.Where(v => v.z >= z0 + a * len && v.z <= z0 + b * len).ToArray();
+            var tip = Slab(0.96f, 1);
+            g.muzzle = new Vector3(tip.Average(v => v.x), tip.Average(v => v.y), z1);
+            // The top of the receiver, not the tallest spike on it (a rear sight).
+            var mid = Slab(0.3f, 0.6f).OrderBy(v => v.y).ToArray();
+            g.sight = new Vector3(mid.Average(v => v.x), mid[(int)(mid.Length * 0.9f)].y, z0 + 0.45f * len);
+            // Far enough forward to miss a magazine.
+            var front = Slab(0.72f, 0.88f);
+            g.rail = new Vector3(front.Average(v => v.x), front.Min(v => v.y), z0 + 0.8f * len);
+            var back = Slab(0, 0.05f);
+            g.stock = new Vector3(back.Average(v => v.x), back.Average(v => v.y), z0);
+            // The magazine, or a pistol's grip, which holds it.
+            g.mag = Slab(0.1f, 0.65f).OrderBy(v => v.y).First();
+            g.width = p.Max(v => v.x) - p.Min(v => v.x);
+            g.length = len;
+            g.bounds = new Bounds(p[0], Vector3.zero);
+            foreach (var v in p) g.bounds.Encapsulate(v);
+        }
+
+        // Ultimate Guns accessories, each turned and sized so its origin is
+        // where it attaches, +z is the way the barrel points, and +y is up:
+        //   near / behind: lies along x and attaches at the end nearer its
+        //         origin, pointing forward (suppressors) or back (the stock)
+        //   bottom / top: lies along x, sits on (or hangs under) the rail,
+        //         its bigger end forward (scope lens, torch head)
+        //   hang: stands along y and hangs from its top (foregrip)
+        static readonly (string id, string file, string how, float size)[] Accessories =
+        {
+            ("suppressor", "Silencer_1", "near", 0.3f),
+            ("comp", "Silencer_Short", "near", 0.12f),
+            ("scope", "Scope_1", "bottom", 0.4f),
+            ("light", "Flashlight", "top", 0.14f),
+            ("foregrip", "Grip", "hang", 0.17f),
+            ("stock", "Stock", "behind", 0.36f),
+        };
+
+        static ArtCatalog.Placed[] BuildParts()
+        {
+            var parts = new System.Collections.Generic.List<ArtCatalog.Placed>();
+            foreach (var (id, file, how, size) in Accessories)
+            {
+                string path = $"Assets/ThirdParty/Quaternius/UltimateGuns/Accessories/{file}.fbx";
+                var inst = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path));
+                var mf = inst.GetComponentInChildren<MeshFilter>();
+                var c = mf.transform.localToWorldMatrix;
+                var p = mf.sharedMesh.vertices.Select(v => c.MultiplyPoint3x4(v)).ToArray();
+                var b = new Bounds(p[0], Vector3.zero);
+                foreach (var v in p) b.Encapsulate(v);
+                // How big each end is across, to tell a lens from an eyepiece.
+                float Across(float x0, float x1) { var s = p.Where(v => v.x >= x0 && v.x <= x1).ToArray(); return s.Length == 0 ? 0 : s.Max(v => v.y) - s.Min(v => v.y); }
+                float end = b.size.x * 0.1f;
+                bool bigAtMax = Across(b.max.x - end, b.max.x) > Across(b.min.x, b.min.x + end);
+                bool nearMax = Mathf.Abs(b.max.x) < Mathf.Abs(b.min.x);
+                Vector3 origin, along;
+                float length;
+                switch (how)
+                {
+                    case "near": case "behind":
+                        origin = new Vector3(nearMax ? b.max.x : b.min.x, b.center.y, b.center.z);
+                        along = nearMax ? Vector3.left : Vector3.right;           // away from where it attaches
+                        length = b.size.x;
+                        break;
+                    case "bottom": case "top":
+                        origin = new Vector3(b.center.x, how == "bottom" ? b.min.y : b.max.y, b.center.z);
+                        along = bigAtMax ? Vector3.right : Vector3.left;          // towards the big end
+                        length = b.size.x;
+                        break;
+                    default:                                                      // hang
+                        origin = new Vector3(b.center.x, b.max.y, b.center.z);
+                        along = Vector3.right;
+                        length = b.size.y;
+                        break;
+                }
+                var turn = Quaternion.FromToRotation(along, how == "behind" ? Vector3.back : Vector3.forward);
+                var place = Matrix4x4.TRS(Vector3.zero, turn, Vector3.one * (size / length)) * Matrix4x4.Translate(-origin) * c;
+                var colors = mf.GetComponent<Renderer>().sharedMaterials.Select(m => m && m.HasProperty("_BaseColor") ? m.GetColor("_BaseColor") : Color.gray).ToArray();
+                parts.Add(Placed(id, mf.sharedMesh, colors, place));
+                Object.DestroyImmediate(inst);
+            }
+            return parts.ToArray();
+        }
+
+        static ArtCatalog.Placed Placed(string id, Mesh mesh, Color[] colors, Matrix4x4 m) => new ArtCatalog.Placed
+        {
+            id = id, mesh = mesh, colors = colors ?? new Color[0],
+            position = m.GetPosition(), rotation = m.rotation, scale = m.lossyScale,
+        };
 
         [MenuItem("Graveway/Art report")]
         public static void Report()

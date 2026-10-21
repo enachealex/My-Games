@@ -97,6 +97,9 @@ namespace Graveway
 
         public static string Short(string clip) => clip.Substring(clip.LastIndexOf('|') + 1);
 
+        // How much a model is scaled up to stand Person tall.
+        public static float SizeOf(string id) => Person / Height[id];
+
         // A survivor holding a gun, with a bright ring underfoot so you never
         // lose yourself in a crowd.
         public static Rig Survivor(CharacterDef c, bool ring = true)
@@ -134,7 +137,7 @@ namespace Graveway
             var inst = Object.Instantiate(e.model, rig.root.transform, false);
             inst.name = id;
             rig.model = inst.transform;
-            rig.model.localScale = Vector3.one * (Person / Height[id] * bulk);
+            rig.model.localScale = Vector3.one * (SizeOf(id) * bulk);
             rig.animator = inst.GetComponent<Animator>();
             if (!rig.animator) rig.animator = inst.AddComponent<Animator>();
             rig.animator.runtimeAnimatorController = e.controller;

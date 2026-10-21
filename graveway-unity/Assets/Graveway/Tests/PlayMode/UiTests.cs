@@ -212,6 +212,52 @@ namespace Graveway.Tests
             photo.Shot("14-result");
         }
 
+        // Every gun bare and with a full set of parts, as the Black Market
+        // shows them, to Logs/shots/gun-*.png.
+        [UnityTest]
+        public IEnumerator GunPictures()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) Assert.Ignore("no GPU (-nographics), so nothing to see");
+            yield return null;
+            var loaded = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, string>>
+            {
+                { "rifle", new System.Collections.Generic.Dictionary<string, string> { { "barrel", "long" }, { "muzzle", "suppressor" }, { "sight", "scope" }, { "rail", "light" }, { "stock", "heavy" }, { "mag", "extended" } } },
+                { "smg", new System.Collections.Generic.Dictionary<string, string> { { "muzzle", "comp" }, { "sight", "reddot" }, { "rail", "foregrip" }, { "stock", "light" }, { "mag", "drum" } } },
+                { "shotgun", new System.Collections.Generic.Dictionary<string, string> { { "barrel", "heavy" }, { "muzzle", "choke" }, { "sight", "holo" }, { "rail", "laser" }, { "stock", "precision" }, { "mag", "quick" } } },
+                { "pistol", new System.Collections.Generic.Dictionary<string, string> { { "muzzle", "suppressor" }, { "sight", "reddot" }, { "rail", "laser" }, { "mag", "extended" } } },
+            };
+            string dir = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, "..", "Logs", "shots"));
+            System.IO.Directory.CreateDirectory(dir);
+            foreach (var w in Tunables.Weapons)
+            {
+                var bare = Studio.GunPicture(w.model, new System.Collections.Generic.Dictionary<string, string>());
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, $"gun-{w.id}.png"), Png(bare));
+                if (loaded.TryGetValue(w.id, out var parts))
+                {
+                    var full = Studio.GunPicture(w.model, parts);
+                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, $"gun-{w.id}-parts.png"), Png(full));
+                }
+                yield return null;
+            }
+        }
+
+        // The studio's pictures live on the GPU only: copy one back to save it.
+        static byte[] Png(Texture tex)
+        {
+            var rt = RenderTexture.GetTemporary(tex.width, tex.height, 0);
+            Graphics.Blit(tex, rt);
+            var prev = RenderTexture.active;
+            RenderTexture.active = rt;
+            var copy = new Texture2D(tex.width, tex.height, TextureFormat.RGB24, false);
+            copy.ReadPixels(new Rect(0, 0, tex.width, tex.height), 0, 0);
+            copy.Apply();
+            RenderTexture.active = prev;
+            RenderTexture.ReleaseTemporary(rt);
+            var png = copy.EncodeToPNG();
+            Object.Destroy(copy);
+            return png;
+        }
+
         IEnumerator Seconds(float s)
         {
             for (int i = 0; i < s / Step; i++) yield return null;

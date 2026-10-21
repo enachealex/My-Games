@@ -65,13 +65,17 @@ namespace Graveway
             const int W = 480, H = 200;
             Shoot(W, H, (set, cam) =>
             {
-                Key(set, Hex.C(0xfff2e0), 2.4f, new Vector3(3, 4, 2));
-                Key(set, Hex.C(0x9be15d), 1.2f, new Vector3(-2, 1, -3));
-                Ambient(Hex.C(0xd8e4ff), Hex.C(0x30281e), 1.7f);
+                Key(set, Hex.C(0xfff2e0), 3.4f, new Vector3(3, 4, 2));
+                Key(set, Hex.C(0x9be15d), 1.8f, new Vector3(-2, 1, -3));
+                Ambient(Hex.C(0xd8e4ff), Hex.C(0x30281e), 2.4f);
                 var gun = Models.Gun(model, fitted);
                 gun.group.transform.SetParent(set, false);
                 gun.group.transform.localPosition = Vector3.zero;
-                var b = Bounds(gun.group);
+                // Its own outline where it has one: a rotated mesh's box is loose.
+                var gt = gun.group.transform;
+                var b = gun.bounds.size != Vector3.zero
+                    ? new Bounds(gt.TransformPoint(gun.bounds.center), Vector3.Scale(gun.bounds.size, gt.lossyScale))
+                    : Bounds(gun.group);
                 var c = b.center;
                 float half = Mathf.Max(b.size.z * 0.56f, b.size.y * 0.56f * W / H);
                 cam.orthographic = true;

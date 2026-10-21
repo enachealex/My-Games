@@ -320,7 +320,7 @@ namespace Graveway
         public Vector3 Muzzle()
         {
             var gun = surv.guns[player.Weapon.Id];
-            return gun.group.transform.TransformPoint(0, 0.03f, gun.len / Models.GunScale);
+            return gun.group.transform.TransformPoint(gun.muzzle);
         }
 
         public void StartRun()
