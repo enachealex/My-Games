@@ -136,7 +136,7 @@ namespace Graveway
         public float step;
     }
 
-    // A survivor's numbers for a run, with their perk and Armory upgrades.
+    // A survivor's numbers for a run, with their perk and Black Market upgrades.
     public sealed class PlayerStats
     {
         public float maxHp, speed, magnet, radius, startArmor, explosionResist, coinMult;
@@ -315,7 +315,7 @@ namespace Graveway
         };
 
         public const float PlayerMagnet = 3, PlayerRadius = 0.45f;
-        // Armory upgrades for whoever you pick. step per level; speed is a share.
+        // Black Market upgrades for whoever you pick. step per level; speed is a share.
         public static readonly PlayerUpgradeDef[] PlayerUpgrades =
         {
             new PlayerUpgradeDef { id = "maxHp", label = "Max health", max = 5, step = 20, baseCost = 100, unit = " HP" },
@@ -441,7 +441,7 @@ namespace Graveway
         }
 
         // A survivor's numbers for a run: their own, their perk, and the
-        // Armory upgrades bought (levels by upgrade id).
+        // Black Market upgrades bought (levels by upgrade id).
         public static PlayerStats StatsFor(CharacterDef c, IDictionary<string, int> ups)
         {
             int Lv(string k) => ups != null && ups.TryGetValue(k, out var v) ? v : 0;

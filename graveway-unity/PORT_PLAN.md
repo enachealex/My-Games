@@ -8,6 +8,32 @@ for "done".
 
 Each phase is one or more PRs. Tick items off here as they land.
 
+## Where it stands (21 October 2026)
+
+The whole game is ported in code: the street, props and destruction, the
+zombie AI and fog of war, combat, power-ups, effects, sound, haptics, and
+every menu (Black Market, notes, settings). It is still drawn with the web
+version's own box models, built in code. What's left needs things from
+outside the repo:
+
+- **Real art** (Phase 1's characters and guns, and the street): the packs
+  need downloading, which needs a yes for each one.
+- **The phone** (Phase 0's last item, Phase 7): the APK build needs Unity's
+  Android Build Support module, and testing needs the phone on USB.
+- **The Bebas Neue font:** the UI uses Unity's default font until its TTF
+  is downloaded.
+- **Phase 7's update check** and **Phase 8's** item-by-item comparison.
+
+### How the port maps the web version's coordinates
+
+The simulation uses the web version's numbers as they are: the road runs up
+−z from z = 2, and `world.js`, `props.js`, `nav.js`, `fog.js`, `vfx.js`,
+`models.js` and `game.js` port almost line for line. three.js and Unity
+build rotation matrices with the same components, so Unity draws a mirror
+image of the web street. Only the joystick and keys account for it
+(screen-right is world −x), signs and billboards flip their texture so text
+reads, and the Black Market's gun pictures are shot from the other side.
+
 ## Decisions (October 2026)
 
 - **Engine:** Unity 6000.5.8f1 (installed on the dev PC), URP with the
@@ -133,80 +159,98 @@ Build Support module, which isn't installed yet.
 
 ### Phase 1: restructure, and the first real characters
 
-- [ ] Split `Game` into systems owned by it, mirroring the web files:
+- [x] Split `Game` into systems owned by it, mirroring the web files:
       players, zombies, combat, and later props, nav, sight, pickups,
-      power-ups, VFX and audio.
-- [ ] Entity views as pooled prefabs: no `new GameObject` or `Destroy` per
-      spawn, and moving objects at the root of the hierarchy.
-- [ ] Bullets, coins, particles and debris drawn instanced from the
+      power-ups, VFX and audio. (`Game.*.cs`, `PropSystem`, `NavGrid`,
+      `Sight`, `Vfx`, `Director`, `Sfx`, `Hud.*.cs`.)
+- [x] Entity views pooled: zombie models are reused, and nothing that
+      moves per frame is a GameObject of its own. Props are built per
+      chunk, as on the web.
+- [x] Bullets, coins, particles and debris drawn instanced from the
       simulation arrays.
 - [ ] Animated survivors and zombies replace the box people (Humanoid.cs).
       Animator parameters come from the simulation (speed, aiming,
       reloading, attacking, dying).
-- [ ] Real gun models with part sockets.
-- [ ] Save v2 on Newtonsoft: coins, best, runs, kills, character, owned,
+- [ ] Real gun models with part sockets. (For now the web's gun models,
+      with every part showing, are built in code.)
+- [x] Save v2 on Newtonsoft: coins, best, runs, kills, character, owned,
       loadout, parts, survivor upgrades and settings, with notes kept
       separately (web `save.js`).
-- [ ] HUD: stop rebuilding strings and changing widths every frame, and
+- [x] HUD: stop rebuilding strings and changing widths every frame, and
       split it into one view per screen.
 - **Done when** 64 animated zombies hold 60 fps on the phone.
 
 ### Phase 2: the street and destruction (`props.js`, `world.js`)
 
-- [ ] Street art: building fronts with lit windows, awnings, alleys,
+Everything here works and looks like the web version; real models come
+with the art.
+
+- [x] Street art: building fronts with lit windows, awnings, alleys,
       lamps, litter, the start barricade.
-- [ ] All 9 prop types with web hp, mass, materials and explosions.
-- [ ] Damage states: hit flash, walls darkening, cars and tankers smoking
+- [x] All 9 prop types with web hp, mass, materials and explosions.
+- [x] Damage states: hit flash, walls darkening, cars and tankers smoking
       then burning.
-- [ ] Wrecks: thrown and tumbling, burnt look, still blocking.
-- [ ] Toppling walls and lamps that crush whatever they land on, and the
+- [x] Wrecks: thrown and tumbling, burnt look, still blocking.
+- [x] Toppling walls and lamps that crush whatever they land on, and the
       condemned building's creak, collapse, rubble field and slabs.
-- [ ] Debris (420 cap), rubble, scorch decals, chained barrel explosions,
+- [x] Debris (420 cap), rubble, scorch decals, chained barrel explosions,
       blast impulse on props.
-- [ ] Bullets stop at props and building fronts, and auto-aim shoots
+- [x] Bullets stop at props and building fronts, and auto-aim shoots
       barrels into crowds and drops condemned buildings on them.
-- [ ] Road coins, health packs and armor vests.
+- [x] Road coins, health packs and armor vests.
 
 ### Phase 3: zombie AI and fog of war (`nav.js`, `fog.js`)
 
-- [ ] Flow-field nav grid (0.5 m cells, 30 × 172, with rough cost ×3),
-      covered by EditMode tests.
-- [ ] Line of sight, steering, getting stuck, smashing (tanks and bosses),
+- [x] Flow-field nav grid (0.5 m cells, 30 × 172, with rough cost ×3).
+- [x] EditMode tests for the nav grid.
+- [x] Line of sight, steering, getting stuck, smashing (tanks and bosses),
       shoving wrecks, rubble slowdown.
-- [ ] Sight checks every 0.1 s, zombies hidden behind tall cover,
+- [x] Sight checks every 0.1 s, zombies hidden behind tall cover,
       auto-aim limited to what can be seen.
-- [ ] Ground shadows behind walls, tankers and buildings (a dynamic mesh
+- [x] Ground shadows behind walls, tankers and buildings (a dynamic mesh
       with a stencil shader in URP).
 
 ### Phase 4: finish combat (`game.js`, `weapons.js`)
 
-- [ ] Every ammo effect: hollow-point and armour-piercing bonuses,
+- [x] Every ammo effect: hollow-point and armour-piercing bonuses,
       incendiary burning, damage to props, pierce, slug, dragon's breath,
       flechette.
-- [ ] Cluster, incendiary and concussion grenades.
-- [ ] Laser sight, weapon light, suppressed guns not drawing zombies.
-- [ ] Tracer colours by ammo, muzzle flash, recoil, camera shake table.
-- [ ] Five power-ups with drops (per chunk, tanks, boss), the timed-buff
+- [x] Cluster, incendiary and concussion grenades.
+- [x] Laser sight, weapon light, suppressed guns not drawing zombies.
+- [x] Tracer colours by ammo, muzzle flash, recoil, camera shake table.
+      Tracers now start at the muzzle (playtest note 1).
+- [x] Five power-ups with drops (per chunk, tanks, boss), the timed-buff
       HUD, the coin magnet and vacuum.
 
 ### Phase 5: effects, sound and haptics (`vfx.js`, `audio.js`)
 
-- [ ] Fire and smoke particles that fade into the fog: explosions, sparks,
+- [x] Fire and smoke particles that fade into the fog: explosions, sparks,
       embers, dust, shock rings, emitters on burning props, flames on
       burning zombies.
-- [ ] Sounds: the 30 web recipes generated with `AudioClip.Create`, plus
+- [x] Sounds: the 29 web recipes generated with `AudioClip.Create`, plus
       a compressor, stereo panning and per-sound cooldowns.
-- [ ] Haptics through Android's Vibrator, with patterns.
-- [ ] A Battery saver quality level: render scale and effect counts.
+- [x] Haptics through Android's Vibrator, with patterns.
+- [x] A Battery saver quality level: effect counts, and render scale
+      capped like the web's pixel ratio (2 on High, 1 on Battery saver; in
+      player builds only, so the editor's URP asset isn't changed).
 
 ### Phase 6: menus and the meta game (`ui.js`, `index.html`, `preview.js`)
 
-- [ ] Menu scene, survivor select (swipe and arrows, 3D portraits), loadout.
-- [ ] The Armory: guns, parts with a 3D gun preview and effect chips, and
+UI Toolkit, styled by `Resources/UI/Graveway.uss` (a port of the web
+CSS). Portraits and gun pictures are rendered from the 3D models
+(`UI/Studio.cs`).
+
+- [x] Menu over the street, survivor select (swipe and arrows, 3D
+      portraits), loadout.
+- [x] The Black Market (the web version's Armory, renamed on 21 October
+      2026): guns, parts with a 3D gun preview and effect chips, and
       survivor upgrades.
-- [ ] Results with tips, pause, settings, playtest tools.
-- [ ] Playtest notes, and Send to Claude as a GitHub issue on My-Games.
-- [ ] Back-button stack, safe areas, Bebas Neue font, banners and toasts.
+- [x] Results with tips, pause, settings, playtest tools.
+- [x] Playtest notes, and Send to Claude as a GitHub issue on My-Games.
+- [x] Back-button stack, safe areas, banners and toasts.
+- [ ] Bebas Neue font (needs its TTF downloaded).
+- [x] PlayMode tests that work the menus by their buttons, and pictures of
+      every screen with the UI over the street.
 
 ### Phase 7: Android polish and delivery
 

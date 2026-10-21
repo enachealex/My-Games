@@ -167,7 +167,7 @@ namespace Graveway
             worldRoot = new GameObject("World").transform;
             nav = new NavGrid();
             vfx = new Vfx(worldRoot);
-            vfx.SetQuality(Save.Data.settings.quality);
+            SetQuality(Save.Data.settings.quality);
             sight = new Sight(worldRoot);
             propSys = new PropSystem(this);
             director = new Director(this);
@@ -196,6 +196,14 @@ namespace Graveway
         public void SetQuality(string q)
         {
             vfx.SetQuality(q);
+            // As the web version caps the device pixel ratio: 2 on High, 1 on
+            // Battery saver. Not in the editor, where changing the pipeline
+            // asset would change the file.
+            if (!Application.isEditor && UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urp)
+            {
+                float dpr = Screen.dpi > 0 ? Screen.dpi / 160f : 2.75f;
+                urp.renderScale = Mathf.Clamp(Mathf.Min(dpr, q == "low" ? 1 : 2) / dpr, 0.25f, 1);
+            }
         }
 
         // Swaps the survivor model to a character from Tunables.Characters.
@@ -257,7 +265,6 @@ namespace Graveway
             world.Update(player.z, 0);
             for (int i = 0; i < 9; i++) SpawnZombie("walker", (rng.Next() - 0.5f) * 11, -12 - rng.Next() * 22, 0, calm: true);
             input.enabled = false;
-            hud.ShowMenu();
             SyncSurvivor();
         }
 
@@ -266,7 +273,7 @@ namespace Graveway
             var c = character;
             var stats = Tunables.StatsFor(c, Save.Data.pup);
             // Your survivor's own gun first, then the ones equipped in the
-            // Armory, each with its parts, and the models in their hands to match.
+            // Black Market, each with its parts, and the models in their hands to match.
             var p = new Player
             {
                 x = 0, z = World.StartPz, yaw = Mathf.PI, hp = stats.maxHp, maxHp = stats.maxHp,
