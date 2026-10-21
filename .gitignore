@@ -3,3 +3,6 @@ node_modules/
 # Local Android builds (tools/android/build-apk.mjs)
 .android-build/
 dist-android/
+
+# Original art downloads (sources in graveway-unity/CREDITS.md)
+/art-src/

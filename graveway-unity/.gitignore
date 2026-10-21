@@ -26,3 +26,6 @@ crashlytics-build.properties
 *.keystore
 *.jks
 signing.properties
+
+# Unity telemetry scratch
+.utmp/

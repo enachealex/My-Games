@@ -3,11 +3,10 @@
 // test. Time is stepped at 20 frames a second, so a minute of play takes
 // 1,200 frames however fast the machine is.
 //
-// Screenshots (only with a GPU, so not under -nographics) land in
-// graveway-unity/Logs/shots/.
+// Screenshots (only with a GPU, so not under -nographics), with the UI over
+// the street, land in graveway-unity/Logs/shots/.
 
 using System.Collections;
-using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -31,8 +30,11 @@ namespace Graveway.Tests
                 game = Object.FindAnyObjectByType<Game>();
             }
             Assert.That(game, Is.Not.Null, "the game didn't boot itself");
+            AudioListener.volume = 0;                   // tests run silent
+            Sfx.Enabled = false;
             Time.captureDeltaTime = Step;
             game.ShowMenu();
+            game.hud.ShowMenu();
             yield return null;
         }
 
@@ -44,7 +46,6 @@ namespace Graveway.Tests
             {
                 game.invincible = false;
                 game.Stick.autopilot = null;
-                if (game.Camera != null) game.Camera.targetTexture = null;
             }
         }
 
@@ -61,7 +62,7 @@ namespace Graveway.Tests
         {
             game.StartRun();
             game.invincible = true;
-            game.Stick.autopilot = new Vector3(0, 0, 1);
+            game.Stick.autopilot = new Vector3(0, 0, -1);      // up the road is -z
             yield return Seconds(60);
             Assert.That(game.state, Is.EqualTo(Game.State.Playing));
             Assert.That(game.Distance, Is.GreaterThan(100), "didn't get far up the road");
@@ -85,40 +86,22 @@ namespace Graveway.Tests
         public IEnumerator Screenshots()
         {
             if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) Assert.Ignore("no GPU (-nographics), so nothing to see");
-            // A phone-shaped picture: 1080 x 2340 at half size.
-            var rt = new RenderTexture(540, 1170, 24);
-            game.Camera.targetTexture = rt;
+            using var photo = new Photo(game);
             yield return Seconds(3);
-            Shot(rt, "1-menu");
+            photo.Shot("1-menu");
             game.StartRun();
             game.invincible = true;
             yield return Seconds(4);
-            Shot(rt, "2-run-start");
-            game.Stick.autopilot = new Vector3(0.3f, 0, 1);
+            photo.Shot("2-run-start");
+            game.Stick.autopilot = new Vector3(0.3f, 0, -1);
             yield return Seconds(25);
             Assert.That(game.state, Is.EqualTo(Game.State.Playing));
-            Shot(rt, "3-run-25s");
-            game.Camera.targetTexture = null;
-            rt.Release();
+            photo.Shot("3-run-25s");
         }
 
         IEnumerator Seconds(float s)
         {
             for (int i = 0; i < s / Step; i++) yield return null;
-        }
-
-        static void Shot(RenderTexture rt, string name)
-        {
-            var prev = RenderTexture.active;
-            RenderTexture.active = rt;
-            var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
-            tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-            tex.Apply();
-            RenderTexture.active = prev;
-            string dir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Logs", "shots"));
-            Directory.CreateDirectory(dir);
-            File.WriteAllBytes(Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
-            Object.Destroy(tex);
         }
     }
 }

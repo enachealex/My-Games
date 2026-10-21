@@ -48,7 +48,9 @@ namespace Graveway.EditorTools
                     options = BuildOptions.None,
                 });
                 var s = report.summary;
-                Debug.Log($"Graveway: build {s.result}: {output} ({s.totalSize / 1048576f:0.0} MB, {s.totalTime.TotalSeconds:0} s, " +
+                // The file's own size: the report's total counts more than the APK.
+                float mb = File.Exists(output) ? new FileInfo(output).Length / 1048576f : 0;
+                Debug.Log($"Graveway: build {s.result}: {output} ({mb:0.0} MB, {s.totalTime.TotalSeconds:0} s, " +
                           $"{(signed ? "release key" : "debug key")})");
                 if (s.result != BuildResult.Succeeded) EditorApplication.Exit(1);
             }
@@ -60,6 +62,8 @@ namespace Graveway.EditorTools
                 PlayerSettings.Android.keyaliasName = "";
                 PlayerSettings.Android.keystorePass = "";
                 PlayerSettings.Android.keyaliasPass = "";
+                // Written out now: a build that fails can leave the path saved.
+                AssetDatabase.SaveAssets();
             }
         }
 

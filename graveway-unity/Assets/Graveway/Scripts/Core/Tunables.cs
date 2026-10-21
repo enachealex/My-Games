@@ -1,9 +1,12 @@
 // Every number that shapes how Graveway plays lives in this file, ported
 // from graveway/src/config.js. Change a value and press Play.
 //
-// Coordinates: +z is up the road (away from the camera), +x is to the
-// right, y is up. The survivor starts at z = 0, and distance is how far up
-// the road they've got.
+// Coordinates are the web version's, number for number: the road runs up
+// -z, away from the camera; the survivor starts at z = START_PZ (2) and
+// distance is how far up the road (toward -z) they've got. Unity draws the
+// same numbers as the mirror image of the web version's street, which
+// changes nothing about how it plays; only the joystick and keys account
+// for it (StickInput.Move).
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -106,6 +109,48 @@ namespace Graveway
         public PartMods mods = new PartMods();
         public PartFx fx;
         public string[] fits, not;
+    }
+
+    // What a blast does: radius in metres, damage at its centre, and how hard
+    // it throws things.
+    public sealed class Explosion
+    {
+        public float radius, damage, impulse;
+        public Explosion(float radius, float damage, float impulse) { this.radius = radius; this.damage = damage; this.impulse = impulse; }
+    }
+
+    public sealed class PowerUpDef
+    {
+        public string id, name, tag;
+        public Color color;
+        public float weight, duration;       // duration 0: not timed
+        public int grenades;                 // Frag Barrage
+        public float range, damage, radius, impulse, fireRateMult = 1, damageMult = 1;
+        public Blast blast;
+    }
+
+    public sealed class PlayerUpgradeDef
+    {
+        public string id, label, unit;
+        public int max, baseCost;
+        public float step;
+    }
+
+    // A survivor's numbers for a run, with their perk and Black Market upgrades.
+    public sealed class PlayerStats
+    {
+        public float maxHp, speed, magnet, radius, startArmor, explosionResist, coinMult;
+        public Perk perk;
+    }
+
+    // Props you can wreck (see PROPS in config.js). hp 0 here means
+    // indestructible (the web's null); mass 0 means bolted down.
+    public sealed class PropDef
+    {
+        public float hp, mass, smokeAt, fireAt, crush, bulletMult = 1, blastMult = 1;
+        public string material;
+        public bool blocksBullets = true, burns, rubble, topples, collapse;
+        public Explosion explodes;
     }
 
     public static class Tunables
@@ -246,7 +291,7 @@ namespace Graveway
                     mods = new PartMods { damage = 0.6f, blast = 1.35f, impulse = 2 } } } },
         };
         public const double PartTierCost = 0.35;     // each later gun's parts cost 35% more
-        public const float UpgradeCostGrowth = 1.65f;
+        public const double UpgradeCostGrowth = 1.65;
 
         // ── Survivors ────────────────────────────────────────────────────
         public static readonly CharacterDef[] Characters =
@@ -270,8 +315,32 @@ namespace Graveway
         };
 
         public const float PlayerMagnet = 3, PlayerRadius = 0.45f;
+        // Black Market upgrades for whoever you pick. step per level; speed is a share.
+        public static readonly PlayerUpgradeDef[] PlayerUpgrades =
+        {
+            new PlayerUpgradeDef { id = "maxHp", label = "Max health", max = 5, step = 20, baseCost = 100, unit = " HP" },
+            new PlayerUpgradeDef { id = "speed", label = "Move speed", max = 5, step = 0.06f, baseCost = 120, unit = "%" },
+            new PlayerUpgradeDef { id = "magnet", label = "Coin magnet", max = 5, step = 1, baseCost = 70, unit = " m" },
+        };
         // Armor soaks up this share of every hit until it runs out.
         public const float ArmorAbsorb = 1, MaxArmor = 100, PickupHealth = 35, PickupArmor = 50;
+
+        // ── Power-ups ────────────────────────────────────────────────────
+        // Glowing badges on the road, and sometimes left by tanks (bosses
+        // always leave one). Walk over one and it goes off at once. Timed ones
+        // stack up to twice their duration.
+        public static readonly PowerUpDef[] PowerUps =
+        {
+            new PowerUpDef { id = "frag", name = "Frag Barrage", tag = "Grenades out", color = Hex.C(0x9be15d), weight = 3,
+                grenades = 4, range = 18, damage = 150, blast = new Blast(3.6f, 12) },
+            new PowerUpDef { id = "rapid", name = "Rapid Fire", tag = "No reloads", color = Hex.C(0xffb02e), weight = 2, duration = 10, fireRateMult = 2 },
+            new PowerUpDef { id = "double", name = "Double Damage", tag = "2× damage", color = Hex.C(0xff5a4a), weight = 2, duration = 10, damageMult = 2 },
+            new PowerUpDef { id = "shock", name = "Shockwave", tag = "Get back!", color = Hex.C(0x7ac8ff), weight = 2, radius = 7, damage = 180, impulse = 24 },
+            new PowerUpDef { id = "vacuum", name = "Coin Vacuum", tag = "Every coin, to you", color = Hex.C(0xffc928), weight = 1.5f, duration = 8, radius = 32 },
+        };
+        public const float PowerUpPerChunk = 0.5f;    // chance of one on each 32 m of road
+        public const float PowerUpFrom = 60;          // metres up the road before the first
+        public const float PowerUpFromTank = 0.25f;   // chance a tank leaves one
 
         // ── Zombies ──────────────────────────────────────────────────────
         public static readonly Dictionary<string, ZombieKind> Zombies = new Dictionary<string, ZombieKind>
@@ -311,6 +380,42 @@ namespace Graveway
             public static int StageBonus(int stage) => 10 + stage * 5;
         }
 
+        // ── Props you can wreck ──────────────────────────────────────────
+        // Everything on the street stops bullets and can be broken.
+        //   hp          damage to destroy it
+        //   material    what bullets hit: metal sparks, concrete/brick/wood dust
+        //   mass        how far blasts shove it (bigger = less); 0 = bolted down
+        //   explodes    blows up when destroyed
+        //   burns       smokes below smokeAt of its hp, catches fire below
+        //               fireAt, and leaves a burning wreck when it blows
+        //   rubble      leaves a rough pile that slows everyone crossing it
+        //   topples     falls over when destroyed, crushing what it lands on
+        //               for `crush` damage
+        //   bulletMult / blastMult   scale incoming damage
+        //   collapse    the big set piece: creaks, then comes down across the
+        //               road as a rubble field with slabs in it
+        public static readonly Dictionary<string, PropDef> Props = new Dictionary<string, PropDef>
+        {
+            { "car", new PropDef { hp = 420, material = "metal", mass = 8, burns = true, smokeAt = 0.6f, fireAt = 0.3f,
+                explodes = new Explosion(5, 170, 18) } },
+            { "tanker", new PropDef { hp = 520, material = "metal", mass = 24, burns = true, smokeAt = 0.6f, fireAt = 0.35f,
+                explodes = new Explosion(9, 320, 30) } },
+            { "barricade", new PropDef { hp = 260, material = "concrete", mass = 3, rubble = true } },
+            { "barrel", new PropDef { hp = 30, material = "metal", mass = 1, explodes = new Explosion(3.8f, 150, 12) } },
+            { "wall", new PropDef { hp = 480, material = "brick", rubble = true, topples = true, crush = 220, blastMult = 1.5f } },
+            { "lamp", new PropDef { hp = 70, material = "metal", topples = true, crush = 90 } },
+            { "fire", new PropDef { hp = 60, material = "metal", mass = 1 } },
+            { "slab", new PropDef { hp = 320, material = "concrete", rubble = true } },
+            { "condemned", new PropDef { hp = 900, material = "concrete", topples = true, collapse = true, crush = 2000,
+                bulletMult = 0.15f, blastMult = 1.6f } },
+        };
+        // How often the road offers the big set pieces.
+        public const int CondemnedEvery = 7;          // one condemned building every 7 chunks (~224 m)
+        public const float TankerChance = 0.06f;      // per row of props, once past TankerFrom metres
+        public const float TankerFrom = 120;
+        public const float RubbleSlow = 0.55f;        // speed multiplier on rubble for zombies
+        public const float RubbleSlowPlayer = 0.75f;  // and for you
+
         public struct Scaling { public float hp, damage, speed; }
 
         public static Scaling StageScaling(int stage) => new Scaling
@@ -323,6 +428,43 @@ namespace Graveway
         // ── Lookups and derived numbers (no tuning below) ────────────────
         public static WeaponDef Weapon(string id) => System.Array.Find(Weapons, w => w.id == id) ?? Weapons[0];
         public static CharacterDef Character(string id) => System.Array.Find(Characters, c => c.id == id) ?? Characters[0];
+        public static PowerUpDef PowerUp(string id) => System.Array.Find(PowerUps, p => p.id == id) ?? PowerUps[0];
+
+        // A power-up id, picked by weight; r is a random number in [0, 1).
+        public static string PickPowerup(float r)
+        {
+            float total = 0;
+            foreach (var p in PowerUps) total += p.weight;
+            float w = r * total;
+            foreach (var p in PowerUps) { w -= p.weight; if (w < 0) return p.id; }
+            return PowerUps[0].id;
+        }
+
+        // A survivor's numbers for a run: their own, their perk, and the
+        // Black Market upgrades bought (levels by upgrade id).
+        public static PlayerStats StatsFor(CharacterDef c, IDictionary<string, int> ups)
+        {
+            int Lv(string k) => ups != null && ups.TryGetValue(k, out var v) ? v : 0;
+            var perk = c.perk ?? new Perk();
+            return new PlayerStats
+            {
+                maxHp = c.baseHealth + PlayerUpgrades[0].step * Lv("maxHp"),
+                speed = c.moveSpeed * (1 + PlayerUpgrades[1].step * Lv("speed")),
+                magnet = PlayerMagnet + PlayerUpgrades[2].step * Lv("magnet") + perk.magnetBonus,
+                radius = PlayerRadius,
+                startArmor = perk.startArmor,
+                explosionResist = perk.explosionResist,
+                coinMult = perk.coinMult,
+                perk = perk,
+            };
+        }
+
+        // Rounded like the web version's Math.round (halves up), in doubles.
+        public static int PlayerUpgradeCost(string id, int level)
+        {
+            var u = System.Array.Find(PlayerUpgrades, x => x.id == id);
+            return (int)System.Math.Floor(u.baseCost * System.Math.Pow(UpgradeCostGrowth, level) / 5 + 0.5) * 5;
+        }
 
         // The parts that go in one slot of one gun; the first is what it comes with.
         public static List<PartDef> PartsFor(WeaponDef def, string slot)

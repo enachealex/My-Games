@@ -132,7 +132,10 @@ namespace Graveway
             Knob = Vector2.zero;
         }
 
-        // World-space direction: x across the road, z up the road.
+        // World-space direction to walk. The road runs up -z, and the camera
+        // looks up it from behind, so Unity shows screen-right as world -x
+        // (the mirror image of the web version, see Tunables.cs): pushing
+        // right walks toward -x, and up the screen walks toward -z.
         public Vector3 Move
         {
             get
@@ -140,9 +143,9 @@ namespace Graveway
                 if (!enabled) return Vector3.zero;
                 if (autopilot.HasValue) return Vector3.ClampMagnitude(autopilot.Value, 1);
                 float kx = (GameKeys.Held(Key.D) || GameKeys.Held(Key.RightArrow) ? 1 : 0) - (GameKeys.Held(Key.A) || GameKeys.Held(Key.LeftArrow) ? 1 : 0);
-                float kz = (GameKeys.Held(Key.W) || GameKeys.Held(Key.UpArrow) ? 1 : 0) - (GameKeys.Held(Key.S) || GameKeys.Held(Key.DownArrow) ? 1 : 0);
-                if (kx != 0 || kz != 0) return new Vector3(kx, 0, kz).normalized;
-                return new Vector3(stick.x, 0, stick.y);
+                float ky = (GameKeys.Held(Key.W) || GameKeys.Held(Key.UpArrow) ? 1 : 0) - (GameKeys.Held(Key.S) || GameKeys.Held(Key.DownArrow) ? 1 : 0);
+                if (kx != 0 || ky != 0) return new Vector3(-kx, 0, -ky).normalized;
+                return new Vector3(-stick.x, 0, -stick.y);
             }
         }
     }

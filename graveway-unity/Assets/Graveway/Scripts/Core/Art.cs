@@ -1,12 +1,12 @@
-// Placeholder art, all made in code: materials, box meshes and textures
-// painted at start-up, like graveway/src/models.js. Everything here is meant
-// to be swapped for real models and materials as they arrive; nothing else
-// cares how a thing is drawn.
+// Materials for the placeholder art, and a few helpers for putting meshes
+// into the scene (models.js's lambert / basic material caches, and its
+// glow and shadow decals).
 //
 // Materials are copies of the base materials in Resources/Materials (made by
 // Graveway → Set up project), never shaders looked up by name: a phone build
-// only keeps the shaders, and shader variants, that some material asset
-// uses.
+// only keeps the shaders, and shader variants, that some material asset uses.
+// The same colour (and texture) always gets the same material, so the SRP
+// Batcher can draw everything that shares it together.
 
 using System;
 using System.Collections.Generic;
@@ -18,18 +18,15 @@ namespace Graveway
 {
     public static class Art
     {
-        static Mesh cube, quad;
-        public static Mesh Cube => cube != null ? cube : (cube = Resources.GetBuiltinResource<Mesh>("Cube.fbx"));
-        public static Mesh Quad => quad != null ? quad : (quad = Resources.GetBuiltinResource<Mesh>("Quad.fbx"));
-
         // The base materials, one per shader setup (see ProjectSetup.cs).
-        public const string BaseLit = "Lit", BaseLitGlow = "LitGlow", BaseUnlit = "Unlit", BaseGlow = "Glow", BaseShadow = "Shadow";
+        public const string BaseLit = "Lit", BaseLitGlow = "LitGlow", BaseUnlit = "Unlit", BaseGlow = "Glow", BaseFade = "Shadow",
+            BaseInstanced = "Instanced", BaseSprite = "Sprite", BaseSightShadow = "SightShadow";
 
         static readonly Dictionary<string, Material> bases = new Dictionary<string, Material>();
         static readonly Dictionary<(string, Color, float, Texture, Texture), Material> cache =
             new Dictionary<(string, Color, float, Texture, Texture), Material>();
 
-        static Material Base(string name)
+        public static Material Base(string name)
         {
             if (bases.TryGetValue(name, out var m) && m != null) return m;
             m = Resources.Load<Material>("Materials/" + name);
@@ -48,8 +45,8 @@ namespace Graveway
             return m;
         }
 
-        // A lit, matte material. Shared: the same colour gets the same one, so
-        // the SRP Batcher draws everything that uses it together.
+        // three's MeshLambertMaterial: matte, lit. glow > 0 adds that much of
+        // the colour as emission (or a glow map, lit windows).
         public static Material Lit(Color c, float glow = 0, Texture tex = null, Texture glowTex = null)
         {
             if (Cached("lit", c, glow, tex, glowTex, out var m)) return m;
@@ -59,313 +56,138 @@ namespace Graveway
             if (tex) m.SetTexture("_BaseMap", tex);
             if (glows)
             {
-                m.SetColor("_EmissionColor", glowTex ? Color.white * Mathf.Max(glow, 1) : c * glow);
+                m.SetColor("_EmissionColor", glowTex ? Color.white * glow : c * glow);
                 if (glowTex) m.SetTexture("_EmissionMap", glowTex);
             }
             return m;
         }
 
-        // Unlit and solid: tracers, eyes, warning lights.
-        public static Material Unlit(Color c)
+        public static Material Lit(int rgb, float glow = 0) => Lit(Hex.C(rgb), glow);
+
+        // A lit material of its own, not shared, for things that change colour
+        // on their own (a damaged wall darkening). Destroy it with its owner.
+        public static Material LitOwn(Color c, Texture tex = null)
         {
-            if (Cached("unlit", c, 0, null, null, out var m)) return m;
-            m = Make(BaseUnlit, "unlit", c, 0, null, null);
+            var m = new Material(Base(BaseLit)) { name = "own lit" };
             m.SetColor("_BaseColor", c);
+            if (tex) m.SetTexture("_BaseMap", tex);
             return m;
         }
 
-        // Additive glow, for pools of light and flashes. Uses a soft round
-        // texture unless given another.
-        public static Material Glow(Color c, Texture tex = null)
+        // three's MeshBasicMaterial: solid colour, no lighting.
+        public static Material Unlit(Color c, Texture tex = null)
+        {
+            if (Cached("unlit", c, 0, tex, null, out var m)) return m;
+            m = Make(BaseUnlit, "unlit", c, 0, tex, null);
+            m.SetColor("_BaseColor", c);
+            if (tex) m.SetTexture("_BaseMap", tex);
+            return m;
+        }
+
+        public static Material Unlit(int rgb) => Unlit(Hex.C(rgb));
+
+        // Additive glow, for pools of light, flashes and flames. `opacity`
+        // dims it, as three's additive opacity does (the material blends by
+        // source alpha).
+        public static Material Glow(Color c, Texture tex = null, float opacity = 1)
         {
             tex = tex ? tex : Tex.Glow;
-            if (Cached("glow", c, 0, tex, null, out var m)) return m;
-            m = Make(BaseGlow, "glow", c, 0, tex, null);
-            m.SetColor("_BaseColor", c);
+            if (Cached("glow", c, opacity, tex, null, out var m)) return m;
+            m = Make(BaseGlow, "glow", c, opacity, tex, null);
+            m.SetColor("_BaseColor", new Color(c.r, c.g, c.b, opacity));
             m.SetTexture("_BaseMap", tex);
             return m;
         }
 
-        // A soft dark blob on the ground: the only shadows in the game.
-        public static Material Shadow(float alpha)
+        // See-through, unlit and blended: blob shadows and scorch marks.
+        public static Material Fade(Color c, float opacity, Texture tex = null)
         {
-            var c = new Color(0, 0, 0, alpha);
-            if (Cached("shadow", c, 0, null, null, out var m)) return m;
-            m = Make(BaseShadow, "shadow", c, 0, null, null);
-            m.SetColor("_BaseColor", c);
-            m.SetTexture("_BaseMap", Tex.Glow);
+            tex = tex ? tex : Tex.Glow;
+            if (Cached("fade", c, opacity, tex, null, out var m)) return m;
+            m = Make(BaseFade, "fade", c, opacity, tex, null);
+            m.SetColor("_BaseColor", new Color(c.r, c.g, c.b, opacity));
+            m.SetTexture("_BaseMap", tex);
             return m;
         }
 
-        // A child object showing `mesh` with `mat`.
-        public static GameObject Part(Transform parent, Mesh mesh, Material mat, Vector3 pos, Vector3 scale, string name = "part")
+        // Hit flash: everything a zombie or prop is made of swaps to this.
+        static Material flash;
+        public static Material Flash => flash != null ? flash : (flash = Unlit(Hex.C(0xffd8c8)));
+
+        // For InstancedBatch: lit like Lambert (or not), solid or additive.
+        public static Material Instanced(bool lit, bool additive = false, Color? emission = null, float alpha = 1)
+        {
+            var m = new Material(Base(BaseInstanced)) { name = "instanced", enableInstancing = true };
+            m.SetFloat("_Lit", lit ? 1 : 0);
+            m.SetFloat("_Additive", additive ? 1 : 0);
+            m.SetFloat("_Alpha", alpha);
+            m.SetColor("_Emission", emission ?? Color.black);
+            if (additive)
+            {
+                m.SetFloat("_SrcBlend", (float)BlendMode.One);
+                m.SetFloat("_DstBlend", (float)BlendMode.One);
+                m.SetFloat("_ZWrite", 0);
+                m.renderQueue = (int)RenderQueue.Transparent;
+            }
+            return m;
+        }
+
+        // For SpriteBatch: additive (fire, sparks) or blended (smoke, dust).
+        public static Material Sprite(Texture tex, bool additive)
+        {
+            var m = new Material(Base(BaseSprite)) { name = additive ? "glow sprites" : "smoke sprites", enableInstancing = true };
+            m.SetTexture("_BaseMap", tex);
+            m.SetFloat("_Additive", additive ? 1 : 0);
+            m.SetFloat("_SrcBlend", (float)(additive ? BlendMode.One : BlendMode.SrcAlpha));
+            m.SetFloat("_DstBlend", (float)(additive ? BlendMode.One : BlendMode.OneMinusSrcAlpha));
+            m.renderQueue = (int)RenderQueue.Transparent + (additive ? 3 : 2);
+            return m;
+        }
+
+        // ── Putting meshes in the scene ──────────────────────────────────
+        public static MeshRenderer Show(Transform parent, Mesh mesh, Material mat, string name = "mesh")
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
-            go.transform.localPosition = pos;
-            go.transform.localScale = scale;
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var r = go.AddComponent<MeshRenderer>();
             r.sharedMaterial = mat;
             r.shadowCastingMode = ShadowCastingMode.Off;
             r.receiveShadows = false;
-            return go;
+            r.lightProbeUsage = LightProbeUsage.Off;
+            r.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            return r;
         }
 
-        public static GameObject Box(Transform parent, Vector3 size, Vector3 center, Material mat, string name = "box") =>
-            Part(parent, Cube, mat, center, size, name);
+        static Mesh flat;
+        // A 1 x 1 square lying flat (three's PlaneGeometry rotated flat).
+        public static Mesh FlatMesh => flat != null ? flat : (flat = new GeoBuilder().Flat(1, 1, M.I).Build("flat"));
 
-        // A flat glow on the ground (a lamp's pool of light, a pickup's ring).
-        public static GameObject GroundGlow(Transform parent, Color c, float size, Vector3 pos, Texture tex = null)
+        // A soft dark blob on the ground: the only shadows in the game.
+        public static MeshRenderer BlobShadow(Transform parent, float size = 1.1f, float opacity = 0.55f)
         {
-            var go = Part(parent, Quad, Glow(c, tex), pos + Vector3.up * 0.03f, new Vector3(size, size, 1), "glow");
-            go.transform.localRotation = Quaternion.Euler(90, 0, 0);
-            return go;
-        }
-    }
-
-    /* Builds one mesh out of many boxes, with UVs scaled to each box's real
-       size (one texture tiles the same on a short shop and a tall tower).
-       A chunk of street is a handful of these, one per material. */
-    public sealed class MeshBuilder
-    {
-        readonly List<Vector3> verts = new List<Vector3>();
-        readonly List<Vector3> norms = new List<Vector3>();
-        readonly List<Vector2> uvs = new List<Vector2>();
-        readonly List<int> tris = new List<int>();
-
-        static readonly Vector3[] faceN = { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
-        static readonly Vector3[] faceV = { Vector3.up, Vector3.up, Vector3.forward, Vector3.forward, Vector3.up, Vector3.up };
-
-        public int Count => verts.Count;
-
-        // tile: metres per texture repeat; 0 stretches the texture over each face.
-        public void Box(Vector3 center, Vector3 size, float tile = 0, float yaw = 0)
-        {
-            var rot = Quaternion.Euler(0, yaw, 0);
-            for (int f = 0; f < 6; f++)
-            {
-                Vector3 n = faceN[f], v = faceV[f], u = Vector3.Cross(n, v);
-                float hn = Abs(n, size) * 0.5f, hu = Abs(u, size) * 0.5f, hv = Abs(v, size) * 0.5f;
-                int b = verts.Count;
-                for (int k = 0; k < 4; k++)
-                {
-                    float su = k == 1 || k == 2 ? 1 : -1, sv = k >= 2 ? 1 : -1;
-                    var local = n * hn + u * (su * hu) + v * (sv * hv);
-                    verts.Add(center + rot * local);
-                    norms.Add(rot * n);
-                    uvs.Add(tile > 0
-                        ? new Vector2((su * hu + hu) / tile, (sv * hv + hv) / tile)
-                        : new Vector2((su + 1) * 0.5f, (sv + 1) * 0.5f));
-                }
-                // Clockwise as seen from outside: Unity's front faces.
-                tris.Add(b); tris.Add(b + 3); tris.Add(b + 2);
-                tris.Add(b); tris.Add(b + 2); tris.Add(b + 1);
-            }
+            var r = Show(parent, FlatMesh, Fade(Color.black, opacity), "shadow");
+            r.transform.localScale = new Vector3(size, 1, size);
+            r.transform.localPosition = new Vector3(0, 0.02f, 0);
+            return r;
         }
 
-        // A flat rectangle facing up, at height y.
-        public void Flat(Vector3 center, float width, float length, float tileU = 0, float tileV = 0)
+        // A soft additive pool of light on the ground.
+        public static MeshRenderer GlowDecal(Transform parent, Color c, float size, float opacity = 0.6f, Texture tex = null)
         {
-            int b = verts.Count;
-            float hw = width * 0.5f, hl = length * 0.5f;
-            Vector3[] c = { new Vector3(-hw, 0, -hl), new Vector3(hw, 0, -hl), new Vector3(hw, 0, hl), new Vector3(-hw, 0, hl) };
-            for (int k = 0; k < 4; k++)
-            {
-                verts.Add(center + c[k]);
-                norms.Add(Vector3.up);
-                float u = (k == 1 || k == 2) ? 1 : 0, v = k >= 2 ? 1 : 0;
-                uvs.Add(new Vector2(tileU > 0 ? u * width / tileU : u, tileV > 0 ? v * length / tileV : v));
-            }
-            tris.Add(b); tris.Add(b + 3); tris.Add(b + 2);
-            tris.Add(b); tris.Add(b + 2); tris.Add(b + 1);
+            var r = Show(parent, FlatMesh, Glow(c, tex, opacity), "glow");
+            r.transform.localScale = new Vector3(size, 1, size);
+            r.transform.localPosition = new Vector3(0, 0.03f, 0);
+            return r;
         }
 
-        static float Abs(Vector3 axis, Vector3 size) =>
-            Mathf.Abs(axis.x) * size.x + Mathf.Abs(axis.y) * size.y + Mathf.Abs(axis.z) * size.z;
+        public static MeshRenderer GlowDecal(Transform parent, int rgb, float size, float opacity = 0.6f, Texture tex = null) =>
+            GlowDecal(parent, Hex.C(rgb), size, opacity, tex);
 
-        public Mesh Build(string name = "built")
+        public static void DestroyAll(List<Object> owned)
         {
-            var m = new Mesh { name = name };
-            if (verts.Count > 65000) m.indexFormat = IndexFormat.UInt32;
-            m.SetVertices(verts);
-            m.SetNormals(norms);
-            m.SetUVs(0, uvs);
-            m.SetTriangles(tris, 0);
-            m.RecalculateBounds();
-            return m;
-        }
-
-        // Adds the mesh to `parent` as one renderer, if anything was built.
-        public GameObject Emit(Transform parent, Material mat, string name, List<Object> owned)
-        {
-            if (verts.Count == 0) return null;
-            var mesh = Build(name);
-            owned.Add(mesh);
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var r = go.AddComponent<MeshRenderer>();
-            r.sharedMaterial = mat;
-            r.shadowCastingMode = ShadowCastingMode.Off;
-            return go;
-        }
-    }
-
-    /* Textures painted at start-up. */
-    public static class Tex
-    {
-        static Texture2D glow, ring, road, walk;
-        static Texture2D[] facades, facadeLights;
-
-        static Texture2D Make(int w, int h, bool repeat = true)
-        {
-            var t = new Texture2D(w, h, TextureFormat.RGBA32, true) { wrapMode = repeat ? TextureWrapMode.Repeat : TextureWrapMode.Clamp };
-            t.filterMode = FilterMode.Bilinear;
-            t.anisoLevel = 4;
-            return t;
-        }
-
-        // A soft white blob.
-        public static Texture2D Glow
-        {
-            get
-            {
-                if (glow) return glow;
-                glow = Make(64, 64, false);
-                var px = new Color[64 * 64];
-                for (int y = 0; y < 64; y++)
-                    for (int x = 0; x < 64; x++)
-                    {
-                        float d = Mathf.Clamp01(Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(32, 32)) / 32);
-                        float a = Mathf.Pow(1 - d, 2.2f);
-                        px[y * 64 + x] = new Color(a, a, a, a);
-                    }
-                glow.SetPixels(px);
-                glow.Apply();
-                return glow;
-            }
-        }
-
-        // A soft white ring, for the survivor's marker and pickups.
-        public static Texture2D Ring
-        {
-            get
-            {
-                if (ring) return ring;
-                ring = Make(128, 128, false);
-                var px = new Color[128 * 128];
-                for (int y = 0; y < 128; y++)
-                    for (int x = 0; x < 128; x++)
-                    {
-                        float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(64, 64)) / 64;
-                        float a = Mathf.Clamp01(1 - Mathf.Abs(d - 0.78f) / 0.14f);
-                        a = a * a + (d < 0.7f ? 0.06f : 0);
-                        px[y * 128 + x] = new Color(a, a, a, a);
-                    }
-                ring.SetPixels(px);
-                ring.Apply();
-                return ring;
-            }
-        }
-
-        // Asphalt: 12 m wide (the road), one tile every 16 m, with a dashed
-        // yellow centre line and white edges.
-        public static Texture2D Road
-        {
-            get
-            {
-                if (road) return road;
-                const int W = 192, H = 256;
-                road = Make(W, H);
-                var rng = new Rng(11);
-                var px = new Color[W * H];
-                for (int y = 0; y < H; y++)
-                    for (int x = 0; x < W; x++)
-                    {
-                        float n = 0.16f + rng.Next() * 0.05f;
-                        var c = new Color(n, n, n * 1.06f);
-                        float m = x / (float)W * 12;                      // metres across
-                        if (Mathf.Abs(m - 6) < 0.1f && (y / (float)H * 16) % 4 < 2.2f) c = new Color(0.78f, 0.62f, 0.18f);
-                        if (Mathf.Abs(m - 0.35f) < 0.07f || Mathf.Abs(m - 11.65f) < 0.07f) c = new Color(0.62f, 0.62f, 0.6f);
-                        px[y * W + x] = c;
-                    }
-                // a few cracks and stains
-                for (int k = 0; k < 40; k++)
-                {
-                    int cx = (int)(rng.Next() * W), cy = (int)(rng.Next() * H), len = 8 + (int)(rng.Next() * 30);
-                    float dx = rng.Next() - 0.5f, dy = rng.Next() - 0.5f;
-                    for (int s = 0; s < len; s++)
-                    {
-                        int x = ((int)(cx + dx * s * 2) % W + W) % W, y = ((int)(cy + dy * s * 2) % H + H) % H;
-                        px[y * W + x] *= 0.55f;
-                    }
-                }
-                road.SetPixels(px);
-                road.Apply();
-                return road;
-            }
-        }
-
-        // Paving slabs, 1 m squares.
-        public static Texture2D Sidewalk
-        {
-            get
-            {
-                if (walk) return walk;
-                walk = Make(64, 64);
-                var rng = new Rng(5);
-                var px = new Color[64 * 64];
-                for (int y = 0; y < 64; y++)
-                    for (int x = 0; x < 64; x++)
-                    {
-                        float n = 0.38f + rng.Next() * 0.05f;
-                        bool seam = x % 32 == 0 || y % 32 == 0;
-                        px[y * 64 + x] = seam ? new Color(0.22f, 0.22f, 0.23f) : new Color(n, n, n * 0.98f);
-                    }
-                walk.SetPixels(px);
-                walk.Apply();
-                return walk;
-            }
-        }
-
-        // Building fronts: rows of windows, a few lit. Each comes with a glow
-        // texture holding only the lit windows. One tile is 8 x 8 m.
-        public static Texture2D[] Facades { get { MakeFacades(); return facades; } }
-        public static Texture2D[] FacadeLights { get { MakeFacades(); return facadeLights; } }
-
-        static void MakeFacades()
-        {
-            if (facades != null) return;
-            facades = new Texture2D[3];
-            facadeLights = new Texture2D[3];
-            var rng = new Rng(23);
-            for (int f = 0; f < 3; f++)
-            {
-                const int S = 128;
-                var t = Make(S, S); var g = Make(S, S);
-                var px = new Color[S * S]; var gx = new Color[S * S];
-                float b = 0.42f + f * 0.06f;
-                for (int i = 0; i < px.Length; i++) { float n = b + rng.Next() * 0.04f; px[i] = new Color(n, n * 0.97f, n * 0.94f); gx[i] = Color.black; }
-                int cols = 3 + f, rows = 3;
-                for (int r = 0; r < rows; r++)
-                    for (int c = 0; c < cols; c++)
-                    {
-                        int w = S / cols, h = S / rows;
-                        int x0 = c * w + w / 4, x1 = c * w + w * 3 / 4, y0 = r * h + h / 4, y1 = r * h + h * 3 / 4;
-                        bool lit = rng.Next() < 0.22f;
-                        var wc = lit ? new Color(0.95f, 0.78f, 0.45f) : new Color(0.07f, 0.09f, 0.11f);
-                        for (int y = y0; y < y1; y++)
-                            for (int x = x0; x < x1; x++)
-                            {
-                                px[y * S + x] = wc;
-                                if (lit) gx[y * S + x] = new Color(0.9f, 0.7f, 0.4f);
-                            }
-                    }
-                t.SetPixels(px); t.Apply();
-                g.SetPixels(gx); g.Apply();
-                facades[f] = t; facadeLights[f] = g;
-            }
+            foreach (var o in owned) if (o != null) Object.Destroy(o);
+            owned.Clear();
         }
     }
 }
