@@ -89,7 +89,8 @@ touching the game logic.
 | `Scripts/UI/Studio.cs`, `Icons.cs` | Portraits and gun pictures rendered from the models; vector icons | `src/preview.js` |
 | `Resources/UI/Graveway.uss` | The UI's look | `index.html` CSS |
 | `Scripts/Core/Art.cs` | Materials (copies of `Resources/Materials`) | `src/models.js` |
-| `Scripts/Core/Save.cs` | Progress and notes in PlayerPrefs | `src/save.js` |
+| `Scripts/Core/Save.cs` | Progress and notes, as crash-safe files on the device, and runs banked however they end | `src/save.js` |
+| `Editor/AndroidManifestFlags.cs` | Android backup on, and the offer to keep the save when uninstalling | |
 | `Settings/` | The URP pipeline (mobile renderer, no shadow maps) and its post-processing: ACES and +0.94 EV, the web version's look | `game.js` renderer |
 | `Editor/ProjectSetup.cs` | App and Android settings, base materials, panel settings, the scene (menu: Graveway → Set up project) | `android.json` |
 | `Editor/ArtImport.cs` | How third-party models import, the art catalog with an Animator controller per character, and a report of every model's clips, bones and size | |

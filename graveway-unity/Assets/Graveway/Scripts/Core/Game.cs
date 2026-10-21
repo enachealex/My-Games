@@ -50,6 +50,8 @@ namespace Graveway
         public int kills, bonus, startAt;
         public float coins, time, startZ;
         public Zombie boss;
+        public bool banked;                  // its takings are in the save
+        public float noteT = 10;             // until it's next written down
     }
 
     public sealed partial class Game : MonoBehaviour
@@ -174,6 +176,9 @@ namespace Graveway
             hud = new GameObject("HUD").AddComponent<Hud>();
             hud.transform.SetParent(transform);
             hud.Init(this);
+            // A run the app closed in the middle of last time still counts.
+            var lost = Save.BankUnfinished();
+            if (lost != null) hud.RunKept(lost, unfinished: true);
             input.overUi = hud.IsOverButton;
             InitBatches();
             ShowMenu();
@@ -237,8 +242,17 @@ namespace Graveway
             surv.Snap("Idle_Gun");
         }
 
+        // Leaving a run, however: quitting, restarting, or the menu. What it
+        // earned is kept, as it would be had the survivor fallen there.
         void ClearRun()
         {
+            if (run != null && !run.banked && run.time > 0)
+            {
+                var kept = Record();
+                run.banked = true;
+                Save.Bank(kept);
+                hud.RunKept(kept, unfinished: false);
+            }
             world?.Dispose();
             world = null;
             foreach (var z in zombies) Recycle(z);
@@ -359,8 +373,22 @@ namespace Graveway
         public void Pause() { if (state == State.Playing) { state = State.Paused; input.enabled = false; hud.ShowPause(); } }
         public void Resume() { if (state == State.Paused) { state = State.Playing; input.enabled = true; hud.ShowHud(); } }
 
-        void OnApplicationPause(bool paused) { if (paused) Pause(); }
-        void OnApplicationFocus(bool focus) { if (!focus) Pause(); }
+        // In the background, Android can close the app without another word:
+        // write the run down first. Closed properly, it's banked.
+        void OnApplicationPause(bool paused) { if (paused) { Pause(); WriteDownRun(); } }
+        void OnApplicationFocus(bool focus) { if (!focus) { Pause(); WriteDownRun(); } }
+        void OnApplicationQuit() { if (run != null && !run.banked && run.time > 0) { run.banked = true; Save.Bank(Record()); } }
+
+        void WriteDownRun() { if (run != null && !run.banked && run.time > 0) Save.Running(Record()); }
+
+        // What the run under way has earned so far.
+        RunRecord Record() => new RunRecord
+        {
+            coins = Mathf.FloorToInt(run.coins) + run.bonus,
+            kills = run.kills,
+            distance = Mathf.FloorToInt(Distance),
+            records = run.startAt == 0,                 // a run started further up the road doesn't set records
+        };
 
         // ── Frame ────────────────────────────────────────────────────────
         void Update()
@@ -379,6 +407,7 @@ namespace Graveway
             if (state == State.Playing)
             {
                 run.time += dt;
+                if ((run.noteT -= dt) <= 0) { run.noteT = 10; Save.Running(Record()); }
                 UpdatePlayer(dt, input.Move);
                 director.Update(dt, Distance);
             }
@@ -687,6 +716,7 @@ namespace Graveway
         {
             int bonus = Tunables.Director.StageBonus(stage);
             run.bonus += bonus;
+            Save.Running(Record());
             hud.Banner($"Stage {stage + 1}", $"{stage * Tunables.Director.StageLength:0} m · +{bonus} coins · they're getting tougher", 1.8f);
             Sfx.Milestone();
         }
@@ -694,22 +724,16 @@ namespace Graveway
         void Finish()
         {
             var r = run;
-            var s = Save.Data;
-            int distance = Mathf.FloorToInt(Distance), coins = Mathf.FloorToInt(r.coins);
+            var kept = Record();
             var result = new Hud.Result
             {
-                character = character.name, distance = distance, stage = Stage, kills = r.kills, coins = coins, bonus = r.bonus,
-                time = r.time, best = distance > s.best, startAt = r.startAt,
+                character = character.name, distance = kept.distance, stage = Stage, kills = r.kills, coins = Mathf.FloorToInt(r.coins),
+                bonus = r.bonus, time = r.time, startAt = r.startAt,
             };
-            s.coins += coins + r.bonus;
-            s.kills += r.kills;
-            s.runs++;
-            // A run started further up the road (playtest tool) doesn't set records.
-            if (r.startAt == 0) s.best = Mathf.Max(s.best, distance);
-            else result.best = false;
-            result.wallet = s.coins;
-            result.bestEver = s.best;
-            Save.Persist();
+            r.banked = true;
+            result.best = Save.Bank(kept);
+            result.wallet = Save.Data.coins;
+            result.bestEver = Save.Data.best;
             hud.ShowResult(result);
         }
 
