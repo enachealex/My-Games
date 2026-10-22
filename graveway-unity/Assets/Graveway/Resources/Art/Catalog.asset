@@ -37,6 +37,73 @@ MonoBehaviour:
   - id: Zombie_Arm
     model: {fileID: 919132149155446097, guid: c019bc796b73a944e974dcf45e3dd6d5, type: 3}
     controller: {fileID: 9100000, guid: f10a771411fc43d4f9d500f47c9feefc, type: 2}
+  props:
+  - id: Vehicle_Sports
+    model: {fileID: 919132149155446097, guid: f788e4e86a281bd4cbdd9938b011bac9, type: 3}
+    bounds:
+      m_Center: {x: 0.00000047683716, y: 0.92060214, z: 0.111765385}
+      m_Extent: {x: 1.3353094, y: 0.93236303, z: 2.82755}
+    light: {x: -0.00000005119886, y: 0.9385342, z: -0.36378622}
+  - id: Vehicle_Pickup
+    model: {fileID: 919132149155446097, guid: 7efe3a649e755a34e83a5749ea49139b, type: 3}
+    bounds:
+      m_Center: {x: 0.00000035762787, y: 0.91828674, z: 0.1028955}
+      m_Extent: {x: 1.156087, y: 0.9242227, z: 2.5901906}
+    light: {x: 0.00000016451986, y: 0.95821327, z: 2.557266}
+  - id: PlasticBarrier
+    model: {fileID: 919132149155446097, guid: 675157397a353f547baab306f709dc9e, type: 3}
+    bounds:
+      m_Center: {x: 0, y: 0.2997735, z: -0.000000014901161}
+      m_Extent: {x: 0.5176711, y: 0.29977357, z: 0.166946}
+    light: {x: 0, y: 0.2997735, z: -0.000000014901161}
+  - id: StreetLights
+    model: {fileID: 919132149155446097, guid: 23176c80b4473844cb0badcfb0ff095b, type: 3}
+    bounds:
+      m_Center: {x: -0.00000062584877, y: 3.3067162, z: 1.2925652}
+      m_Extent: {x: 0.18214428, y: 3.3213987, z: 1.4626431}
+    light: {x: -0.00000070868816, y: 6.35543, z: 2.3853505}
+  - id: Barrel
+    model: {fileID: 919132149155446097, guid: 64d437cca7238614fb2f06e958c31209, type: 3}
+    bounds:
+      m_Center: {x: -0.00000011920929, y: 0.5741989, z: -0.00000017881393}
+      m_Extent: {x: 0.3520589, y: 0.5724541, z: 0.3520589}
+    light: {x: -0.00000011920929, y: 0.5741989, z: -0.00000017881393}
+  - id: TrashBag_1
+    model: {fileID: 919132149155446097, guid: 954b18e2286ef7949927a755b126a646, type: 3}
+    bounds:
+      m_Center: {x: 0.0005773455, y: 0.27041572, z: 0.0008429289}
+      m_Extent: {x: 0.24843842, y: 0.28185576, z: 0.25166768}
+    light: {x: 0.0005773455, y: 0.27041572, z: 0.0008429289}
+  - id: TrashBag_2
+    model: {fileID: 919132149155446097, guid: 25a1a2c7165bb794f84bb6684ba7a16b, type: 3}
+    bounds:
+      m_Center: {x: 0.035533458, y: 0.25682065, z: 0.025441557}
+      m_Extent: {x: 0.4530456, y: 0.2650072, z: 0.26215857}
+    light: {x: 0.035533458, y: 0.25682065, z: 0.025441557}
+  - id: Wheel
+    model: {fileID: 919132149155446097, guid: a87273b7c759ea54e9ec3b435e8d32c6, type: 3}
+    bounds:
+      m_Center: {x: 0, y: 0.1101426, z: 0}
+      m_Extent: {x: 0.28649127, y: 0.10207136, z: 0.28649125}
+    light: {x: 0, y: 0.1101426, z: 0}
+  - id: Pallet_Broken
+    model: {fileID: 919132149155446097, guid: dbe524b0406335d47a4a865a5ffdc81a, type: 3}
+    bounds:
+      m_Center: {x: 0.0025770664, y: 0.08239702, z: 0.00097054243}
+      m_Extent: {x: 0.4586488, y: 0.08196708, z: 0.6110567}
+    light: {x: 0.0025770664, y: 0.08239702, z: 0.00097054243}
+  - id: TrafficCone_1
+    model: {fileID: 919132149155446097, guid: 471bb2bebe3b4aa449d2ccbf79b5c85b, type: 3}
+    bounds:
+      m_Center: {x: 0, y: 0.32009456, z: 0}
+      m_Extent: {x: 0.26081336, y: 0.33663797, z: 0.26081333}
+    light: {x: 0, y: 0.32009456, z: 0}
+  - id: CinderBlock
+    model: {fileID: 919132149155446097, guid: c554aedc1a17d9641872e00472172602, type: 3}
+    bounds:
+      m_Center: {x: 0, y: 0.11694134, z: -0.000000007450581}
+      m_Extent: {x: 0.23577686, y: 0.11368976, z: 0.10726325}
+    light: {x: 0, y: 0.11694134, z: -0.000000007450581}
   guns:
   - body:
       id: Pistol

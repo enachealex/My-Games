@@ -114,11 +114,55 @@ namespace Graveway.EditorTools
                 AssetDatabase.CreateAsset(cat, CatalogPath);
             }
             cat.models = entries.ToArray();
+            cat.props = BuildProps();
             cat.guns = BuildGuns();
             cat.parts = BuildParts();
             cat.zombieAtlas = AssetDatabase.LoadAssetAtPath<Texture2D>(Kit + "Zombie_Atlas.png");
             EditorUtility.SetDirty(cat);
             AssetDatabase.SaveAssets();
+        }
+
+        // The kit's static models the street uses: each one's outline in its
+        // own space, and the middle of its light (a lamp's glass, a car's
+        // headlights) for what glows there.
+        static readonly string[] KitProps =
+        {
+            "Vehicles/Vehicle_Sports", "Vehicles/Vehicle_Pickup",
+            "Environment/PlasticBarrier", "Environment/StreetLights", "Environment/Barrel",
+            "Environment/TrashBag_1", "Environment/TrashBag_2", "Environment/Wheel", "Environment/Pallet_Broken",
+            "Environment/TrafficCone_1", "Environment/CinderBlock",
+        };
+
+        static ArtCatalog.Prop[] BuildProps()
+        {
+            var props = new System.Collections.Generic.List<ArtCatalog.Prop>();
+            foreach (var name in KitProps)
+            {
+                var model = AssetDatabase.LoadAssetAtPath<GameObject>($"{Kit}{name}.fbx");
+                if (model == null) throw new System.InvalidOperationException($"Graveway: {Kit}{name}.fbx is missing.");
+                var inst = Object.Instantiate(model);
+                var b = new Bounds();
+                bool first = true;
+                Vector3 light = Vector3.zero;
+                int lights = 0;
+                foreach (var mf in inst.GetComponentsInChildren<MeshFilter>())
+                {
+                    var m = mf.transform.localToWorldMatrix;
+                    var verts = mf.sharedMesh.vertices;
+                    foreach (var v in verts)
+                    {
+                        var w = m.MultiplyPoint3x4(v);
+                        if (first) { b = new Bounds(w, Vector3.zero); first = false; } else b.Encapsulate(w);
+                    }
+                    var mats = mf.GetComponent<Renderer>().sharedMaterials;
+                    for (int s = 0; s < mf.sharedMesh.subMeshCount && s < mats.Length; s++)
+                        if (mats[s] && (mats[s].name == "Light" || mats[s].name == "Headlights"))
+                            foreach (int i in mf.sharedMesh.GetIndices(s)) { light += m.MultiplyPoint3x4(verts[i]); lights++; }
+                }
+                props.Add(new ArtCatalog.Prop { id = Path.GetFileName(name), model = model, bounds = b, light = lights > 0 ? light / lights : b.center });
+                Object.DestroyImmediate(inst);
+            }
+            return props.ToArray();
         }
 
         // The kit's guns as a survivor holds them: Matt (any of the four would

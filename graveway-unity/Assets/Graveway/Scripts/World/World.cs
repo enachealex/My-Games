@@ -172,6 +172,8 @@ namespace Graveway
         // ── Materials and shared ground meshes ───────────────────────────
         static Material[] facadeMats;
         static Material roadMat, walkMat, curbMat, underMat, litterMat;
+        static readonly string[] LitterRoad = { "TrashBag_1", "TrashBag_2", "Wheel", "CinderBlock" };
+        static readonly string[] LitterWalk = { "TrashBag_1", "TrashBag_2", "Wheel", "CinderBlock", "TrafficCone_1", "Pallet_Broken" };
         static Material[] awningMats;
         static Mesh roadMesh, walkMesh, curbMesh, underMesh;
 
@@ -270,14 +272,25 @@ namespace Graveway
                 if (rng.Next() < 0.22f) animated.Add(new Animated { kind = "flicker", head = lamp.head, pool = lamp.pool, seed = rng.Next() * 100, chunk = i, prop = p });
             }
 
-            // Litter: one merged mesh for every bag and box in the chunk.
+            // Litter: the kit's bags, tyres, cones and junk where it has them
+            // (cones and pallets only on the sidewalks), else one merged mesh
+            // of boxes. The same random numbers either way, so the street
+            // that follows is the same.
             var litter = new GeoBuilder();
+            bool kit = Kit.Has("TrashBag_1");
             for (int k = 0; k < Chunk / 3; k++)
             {
                 int s = rng.Next() < 0.5f ? -1 : 1;
-                float lx = rng.Next() < 0.7f ? s * Rand(RoadHalf + 0.4f, WalkHalf) : Rand(-RoadHalf, RoadHalf);
-                float sz = Rand(0.25f, 0.6f);
-                litter.Box(sz, sz * Rand(0.4f, 0.9f), sz * Rand(0.8f, 1.4f), lx, sz * 0.3f, Rand(z1, z0));
+                bool walk = rng.Next() < 0.7f;
+                float lx = walk ? s * Rand(RoadHalf + 0.4f, WalkHalf) : Rand(-RoadHalf, RoadHalf);
+                float sz = Rand(0.25f, 0.6f), h = Rand(0.4f, 0.9f), d = Rand(0.8f, 1.4f), lz = Rand(z1, z0);
+                if (!kit) { litter.Box(sz, sz * h, sz * d, lx, sz * 0.3f, lz); continue; }
+                var pick = walk ? LitterWalk : LitterRoad;
+                string id = pick[(int)(h * 1000) % pick.Length];
+                var b = Kit.Find(id).bounds;
+                var junk = Kit.Place(id, ch.group.transform, sz * 1.8f / Mathf.Max(b.size.x, b.size.z));
+                junk.transform.localPosition = new Vector3(lx, 0, lz);
+                junk.transform.localRotation = M.Yaw(d * 9);
             }
             Emit(ch, litter, litterMat, "litter");
 

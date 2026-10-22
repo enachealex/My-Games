@@ -6,6 +6,8 @@
 //   - guns: the kit's own guns, posed as a survivor's hand holds them, with
 //     where parts go on each
 //   - parts: gun accessories, each set to attach at its own origin
+//   - props: static models (vehicles, barriers, lamps, litter), with their
+//     outline and where their light is
 // and the textures they share.
 
 using System;
@@ -47,7 +49,19 @@ namespace Graveway
             public Bounds bounds;
         }
 
+        // A static model, measured in its own space: its outline, and the
+        // middle of its light (a lamp's glass, a car's headlights), if any.
+        [Serializable]
+        public sealed class Prop
+        {
+            public string id;
+            public GameObject model;
+            public Bounds bounds;
+            public Vector3 light;
+        }
+
         public Entry[] models = Array.Empty<Entry>();
+        public Prop[] props = Array.Empty<Prop>();
         public Gun[] guns = Array.Empty<Gun>();
         public Placed[] parts = Array.Empty<Placed>();
         public Texture2D zombieAtlas;        // the Zombie Apocalypse Kit's colour palette
@@ -57,6 +71,7 @@ namespace Graveway
 
         public Entry Find(string id) => Array.Find(models, e => e.id == id);
         public Gun FindGun(string id) => Array.Find(guns, g => g.body.id == id);
+        public Prop FindProp(string id) => Array.Find(props, p => p.id == id);
         public Placed FindPart(string id) => Array.Find(parts, p => p.id == id);
     }
 }

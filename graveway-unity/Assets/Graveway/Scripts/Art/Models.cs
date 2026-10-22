@@ -22,27 +22,39 @@ namespace Graveway
     public sealed class PropModel
     {
         public GameObject group;
-        public readonly List<MeshRenderer> meshes = new List<MeshRenderer>();   // flashed when hit
-        public readonly List<Material> mats = new List<Material>();
+        public readonly List<Renderer> meshes = new List<Renderer>();          // flashed when hit
+        public readonly List<Material[]> mats = new List<Material[]>();         // their own materials
+        readonly List<Material[]> flashed = new List<Material[]>();
         public float hw, hd, height;
         public readonly List<Object> own = new List<Object>();                  // destroy with the prop
         public MeshRenderer head, pool, shadow;                                  // lamps; fire barrels' pool
         public MeshRenderer[] flames;
         public MeshRenderer burnBody, burnCabin, burnLights, burnHeads;          // vehicles, for the burnt wreck
+        public readonly List<Renderer> burnAlso = new List<Renderer>();         // and anything else that chars
 
-        public MeshRenderer Keep(MeshRenderer r) { meshes.Add(r); mats.Add(r.sharedMaterial); return r; }
+        public T Keep<T>(T r) where T : Renderer
+        {
+            meshes.Add(r);
+            mats.Add(r.sharedMaterials);
+            var f = new Material[r.sharedMaterials.Length];
+            for (int i = 0; i < f.Length; i++) f[i] = Art.Flash;
+            flashed.Add(f);
+            return r;
+        }
 
         public void SetFlash(bool on)
         {
-            for (int i = 0; i < meshes.Count; i++) meshes[i].sharedMaterial = on ? Art.Flash : mats[i];
+            for (int i = 0; i < meshes.Count; i++) meshes[i].sharedMaterials = on ? flashed[i] : mats[i];
         }
 
-        // Swaps a kept mesh's own material for good (a burnt wreck).
-        public void Replace(MeshRenderer r, Material m)
+        // Swaps a kept mesh's own materials for good (a burnt wreck).
+        public void Replace(Renderer r, Material m)
         {
+            var all = new Material[r.sharedMaterials.Length];
+            for (int k = 0; k < all.Length; k++) all[k] = m;
             int i = meshes.IndexOf(r);
-            if (i >= 0) mats[i] = m;
-            r.sharedMaterial = m;
+            if (i >= 0) mats[i] = all;
+            r.sharedMaterials = all;
         }
     }
 
@@ -249,8 +261,11 @@ namespace Graveway
         public static Material BurntGlass => Art.Lit(0x0a0a0a);
         public static Material BurntLamp => Art.Unlit(0x1a1210);
 
+        // A parked car: the kit's sports car or pickup (one in four with its
+        // headlights left on), at the web version's size.
         public static PropModel Car(Rng rng)
         {
+            if (Kit.Has("Vehicle_Sports")) return KitCar(rng);
             if (carBody == null)
             {
                 carBody = new GeoBuilder().Box(1.9f, 0.62f, 4.2f, 0, 0.66f, 0).Box(1.84f, 0.12f, 0.3f, 0, 0.42f, 2.0f).Box(1.84f, 0.12f, 0.3f, 0, 0.42f, -2.0f).Build("car body");
@@ -269,6 +284,24 @@ namespace Graveway
             At(t, carWheels, Art.Lit(0x141414), name: "wheels");
             p.burnLights = At(t, carLights, Art.Unlit(0x7a1010), name: "tail lights");
             p.burnHeads = At(t, carHeads, Art.Unlit(rng.Next() < 0.25f ? 0xfff0b0 : 0x4a4a40), name: "headlights");
+            p.shadow = Art.BlobShadow(t, 4.4f, 0.5f);
+            return p;
+        }
+
+        static PropModel KitCar(Rng rng)
+        {
+            var p = new PropModel { group = new GameObject("car"), hw = 0.95f, hd = 2.1f, height = 1.6f };
+            var t = p.group.transform;
+            string id = rng.Next() < 0.5f ? "Vehicle_Sports" : "Vehicle_Pickup";
+            bool lit = rng.Next() < 0.25f;
+            var car = Kit.Place(id, t, 4.3f / Kit.Find(id).bounds.size.z,
+                n => n == "Headlights" ? Art.Unlit(lit ? 0xfff0b0 : 0x4a4a40) : n == "BrakeLight" ? Art.Unlit(0x7a1010) : null);
+            foreach (var r in car.GetComponentsInChildren<MeshRenderer>())
+            {
+                p.Keep(r);
+                if (r.sharedMaterials.Length > 1) p.burnBody = r;              // the body, with its lights
+                else p.burnAlso.Add(r);                                        // the wheels
+            }
             p.shadow = Art.BlobShadow(t, 4.4f, 0.5f);
             return p;
         }
@@ -350,8 +383,21 @@ namespace Graveway
 
         static Mesh barrierBlock, barrierStripe;
 
+        // A barricade: two of the kit's plastic barriers, end to end.
         public static PropModel Barrier()
         {
+            if (Kit.Has("PlasticBarrier"))
+            {
+                var b = new PropModel { group = new GameObject("barricade"), hw = 1.2f, hd = 0.32f, height = 0.95f };
+                float s = 1.2f / Kit.Find("PlasticBarrier").bounds.size.x;
+                foreach (float x in new[] { -0.6f, 0.6f })
+                {
+                    var half = Kit.Place("PlasticBarrier", b.group.transform, s);
+                    half.transform.localPosition = new Vector3(x, 0, 0);
+                    foreach (var r in half.GetComponentsInChildren<MeshRenderer>()) b.Keep(r);
+                }
+                return b;
+            }
             if (barrierBlock == null)
             {
                 barrierBlock = new GeoBuilder().Box(2.4f, 0.55f, 0.62f, 0, 0.275f, 0).Box(2.4f, 0.38f, 0.3f, 0, 0.74f, 0).Build("barrier");
@@ -371,14 +417,24 @@ namespace Graveway
             if (lampPole == null)
             {
                 lampPole = new GeoBuilder().Cylinder(0.08f, 0.11f, 5.4f, 8, M.T(0, 2.7f, 0)).Box(0.1f, 0.1f, 1.6f, 0, 5.35f, 0.75f).Build("lamp pole");
-                lampHead = new GeoBuilder().Box(0.34f, 0.12f, 0.5f, 0, 5.28f, 1.5f).Build("lamp head");
+                lampHead = new GeoBuilder().Box(0.34f, 0.12f, 0.5f).Build("lamp head");
             }
             var p = new PropModel { group = new GameObject("lamp"), hw = 0.13f, hd = 0.13f, height = 5.4f };
             var t = p.group.transform;
-            p.Keep(At(t, lampPole, Art.Lit(0x3a3c40), name: "pole"));
-            p.head = At(t, lampHead, Art.Unlit(0xffc979), name: "head");
+            var light = new Vector3(0, 5.28f, 1.5f);
+            if (Kit.Has("StreetLights"))
+            {
+                // The kit's street light; its own glass dark, our glowing head
+                // just under it (it flickers and goes out on its own).
+                float s = 5.4f / Kit.Find("StreetLights").bounds.size.y;
+                var lamp = Kit.Place("StreetLights", t, s, n => n == "Light" ? Art.Lit(0x2a2c30) : null);
+                foreach (var r in lamp.GetComponentsInChildren<MeshRenderer>()) p.Keep(r);
+                light = Kit.At("StreetLights", Kit.Find("StreetLights").light, s) - new Vector3(0, 0.06f, 0);
+            }
+            else p.Keep(At(t, lampPole, Art.Lit(0x3a3c40), name: "pole"));
+            p.head = At(t, lampHead, Art.Unlit(0xffc979), light.x, light.y, light.z, "head");
             p.pool = Art.GlowDecal(t, 0xff9a3a, 7.5f, 0.32f);
-            p.pool.transform.localPosition = new Vector3(0, 0.03f, 1.6f);
+            p.pool.transform.localPosition = new Vector3(light.x, 0.03f, light.z + 0.1f);
             return p;
         }
 
@@ -393,7 +449,12 @@ namespace Graveway
             }
             var p = new PropModel { group = new GameObject("fire barrel"), hw = 0.36f, hd = 0.36f, height = 0.95f };
             var t = p.group.transform;
-            p.Keep(At(t, fireDrum, Art.Lit(0x5a3a26), name: "drum"));
+            if (Kit.Has("Barrel"))
+            {
+                var drum = Kit.Place("Barrel", t, 0.95f / Kit.Find("Barrel").bounds.size.y);
+                foreach (var r in drum.GetComponentsInChildren<MeshRenderer>()) p.Keep(r);
+            }
+            else p.Keep(At(t, fireDrum, Art.Lit(0x5a3a26), name: "drum"));
             p.flames = new MeshRenderer[2];
             for (int i = 0; i < 2; i++)
             {

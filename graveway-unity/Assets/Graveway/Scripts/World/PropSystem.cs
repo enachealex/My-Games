@@ -95,7 +95,7 @@ namespace Graveway
             if ((p.kind == "wall" || p.kind == "condemned") && p.model.mats.Count > 0)
             {
                 float v = 0.45f + 0.55f * k;
-                p.model.mats[0].SetColor("_BaseColor", new Color(v, v, v));
+                p.model.mats[0][0].SetColor("_BaseColor", new Color(v, v, v));
             }
             // Vehicles smoke, then burn, before they go.
             if (def.burns && p.hp > 0)
@@ -163,6 +163,7 @@ namespace Graveway
             if (m.burnCabin) m.Replace(m.burnCabin, Models.BurntGlass);
             if (m.burnLights) m.Replace(m.burnLights, Models.BurntLamp);
             if (m.burnHeads) m.Replace(m.burnHeads, Models.BurntLamp);
+            foreach (var r in m.burnAlso) m.Replace(r, Models.BurntBody);
             if (p.smoking != null) p.smoking.dead = true;
             if (p.burning != null) p.burning.dead = true;
             bool big = p.kind == "tanker";
