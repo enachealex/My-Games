@@ -171,6 +171,22 @@ namespace Graveway.Tests
             Assert.That(Save.Data.coins, Is.EqualTo(coins + 20));
         }
 
+        // The real thing, against GitHub: from the editor (build 0), every
+        // published build is newer. Skipped without a network.
+        [UnityTest]
+        public IEnumerator FindsTheReleasesOnGitHub()
+        {
+            var u = game.hud.updates;
+            yield return u.Check(true);
+            if (u.newer == null && u.status.StartsWith("Couldn't")) Assert.Ignore("no network: " + u.status);
+            Assert.That(u.newer, Is.Not.Null, u.status);
+            StringAssert.StartsWith("https://github.com/enachealex/My-Games/releases/download/graveway-unity-v", u.newer.apk);
+            StringAssert.EndsWith(".apk", u.newer.apk);
+            Assert.That(u.newer.code, Is.GreaterThanOrEqualTo(1));
+            yield return null;
+            Assert.That(Visible(Button(ui, $"New version {u.newer.version} · tap to get it")), "offered on the menu");
+        }
+
         [UnityTest]
         public IEnumerator BackUnwindsScreens()
         {

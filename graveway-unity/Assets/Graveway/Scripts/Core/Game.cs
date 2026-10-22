@@ -65,6 +65,7 @@ namespace Graveway
         // Playtest tool (web: Settings → Playtest tools → Invincible): hits
         // still land and flinch, but do no damage.
         public bool invincible;
+        [System.NonSerialized] public uint? nextSeed;   // tests: the next run's street, instead of a random one
         bool Invincible => invincible || Save.Data.settings.god;
 
         [System.NonSerialized] public Rng rng = new Rng(7);
@@ -344,7 +345,8 @@ namespace Graveway
             var settings = Save.Data.settings;
             int startAt = settings.startAt;
             float startZ = World.StartPz - startAt;
-            seed = (uint)(System.DateTime.Now.Ticks / 10000 & 0xffff) ^ 0x5bd1u;
+            seed = nextSeed ?? (uint)(System.DateTime.Now.Ticks / 10000 & 0xffff) ^ 0x5bd1u;
+            nextSeed = null;
             rng = new Rng(seed);
             world = new World(worldRoot, seed, startZ) { lotsOfPowerups = settings.powers };
             world.onCoins = spots => { foreach (var s in spots) AddCoin(s.x, 0.55f, s.y, 0, 0, 0, true); };

@@ -60,6 +60,7 @@ namespace Graveway.Tests
         [UnityTest]
         public IEnumerator SurvivesAMinuteRunningUpTheRoad()
         {
+            game.nextSeed = 7;                                  // a street the straight-ahead autopilot can get up
             game.StartRun();
             game.invincible = true;
             game.Stick.autopilot = new Vector3(0, 0, -1);      // up the road is -z

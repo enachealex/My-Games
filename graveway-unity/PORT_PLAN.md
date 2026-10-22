@@ -267,12 +267,19 @@ CSS). Portraits and gun pictures are rendered from the 3D models
 
 ### Phase 7: Android polish and delivery
 
-- [ ] Icon, splash, fullscreen, frame pacing, heat over a 20-minute run.
+- [x] Icon (the web version's, as an adaptive icon), no Unity splash,
+      fullscreen, frame pacing.
+- [ ] Heat over a 20-minute run (on the phone).
 - [ ] Profile the worst case on the phone: 64 zombies plus a building
       collapse.
-- [ ] Releases: build here, attach the APK to a My-Games Release. In the
-      app, check Releases on start and offer the new version, which opens
-      the APK download.
+- [x] Releases: `build-android.ps1 -Version 0.2 -Code 2 -Release` builds
+      from a pushed commit and publishes a My-Games pre-release tagged
+      `graveway-unity-v<version>-<code>` with the APK. The app checks
+      Releases as it loads (`Scripts/Core/Updates.cs`) and offers a newer
+      build on the menu and in Settings; tapping it downloads the APK, and
+      Android installs it over the old one. The web app's updater only
+      reads `graveway-v…` tags, so it ignores these. 0.1 (code 1, 21 October
+      2026) predates the check; 0.2 is the first build that has it.
 
 ### Phase 8: check everything against the web version, then switch
 

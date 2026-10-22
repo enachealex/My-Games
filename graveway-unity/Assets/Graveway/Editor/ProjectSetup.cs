@@ -33,6 +33,7 @@ namespace Graveway.EditorTools
         public static void Run()
         {
             Player();
+            Branding();
             Materials();
             Panel();
             ArtImport.BuildCatalog();
@@ -59,6 +60,50 @@ namespace Graveway.EditorTools
             // (none: no status or navigation bar), with the HUD kept clear of
             // notches by Hud.SafeArea.
             PlayerSettings.Android.renderOutsideSafeArea = true;
+            // For the update check (Updates.cs).
+            PlayerSettings.Android.forceInternetPermission = true;
+        }
+
+        // The web version's icon (the dead road at night) on the launcher, and
+        // no Unity splash: just the game's dark background while it loads.
+        const string IconPath = "Assets/Graveway/Branding/Icon.png";
+        const string ClearPath = "Assets/Graveway/Branding/Clear.png";
+
+        static void Branding()
+        {
+            if (!File.Exists(ClearPath))
+            {
+                var clear = new Texture2D(432, 432, TextureFormat.RGBA32, false);
+                clear.SetPixels32(new Color32[432 * 432]);
+                File.WriteAllBytes(ClearPath, clear.EncodeToPNG());
+                Object.DestroyImmediate(clear);
+                AssetDatabase.ImportAsset(ClearPath);
+            }
+            foreach (var path in new[] { IconPath, ClearPath })
+            {
+                var ti = (TextureImporter)AssetImporter.GetAtPath(path);
+                if (ti.textureCompression == TextureImporterCompression.Uncompressed && !ti.mipmapEnabled) continue;
+                ti.textureCompression = TextureImporterCompression.Uncompressed;
+                ti.mipmapEnabled = false;
+                ti.alphaIsTransparency = true;
+                ti.SaveAndReimport();
+            }
+            var icon = AssetDatabase.LoadAssetAtPath<Texture2D>(IconPath);
+            var none = AssetDatabase.LoadAssetAtPath<Texture2D>(ClearPath);
+            PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
+#if UNITY_ANDROID
+            void Set(PlatformIconKind kind, params Texture2D[] layers)
+            {
+                var icons = PlayerSettings.GetPlatformIcons(NamedBuildTarget.Android, kind);
+                foreach (var i in icons) i.SetTextures(layers);
+                PlayerSettings.SetPlatformIcons(NamedBuildTarget.Android, kind, icons);
+            }
+            // Adaptive (all Unity 6 makes): the whole picture as the background
+            // layer, nothing in front; the launcher crops it to its own shape.
+            Set(UnityEditor.Android.AndroidPlatformIconKind.Adaptive, icon, none);
+#endif
+            PlayerSettings.SplashScreen.show = false;
+            PlayerSettings.SplashScreen.backgroundColor = Fog;
         }
 
         // The base materials Art.cs copies, one per shader setup. Their shader

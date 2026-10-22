@@ -72,6 +72,9 @@ namespace Graveway
             foreach (var l in root.Query<Label>(className: "a-head-title").ToList()) Fit(l, l);
             Show("menu");
             RenderMenu();
+            // A release build looks for a newer one as soon as it loads.
+            updates.Changed += () => { DrawUpdate(); DrawSettings(); };
+            StartCoroutine(updates.Check(false));
             if (Save.Data.refunded > 0)
             {
                 // Once: the old per-stat gun upgrades were paid back when parts came in.

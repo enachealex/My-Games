@@ -16,6 +16,8 @@ namespace Graveway
         // ── Menu ─────────────────────────────────────────────────────────
         VisualElement mCoins, mChar, mBadge;
         Label mBest, mRuns, mBadgeN;
+        Button mUpdate;
+        public readonly Updates updates = new Updates();
 
         void BuildMenu()
         {
@@ -33,6 +35,8 @@ namespace Graveway
             Fit(title, Lbl("title-main", tr, "GRAVE"), Lbl("title-main red", tr, "WAY"));
             Lbl("title-sub", title, "Walk the dead road. Get as far as you can.");
             var bottom = El("menu-bottom", menu);
+            mUpdate = Btn("", "update", bottom, () => updates.Install());
+            Shown(mUpdate, false);
             var stats = El("menu-stats", bottom);
             mChar = El("m-card", stats);
             var best = El("m-card m-best", stats);
@@ -69,6 +73,21 @@ namespace Graveway
             who.style.marginLeft = 10;
             Lbl("small-caps", who, "SURVIVOR");
             Lbl("m-big", who, c.name.ToUpperInvariant());
+        }
+
+        // A newer build to install, on the menu.
+        void DrawUpdate()
+        {
+            var n = updates.newer;
+            Shown(mUpdate, n != null);
+            if (n != null) mUpdate.text = $"New version {n.version} · tap to get it";
+        }
+
+        // Asked for in Settings: says so when there's nothing newer.
+        System.Collections.IEnumerator CheckNow()
+        {
+            yield return updates.Check(true);
+            if (updates.newer == null) Toast(updates.status);
         }
 
         void ToMenu()
@@ -350,7 +369,7 @@ namespace Graveway
         // ── Settings ─────────────────────────────────────────────────────
         readonly Dictionary<string, Button> toggles = new Dictionary<string, Button>();
         Button sReset;
-        Label sNotesN, sVersion;
+        Label sNotesN, sVersion, sUpdate;
         bool resetArmed;
 
         Button Toggle(VisualElement parent, string id, string label, Action onClick)
@@ -382,6 +401,12 @@ namespace Graveway
             Toggle(stack, "quality", "Graphics", () => { s.quality = s.quality == "high" ? "low" : "high"; game.SetQuality(s.quality); Saved(); });
             var notesBtn = Toggle(stack, "notes", "Playtest notes", OpenNotes);
             sNotesN = (Label)notesBtn[1];
+            Toggle(stack, "updates", "Updates", () =>
+            {
+                if (updates.newer != null) updates.Install();
+                else if (!updates.busy) StartCoroutine(CheckNow());
+            });
+            sUpdate = Lbl("fine", stack);
             Lbl("s-head", sc, "PLAYTEST TOOLS");
             var tools = El("stack", sc);
             var row = El("row-btns", tools);
@@ -437,6 +462,10 @@ namespace Graveway
             sReset.text = resetArmed ? "Tap again to erase everything" : "Reset progress";
             sReset.EnableInClassList("armed", resetArmed);
             sVersion.text = $"Graveway · {BuildLabel}\n3D art by Quaternius (CC0). Bebas Neue font (OFL). Sounds are synthesised in code.";
+            var n = updates.newer;
+            SetToggle("updates", n != null, updates.busy ? "Checking…" : n != null ? $"Get {n.version}" : "Check now");
+            string build = Updates.Code > 0 ? $"This is version {Application.version} (build {Updates.Code})" : $"This is version {Application.version}, not a release build";
+            sUpdate.text = build + (updates.busy || string.IsNullOrEmpty(updates.status) ? "." : $" · {updates.status}.");
         }
 
         static string BuildLabel => $"v{Application.version} · {(Application.platform == RuntimePlatform.Android ? "Android" : Application.isEditor ? "Editor" : Application.platform.ToString())}";

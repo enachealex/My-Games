@@ -125,6 +125,14 @@ of everything against the web version.
 
 The web version's Android app updates itself, because its game is web
 files it can download. A Unity game is compiled into the app, so new
-builds need installing again. Builds go to My-Games GitHub Releases, and
-the app offers "New version · tap to install" when there's a newer one
-(Phase 7). Android still asks you to tap Install.
+builds need installing again. They go to My-Games GitHub Releases:
+
+```powershell
+graveway-unity/build-android.ps1 -Version 0.2 -Code 2 -Release -Notes "What changed"
+```
+
+Commit and push first, and give each release a higher `-Code`. As it
+loads, the app looks for a newer release (`Scripts/Core/Updates.cs`) and
+offers "New version · tap to get it" on the menu (and under Settings →
+Updates). Tapping it downloads the APK in the phone's browser; Android
+still asks you to tap Install, and progress stays.

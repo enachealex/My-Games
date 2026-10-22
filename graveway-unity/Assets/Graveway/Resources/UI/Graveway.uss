@@ -88,6 +88,8 @@
 .title-sub { margin-top: 10px; color: rgb(154, 166, 160); font-size: 15px; text-shadow: 0 2px 8px rgb(0, 0, 0); }
 .menu-bottom { width: 100%; max-width: 420px; align-self: center; }
 .menu-bottom > * { margin-top: 10px; }
+.btn.update { min-height: 44px; font-size: 14px; color: rgb(155, 225, 93); border-color: rgba(155, 225, 93, 0.5);
+    background-color: rgba(155, 225, 93, 0.14); }
 .menu-stats { flex-direction: row; }
 .m-card {
     flex-grow: 1; flex-basis: 0; flex-direction: row; align-items: center; padding: 10px 12px; border-radius: 18px;
