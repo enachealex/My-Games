@@ -16,9 +16,10 @@ every menu (Black Market, notes, settings). The survivors and zombies are
 real animated models now (Quaternius's Zombie Apocalypse Kit, CC0), and the
 UI uses Bebas Neue. Still to come:
 
-- **The rest of the real art:** props, vehicles and the street, and a
-  grenade launcher and minigun (the other guns are real, with their parts).
-  The packs are downloaded (see [CREDITS.md](CREDITS.md)).
+- **The rest of the real art:** the street's buildings (after profiling
+  on the phone), and a grenade launcher and minigun. The cars, lamps,
+  barricades, fire barrels and litter are the kit's now (see
+  [CREDITS.md](CREDITS.md)).
 - **The phone** (Phase 0's last item, Phase 7): the APK builds (38.9 MB,
   signed with the release key, `build-android.ps1`); trying it needs the
   phone on USB.
@@ -184,7 +185,9 @@ Everything but the phone is done. The first APK built on 21 October 2026:
       and rifle (`Scripts/Art/Guns.cs`), wearing Ultimate Guns accessories
       for the parts that show, at points measured from each gun's mesh.
 - [ ] Grenade launcher and minigun models: neither pack has one, so these
-      two are still built in code.
+      two are still built in code. Quaternius's Toon Shooter Game Kit (CC0)
+      has a grenade launcher, and a rocket launcher, sniper rifle and
+      landmine for the after-the-port ideas; nothing has a minigun yet.
 - [x] Save v2 on Newtonsoft: coins, best, runs, kills, character, owned,
       loadout, parts, survivor upgrades and settings, with notes kept
       separately (web `save.js`). Crash-safe files since 21 October 2026,
@@ -195,8 +198,18 @@ Everything but the phone is done. The first APK built on 21 October 2026:
 
 ### Phase 2: the street and destruction (`props.js`, `world.js`)
 
-Everything here works and looks like the web version; real models come
-with the art.
+Everything here works as in the web version. The cars, lamps,
+barricades, fire barrels and litter are the Zombie Apocalypse Kit's
+(`Scripts/Art/Kit.cs`); the tanker, explosive barrels, brick walls and the
+condemned building keep their built models, which the kit has nothing like.
+
+- [ ] Buildings from the Downtown City MegaKit. The free kit has three
+      prebuilt buildings of fixed proportions and modular pieces with
+      heavy textures (about 11 MB of colour maps, more with normals), and
+      the street's fronts vary from 6 to 13 m wide and 6 to 24 m tall. That
+      needs a modular builder and a frame-rate budget, so it waits for the
+      first profile on the phone; the built fronts with lit windows stand
+      in until then.
 
 - [x] Street art: building fronts with lit windows, awnings, alleys,
       lamps, litter, the start barricade.
