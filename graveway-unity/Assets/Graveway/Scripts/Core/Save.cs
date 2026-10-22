@@ -51,8 +51,10 @@ namespace Graveway
         public int runs;
         public int kills;
         public string character = "rook";    // survivor picked last time
+        public List<string> survivors;       // survivors unlocked; null in a save from before they were sold
         public List<string> owned = new List<string> { "pistol" };   // guns bought
-        public List<string> loadout;         // guns equipped besides the survivor's own; null until first chosen
+        public Dictionary<string, List<string>> loadouts = new Dictionary<string, List<string>>();   // by survivor: guns carried besides their own
+        public List<string> loadout;         // the one loadout everyone shared until October 2026, where each survivor's starts
         public Dictionary<string, GunParts> parts = new Dictionary<string, GunParts>();
         public int refunded;                 // coins given back for old upgrades, shown once
         public Dictionary<string, int> pup = new Dictionary<string, int>();   // survivor upgrades, e.g. maxHp: 1
@@ -222,6 +224,14 @@ namespace Graveway
             if (data.owned == null || data.owned.Count == 0) data.owned = new List<string> { "pistol" };
             data.parts ??= new Dictionary<string, GunParts>();
             data.pup ??= new Dictionary<string, int>();
+            // Survivors are sold from October 2026: a save from before keeps the one
+            // it last ran as, and nobody's left on one that isn't theirs.
+            data.survivors ??= new List<string> { data.character };
+            data.survivors.RemoveAll(id => Tunables.Characters.All(c => c.id != id || c.price == 0));
+            data.survivors = data.survivors.Distinct().ToList();
+            if (!HasSurvivor(Tunables.Character(data.character)) || Tunables.Character(data.character).id != data.character)
+                data.character = Tunables.Characters[0].id;
+            data.loadouts ??= new Dictionary<string, List<string>>();
             data.backpack ??= new List<string>();
             data.backpack.RemoveAll(id => Tunables.Item(id) == null);
             if (data.backpack.Count > Tunables.BackpackSize) data.backpack.RemoveRange(Tunables.BackpackSize, data.backpack.Count - Tunables.BackpackSize);
@@ -272,6 +282,7 @@ namespace Graveway
         {
             var keep = Data.settings;
             data = new SaveData { settings = keep };
+            Repair();
             Persist();
         }
 
@@ -300,24 +311,31 @@ namespace Graveway
             return output;
         }
 
-        // The guns equipped in the Armory: up to LoadoutSlots - 1, carried
-        // besides the survivor's own. Until first chosen, the priciest owned.
-        public static List<string> Loadout()
+        public static bool HasSurvivor(CharacterDef c) => c.price == 0 || Data.survivors.Contains(c.id);
+
+        // The guns a survivor carries besides their own: up to LoadoutSlots - 1,
+        // equipped in the Armory, each survivor their own. Their own gun is
+        // never one of them, so no gun is carried twice. Until first chosen:
+        // the loadout everyone used to share, or else the priciest guns owned.
+        public static List<string> Loadout(string survivor = null)
         {
             var d = Data;
-            if (d.loadout == null)
+            var c = Tunables.Character(survivor ?? d.character);
+            if (!d.loadouts.TryGetValue(c.id, out var list) || list == null)
             {
-                d.loadout = Tunables.Weapons.Where(w => d.owned.Contains(w.id)).OrderByDescending(w => w.price)
-                    .Take(Tunables.LoadoutSlots - 1).Select(w => w.id).ToList();
+                var from = d.loadout ?? Tunables.Weapons.Where(w => d.owned.Contains(w.id)).OrderByDescending(w => w.price).Select(w => w.id).ToList();
+                d.loadouts[c.id] = list = from.Where(id => id != c.startingWeapon).Take(Tunables.LoadoutSlots - 1).ToList();
             }
-            return d.loadout;
+            list.RemoveAll(id => id == c.startingWeapon);
+            return list;
         }
 
         // What a survivor carries into a run: their own gun first, then the
-        // equipped ones in Armory order.
+        // equipped ones in Armory order. Each is the Armory's gun, with the
+        // parts fitted to it there.
         public static List<string> RunWeapons(CharacterDef c)
         {
-            var eq = Loadout();
+            var eq = Loadout(c.id);
             var list = new List<string> { c.startingWeapon };
             foreach (var w in Tunables.Weapons)
                 if (w.id != c.startingWeapon && eq.Contains(w.id) && Data.owned.Contains(w.id)) list.Add(w.id);

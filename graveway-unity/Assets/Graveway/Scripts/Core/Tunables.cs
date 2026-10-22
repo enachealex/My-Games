@@ -69,6 +69,7 @@ namespace Graveway
     public sealed class CharacterDef
     {
         public string id, name, role, blurb, startingWeapon;
+        public int price;                    // coins to unlock them; 0 for the one you start with
         public float baseHealth, moveSpeed;
         public Perk perk;
         public Look look;
@@ -338,6 +339,8 @@ namespace Graveway
         public const double UpgradeCostGrowth = 1.65;
 
         // ── Survivors ────────────────────────────────────────────────────
+        // Rook to start with; the others are bought on survivor select, each
+        // for more than the gun they bring.
         public static readonly CharacterDef[] Characters =
         {
             new CharacterDef { id = "rook", name = "Rook", role = "Ex-cop", blurb = "Keeps his head when the street fills up.",
@@ -345,15 +348,15 @@ namespace Graveway
                 perk = new Perk { name = "Quick Hands", text = "Reloads 40% faster", reloadMult = 0.6f },
                 look = new Look { skin = Hex.C(0xc58c64), shirt = Hex.C(0x2f4a78), pants = Hex.C(0x23262e), hat = "cap", hatColor = Hex.C(0x1d2a44) } },
             new CharacterDef { id = "bram", name = "Bram", role = "Riot guard", blurb = "Slow, huge and very hard to put down.",
-                baseHealth = 140, moveSpeed = 5.4f, startingWeapon = "shotgun",
+                baseHealth = 140, moveSpeed = 5.4f, startingWeapon = "shotgun", price = 1000,
                 perk = new Perk { name = "Riot Gear", text = "Starts every run with 75 armor", startArmor = 75 },
                 look = new Look { skin = Hex.C(0x8d5a3c), shirt = Hex.C(0x3a3f46), pants = Hex.C(0x1f2226), hat = "helmet", hatColor = Hex.C(0x2a2e33), bulk = 1.12f } },
             new CharacterDef { id = "juno", name = "Juno", role = "Demolitions", blurb = "Brought her own launcher. Mostly unharmed by it.",
-                baseHealth = 90, moveSpeed = 6.0f, startingWeapon = "launcher",
+                baseHealth = 90, moveSpeed = 6.0f, startingWeapon = "launcher", price = 2500,
                 perk = new Perk { name = "Blast Proof", text = "Takes 80% less explosion damage", explosionResist = 0.8f },
                 look = new Look { skin = Hex.C(0xe2b48e), shirt = Hex.C(0xb8382e), pants = Hex.C(0x3b3328), hat = "goggles", hatColor = Hex.C(0xffb02e) } },
             new CharacterDef { id = "wren", name = "Wren", role = "Courier", blurb = "Fastest legs in the city, and a nose for loot.",
-                baseHealth = 80, moveSpeed = 7.2f, startingWeapon = "smg",
+                baseHealth = 80, moveSpeed = 7.2f, startingWeapon = "smg", price = 600,
                 perk = new Perk { name = "Scavenger", text = "Coin magnet +2 m, 25% more coins", magnetBonus = 2, coinMult = 1.25f },
                 look = new Look { skin = Hex.C(0xf0c9a4), shirt = Hex.C(0xe0b020), pants = Hex.C(0x2a3a52), hat = "hood", hatColor = Hex.C(0xe0b020) } },
         };

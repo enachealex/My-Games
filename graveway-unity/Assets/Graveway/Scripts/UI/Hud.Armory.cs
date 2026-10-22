@@ -81,15 +81,15 @@ namespace Graveway
             var all = new List<WeaponStats>();
             foreach (var w0 in Tunables.Weapons) all.Add(WeaponStats.Of(w0, Save.FittedParts(w0.id), null));
             float Max(Func<WeaponStats, float> f) { float m = 0; foreach (var x in all) m = Mathf.Max(m, f(x)); return m; }
-            var eq = Save.Loadout();
             var surv = Tunables.Character(Save.Data.character);
+            var eq = Save.Loadout(surv.id);
 
             LoadoutStrip(surv, eq);
             var grid = El("wgrid", aContent);
             foreach (var w0 in Tunables.Weapons)
             {
                 var w1 = w0;
-                bool owned = IsOwned(w1), on = owned && eq.Contains(w1.id);
+                bool owned = IsOwned(w1), mine = w1.id == surv.startingWeapon, on = mine || owned && eq.Contains(w1.id);
                 var card = new Button(() => { if (selWeapon != w1.id) openSlot = null; selWeapon = w1.id; Sfx.Click(); RenderArmory(true); });
                 card.AddToClassList("wcard");
                 card.EnableInClassList("eq", on);
@@ -97,7 +97,9 @@ namespace Graveway
                 card.Add(Icons.Gun(w1.id, owned ? Hex.C(0xc9d2cc) : Hex.C(0x5d6764)));
                 Lbl("wn", card, w1.name);
                 var tag = El("wt", card);
-                if (!owned) Coins(tag, w1.price); else Lbl("", tag, on ? "Equipped" : "Owned");
+                if (mine) Lbl("", tag, "Carried");
+                else if (!owned) Coins(tag, w1.price);
+                else Lbl("", tag, on ? "Equipped" : "Owned");
                 var sig = Array.Find(Tunables.Characters, c => c.startingWeapon == w1.id && w1.price > 0);
                 if (sig != null) Lbl("wsig", card, $"{sig.name}'s gun");
                 grid.Add(card);
@@ -106,12 +108,12 @@ namespace Graveway
             int wi = Array.FindIndex(Tunables.Weapons, x => x.id == selWeapon);
             var w = Tunables.Weapons[wi];
             var s = all[wi];
-            bool isOwned = IsOwned(w), equipped = isOwned && eq.Contains(w.id), own = surv.startingWeapon == w.id;
+            bool isOwned = IsOwned(w), own = surv.startingWeapon == w.id, equipped = !own && isOwned && eq.Contains(w.id);
             var panel = El("panel", aContent);
             var head = El("wd-head", panel);
             Lbl("wd-title", head, w.name.ToUpperInvariant());
-            if (equipped) Lbl("pill", head, "EQUIPPED");
-            else if (own) Lbl("pill", head, $"{surv.name.ToUpperInvariant()}'S OWN");
+            if (own) Lbl("pill", head, $"{surv.name.ToUpperInvariant()}'S OWN");
+            else if (equipped) Lbl("pill", head, "EQUIPPED");
             var pic = Studio.GunPicture(w.model, Save.FittedParts(w.id));
             if (pic) El("gunpic", panel).style.backgroundImage = pic;
             Lbl("blurb", panel, w.blurb);
@@ -149,43 +151,43 @@ namespace Graveway
                 Lbl("", buy, "Unlock for ");
                 Coins(buy, w.price);
                 if (!can) Lbl("need", panel, $"{N(w.price - Save.Data.coins)} more coins needed");
+                if (own) Lbl("need", panel, $"{surv.name} brings it anyway, with the parts below. Unlock it to carry it as anyone else.");
             }
+            // Their own gun is always carried, and is this one: the parts
+            // fitted here are on it.
+            else if (own) Lbl("need", panel, $"{surv.name} always brings this one, with the parts below.");
             else
             {
                 bool full = !equipped && eq.Count >= Tunables.LoadoutSlots - 1;
                 var b = Quiet((equipped ? "" : "primary ") + "wide", panel, x => Equip(w.id, x), equipped ? "Unequip" : "Equip");
                 b.EnableInClassList("off", full);
-                if (own) Lbl("need", panel, $"{surv.name} always brings this one. Equip it to carry it as anyone else.");
-                else if (full) Lbl("need", panel, "Loadout full. Unequip a gun to make room.");
+                if (full) Lbl("need", panel, "Loadout full. Unequip a gun to make room.");
             }
             Lbl("h4", panel, "PARTS");
             PartsList(panel, w);
         }
 
         // The slots along the top of the Weapons tab: the survivor's own gun,
-        // then one per equipped gun, then the empty ones.
+        // then one per equipped gun, then the empty ones. Each survivor has
+        // their own loadout.
         void LoadoutStrip(CharacterDef surv, List<string> eq)
         {
             var box = El("loadout", aContent);
             var extras = new List<WeaponDef>();
             foreach (var w in Tunables.Weapons) if (eq.Contains(w.id) && Save.Data.owned.Contains(w.id)) extras.Add(w);
-            Lbl("small-caps", box, $"LOADOUT · {extras.Count}/{Tunables.LoadoutSlots - 1} SLOTS + {surv.name.ToUpperInvariant()}'S OWN GUN");
+            Lbl("small-caps", box, $"{surv.name.ToUpperInvariant()}'S LOADOUT · {extras.Count}/{Tunables.LoadoutSlots - 1} SLOTS + THEIR OWN GUN");
             var slots = El("lo-slots", box);
             void Slot(string id, string label, string cls)
             {
                 var b = new Button(() => { if (selWeapon != id) openSlot = null; selWeapon = id; Sfx.Click(); RenderArmory(true); });
                 b.AddToClassList("lo-slot");
                 if (cls != null) b.AddToClassList(cls);
-                b.Add(Icons.Gun(id, cls == "own" ? Hex.C(0xc9d2cc) : cls == "dup" ? Hex.C(0x6d7a73) : Icons.Accent));
+                b.Add(Icons.Gun(id, cls == "own" ? Hex.C(0xc9d2cc) : Icons.Accent));
                 Lbl("lo-slot-label", b, label);
                 slots.Add(b);
             }
             Slot(surv.startingWeapon, $"{surv.name}'s", "own");
-            foreach (var w in extras)
-            {
-                bool dup = w.id == surv.startingWeapon;     // carried anyway: this slot adds nothing for them
-                Slot(w.id, dup ? "Theirs anyway" : w.name, dup ? "dup" : null);
-            }
+            foreach (var w in extras) Slot(w.id, w.name, null);
             for (int i = extras.Count; i < Tunables.LoadoutSlots - 1; i++)
             {
                 var e = El("lo-slot empty", slots);
@@ -266,16 +268,20 @@ namespace Graveway
             s.coins -= w.price;
             var eq = Save.Loadout();
             s.owned.Add(w.id);
-            // Straight into your loadout: a free slot, or in place of the
-            // cheapest gun equipped.
-            if (eq.Count >= Tunables.LoadoutSlots - 1)
+            // Straight into your loadout (unless it's your survivor's own, which
+            // they carry anyway): a free slot, or in place of the cheapest gun
+            // equipped.
+            if (w.id != Tunables.Character(s.character).startingWeapon)
             {
-                string cheapest = eq[0];
-                foreach (var id in eq) if (Tunables.Weapon(id).price < Tunables.Weapon(cheapest).price) cheapest = id;
-                eq.Remove(cheapest);
-                Toast($"Equipped in place of the {Tunables.Weapon(cheapest).name}");
+                if (eq.Count >= Tunables.LoadoutSlots - 1)
+                {
+                    string cheapest = eq[0];
+                    foreach (var id in eq) if (Tunables.Weapon(id).price < Tunables.Weapon(cheapest).price) cheapest = id;
+                    eq.Remove(cheapest);
+                    Toast($"Equipped in place of the {Tunables.Weapon(cheapest).name}");
+                }
+                eq.Add(w.id);
             }
-            eq.Add(w.id);
             Sfx.Buy();
             Save.Persist();
             RenderArmory(true);

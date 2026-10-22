@@ -129,8 +129,13 @@
 .c-foot { align-items: center; padding: 12px 16px 18px 16px; }
 .c-dots { flex-direction: row; margin-bottom: 12px; }
 .c-dot { width: 12px; height: 12px; border-radius: 6px; background-color: rgba(255, 255, 255, 0.2); margin: 0 4px; padding: 0; border-width: 0; }
+.c-dot.locked { background-color: rgba(255, 255, 255, 0.08); }
 .c-dot.on { width: 28px; background-color: rgb(155, 225, 93); }
 .c-foot > .btn { width: 100%; max-width: 420px; }
+.c-buy { flex-direction: row; justify-content: center; align-items: center; }
+.c-buy-label { margin-right: 14px; }
+.c-buy .coin { width: 22px; height: 22px; margin-right: 6px; }
+.portrait.locked { -unity-background-image-tint-color: rgb(96, 104, 100); }
 
 /* ── Armory ───────────────────────────────────────────────────────────── */
 .armory { background-color: rgba(9, 13, 16, 0.94); }
@@ -160,7 +165,7 @@
 .lo-slot .gun-icon { width: 44px; height: 16px; margin: 0 0 3px 0; }
 .lo-slot-label { font-size: 11px; -unity-font-style: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .lo-slot.own { border-color: rgba(255, 255, 255, 0.1); background-color: rgba(255, 255, 255, 0.05); }
-.lo-slot.own .lo-slot-label, .lo-slot.dup .lo-slot-label, .lo-slot.empty .lo-slot-label { color: rgb(154, 166, 160); }
+.lo-slot.own .lo-slot-label, .lo-slot.empty .lo-slot-label { color: rgb(154, 166, 160); }
 .lo-slot.empty { border-color: rgba(255, 255, 255, 0.1); background-color: rgba(0, 0, 0, 0); }
 .wd-head { flex-direction: row; align-items: center; justify-content: space-between; }
 .wd-title { font-size: 28px; -unity-font-style: bold; letter-spacing: 1px; }

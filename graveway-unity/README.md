@@ -84,8 +84,8 @@ touching the game logic.
 | `Scripts/Audio/Sfx.cs`, `Haptics.cs` | The web version's 29 sounds plus the jet and the rotor, synthesised at start-up; vibration | `src/audio.js` |
 | `Scripts/Core/StickInput.cs` | The floating joystick, any number of fingers, and keyboard keys (Input System) | `src/input.js` |
 | `Scripts/UI/Hud.cs` | HUD, banners, toasts, the back button | `src/ui.js`, `index.html` |
-| `Scripts/UI/Hud.Screens.cs` | Menu, survivor select, pause, results, settings | `src/ui.js` |
-| `Scripts/UI/Hud.Armory.cs` | The Armory: guns, loadout, parts and survivor upgrades | `src/ui.js` |
+| `Scripts/UI/Hud.Screens.cs` | Menu, survivor select (and unlocking survivors), pause, results, settings | `src/ui.js` |
+| `Scripts/UI/Hud.Armory.cs` | The Armory: guns, each survivor's loadout, parts and survivor upgrades | `src/ui.js` |
 | `Scripts/UI/Hud.BlackMarket.cs` | The Black Market, and the backpack on the HUD | |
 | `Scripts/UI/Hud.Notes.cs` | Playtest notes and Send to Claude | `src/ui.js` |
 | `Scripts/UI/Studio.cs`, `Icons.cs` | Portraits and gun pictures rendered from the models; vector icons | `src/preview.js` |

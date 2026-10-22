@@ -90,6 +90,78 @@ namespace Graveway.Tests
             Assert.That(Visible(Button(ui, "PLAY")), "Back from the Armory goes to the menu");
         }
 
+        bool Showing(string text) => ui.Query<Button>().ToList().Exists(b => Visible(b) && Says(b, text));
+
+        [UnityTest]
+        public IEnumerator SurvivorsAreBought()
+        {
+            var wren = Tunables.Character("wren");
+            Save.Data.coins = wren.price;
+            Click(ui, "PLAY");
+            yield return null;
+            Assert.That(Showing("RUN AS ROOK"));
+            Click(ui, "‹");                             // round to the last: Wren
+            yield return null;
+            Assert.That(Visible(Find<Label>(ui, l => l.text == "WREN", "her name")));
+            Assert.That(Showing("RUN AS WREN"), Is.False, "she isn't yours yet");
+            Assert.That(Save.Data.character, Is.EqualTo("rook"), "looking at her doesn't make her the one you run as");
+            Button Unlock() => Find<Button>(ui, b => b.ClassListContains("c-buy"), "the unlock button");
+            Press(Unlock());
+            yield return null;
+            Assert.That(Save.HasSurvivor(wren));
+            Assert.That(Save.Data.coins, Is.Zero);
+            Assert.That(Save.Data.character, Is.EqualTo("wren"));
+            Assert.That(Showing("RUN AS WREN"));
+
+            Click(ui, "‹");                             // Juno: more than what's left
+            yield return null;
+            Press(Unlock());
+            yield return null;
+            Assert.That(Save.HasSurvivor(Tunables.Character("juno")), Is.False);
+            Assert.That(Save.Data.character, Is.EqualTo("wren"));
+            game.hud.Back();
+            yield return null;
+            Assert.That(Visible(Button(ui, "PLAY")));
+        }
+
+        // Wren's SMG is the Armory's SMG: the parts fitted there are on it,
+        // and it never takes a loadout slot as well.
+        [UnityTest]
+        public IEnumerator ASurvivorsOwnGunIsTheArmorysGun()
+        {
+            Save.Data.coins = 100000;
+            Save.Data.survivors.Add("wren");
+            Save.Data.character = "wren";
+            Click(ui, "Armory");
+            yield return null;
+            var w = Tunables.Weapon("smg");
+            Press(Find<Button>(ui, b => b.ClassListContains("wcard") && Says(b, w.name), "the SMG's card"));
+            yield return null;
+            Press(Find<Button>(ui, b => Says(b, "Unlock for "), "the unlock button"));
+            yield return null;
+            Assert.That(Save.Data.owned, Does.Contain("smg"));
+            Assert.That(Save.Loadout("wren"), Does.Not.Contain("smg"), "she carries it anyway");
+            Assert.That(Showing("Equip"), Is.False, "nothing to equip");
+            var strip = ui.Query<VisualElement>(className: "lo-slot").ToList().FindAll(Visible);
+            Assert.That(strip.FindAll(s => Says(s, "SMG")), Is.Empty, "no second SMG in her loadout");
+
+            string slot = w.slots[0];
+            Press(Find<Button>(ui, b => b.ClassListContains("slotrow") && Says(b, Tunables.PartSlots[slot].ToUpperInvariant()), $"the {slot} slot"));
+            yield return null;
+            var part = Tunables.PartsFor(w, slot)[1];
+            Press(Find<VisualElement>(ui, v => v.ClassListContains("part") && Says(v, part.name), $"the {part.name} row").Q<Button>());
+            yield return null;
+            game.hud.Back();
+            yield return null;
+
+            game.StartRun();
+            yield return Seconds(0.5f);
+            var guns = game.player.weapons;
+            Assert.That(guns[0].def.id, Is.EqualTo("smg"));
+            Assert.That(guns[0].fitted[slot], Is.EqualTo(part.id), "with the part fitted in the Armory");
+            Assert.That(guns.ConvertAll(g => g.def.id), Is.Unique);
+        }
+
         [UnityTest]
         public IEnumerator SurvivorUpgradesCostCoins()
         {
@@ -220,6 +292,9 @@ namespace Graveway.Tests
             Click(ui, "PLAY");
             yield return Seconds(0.5f);
             photo.Shot("5-select");
+            Click(ui, "›");
+            yield return Seconds(0.5f);
+            photo.Shot("5b-select-locked");
             game.hud.Back();
             Click(ui, "Armory");
             Press(Find<Button>(ui, b => b.ClassListContains("wcard") && Says(b, "SMG"), "the SMG's card"));

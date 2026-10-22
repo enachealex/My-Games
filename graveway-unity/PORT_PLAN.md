@@ -384,6 +384,13 @@ complete. The web version stays frozen, so these land in Unity only.
 6. **New environments after every 2 bosses.** A helicopter lands about
    25 m ahead; walking up to it plays a cut scene of the survivor climbing
    aboard and being dropped off in the new environment.
+7. **Survivors are bought** (22 October 2026). You start as Rook; the
+   others are unlocked on survivor select: Wren 600, Bram 1,000, Juno
+   2,500, each more than the gun they bring. A save from before keeps the
+   survivor it last ran as. A survivor's own gun is the Armory's gun, with
+   the parts fitted there, and never fills a loadout slot as well: each
+   survivor has their own loadout (starting from the one everyone used to
+   share), so no gun is carried twice. *(Done.)*
 
 ## How work gets checked
 

@@ -105,8 +105,9 @@ namespace Graveway
         // ── Survivor select ──────────────────────────────────────────────
         int pick;
         ScrollView cCard;
-        VisualElement cDots;
-        Button cGo;
+        VisualElement cDots, cPrice;
+        Button cGo, cBuy;
+        Label cNeed;
         Vector2? swipeFrom;
 
         void BuildSelect()
@@ -140,6 +141,11 @@ namespace Graveway
             var foot = El("c-foot", select);
             cDots = El("c-dots", foot);
             cGo = Btn("Run", "primary big", foot, Play);
+            // In its place for a survivor you haven't got yet.
+            cBuy = Quiet("primary big c-buy", foot, b => BuySurvivor(b));
+            Lbl("c-buy-label", cBuy, "UNLOCK");
+            cPrice = Coins(cBuy, 0);
+            cNeed = Lbl("need", foot);
         }
 
         void OpenSelect()
@@ -160,8 +166,10 @@ namespace Graveway
         void RenderSelect()
         {
             var c = Tunables.Characters[pick];
-            // The survivor on the street behind the menu changes too.
-            if (Save.Data.character != c.id)
+            bool mine = Save.HasSurvivor(c);
+            // The survivor on the street behind the menu changes too, to any
+            // that's yours.
+            if (mine && Save.Data.character != c.id)
             {
                 Save.Data.character = c.id;
                 Save.Persist();
@@ -177,7 +185,9 @@ namespace Graveway
             for (int i = 1; i < run.Count; i++) more.Add(Tunables.Weapon(run[i]).name);
 
             cCard.Clear();
-            cCard.Add(Portrait(c, "lg"));
+            var portrait = Portrait(c, "lg");
+            portrait.EnableInClassList("locked", !mine);
+            cCard.Add(portrait);
             var name = El("c-name", cCard);
             Lbl("c-name-text", name, c.name.ToUpperInvariant());
             Lbl("pill", name, c.role.ToUpperInvariant());
@@ -193,12 +203,17 @@ namespace Graveway
             var gt = El("grow", gun);
             Lbl("small-caps", gt, "BRINGS");
             Lbl("perk-name", gt, w.name);
-            Lbl("perk-text", gt, owned ? "Their own gun" : "Theirs for the run, even before you buy it");
-            var load = El("perk gunline loadline", cCard);
-            var lt = El("grow", load);
-            Lbl("small-caps", lt, "ALSO CARRYING");
-            Lbl("perk-name", lt, more.Count > 0 ? string.Join(", ", more) : "Nothing else");
-            Btn("Loadout", "small", load, () => OpenArmory("select"));
+            // The Armory's gun, not a copy: its parts are on it.
+            Lbl("perk-text", gt, owned ? "Their own gun, with the parts fitted in the Armory"
+                : "Theirs every run, even before you buy it, with the parts fitted in the Armory");
+            if (mine)
+            {
+                var load = El("perk gunline loadline", cCard);
+                var lt = El("grow", load);
+                Lbl("small-caps", lt, "ALSO CARRYING");
+                Lbl("perk-name", lt, more.Count > 0 ? string.Join(", ", more) : "Nothing else");
+                Btn("Loadout", "small", load, () => OpenArmory("select"));
+            }
 
             cDots.Clear();
             for (int i = 0; i < Tunables.Characters.Length; i++)
@@ -207,9 +222,34 @@ namespace Graveway
                 var dot = new Button(() => { pick = k; Sfx.Click(); RenderSelect(); });
                 dot.AddToClassList("c-dot");
                 dot.EnableInClassList("on", i == pick);
+                dot.EnableInClassList("locked", !Save.HasSurvivor(Tunables.Characters[i]));
                 cDots.Add(dot);
             }
             cGo.text = $"RUN AS {c.name.ToUpperInvariant()}";
+            Shown(cGo, mine);
+            Shown(cBuy, !mine);
+            Shown(cNeed, !mine);
+            if (!mine)
+            {
+                int coins = Save.Data.coins;
+                SetCoins(cPrice, c.price);
+                cBuy.EnableInClassList("off", coins < c.price);
+                cNeed.text = coins < c.price ? $"{N(c.price - coins)} more coins needed" : $"You have {N(coins)} coins";
+            }
+        }
+
+        void BuySurvivor(VisualElement button)
+        {
+            var c = Tunables.Characters[pick];
+            var s = Save.Data;
+            if (Save.HasSurvivor(c)) return;
+            if (s.coins < c.price) { Sfx.Denied(); Nudge(button); return; }
+            s.coins -= c.price;
+            s.survivors.Add(c.id);
+            Sfx.Buy();
+            Toast($"{c.name} is with you now");
+            Save.Persist();
+            RenderSelect();                         // and the one you'll run as
         }
 
         void Play()
