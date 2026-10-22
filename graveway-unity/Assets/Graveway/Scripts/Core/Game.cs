@@ -448,7 +448,6 @@ namespace Graveway
             if (GameKeys.Down(Key.R) || GameKeys.Down(Key.Space)) Reload();
             if (GameKeys.Down(Key.Q)) SwapWeapon(-1);
             if (GameKeys.Down(Key.E) || GameKeys.Down(Key.Tab)) SwapWeapon(1);
-            if (GameKeys.Down(Key.P)) Pause();
             for (int i = 0; i < 9; i++) if (GameKeys.Down(Key.Digit1 + i)) SelectWeapon(i);
         }
 

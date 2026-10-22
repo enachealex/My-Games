@@ -20,7 +20,7 @@ namespace Graveway
     {
         // The base materials, one per shader setup (see ProjectSetup.cs).
         public const string BaseLit = "Lit", BaseLitGlow = "LitGlow", BaseUnlit = "Unlit", BaseGlow = "Glow", BaseFade = "Shadow",
-            BaseInstanced = "Instanced", BaseSprite = "Sprite", BaseSightShadow = "SightShadow";
+            BaseInstanced = "Instanced", BaseSprite = "Sprite", BaseSightShadow = "SightShadow", BaseEyes = "Eyes";
 
         static readonly Dictionary<string, Material> bases = new Dictionary<string, Material>();
         static readonly Dictionary<(string, Color, float, Texture, Texture), Material> cache =
@@ -85,6 +85,15 @@ namespace Graveway
         }
 
         public static Material Unlit(int rgb) => Unlit(Hex.C(rgb));
+
+        // Zombie eyes: flat colour, no light and no fog (Shaders/Eyes.shader).
+        public static Material Eyes(Color c)
+        {
+            if (Cached("eyes", c, 0, null, null, out var m)) return m;
+            m = Make(BaseEyes, "eyes", c, 0, null, null);
+            m.SetColor("_BaseColor", c);
+            return m;
+        }
 
         // Additive glow, for pools of light, flashes and flames. `opacity`
         // dims it, as three's additive opacity does (the material blends by

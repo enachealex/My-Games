@@ -34,8 +34,10 @@ namespace Graveway
 
         sealed class Pool
         {
+            // A ring, oldest first, so they draw in the order they came, as
+            // on the web (smoke over older smoke).
             readonly Sprite[] items;
-            int count, cursor;
+            int start, count;
             readonly SpriteBatch batch;
 
             public Pool(Material mat, int max)
@@ -44,34 +46,40 @@ namespace Graveway
                 batch = new SpriteBatch(mat, max);
             }
 
-            // A full pool recycles a sprite, so a new explosion always shows.
+            // A full pool drops its oldest sprite, so a new explosion always shows.
             public void Add(in Sprite s)
             {
-                if (count < items.Length) items[count++] = s;
-                else { items[cursor] = s; cursor = (cursor + 1) % items.Length; }
+                if (count < items.Length) items[(start + count++) % items.Length] = s;
+                else { items[start] = s; start = (start + 1) % items.Length; }
             }
 
             public void Update(float dt)
             {
-                for (int i = count - 1; i >= 0; i--)
+                // The living move up behind each other, keeping their order.
+                int n = items.Length, kept = 0;
+                for (int j = 0; j < count; j++)
                 {
+                    int i = (start + j) % n;
                     ref var p = ref items[i];
                     p.age += dt;
-                    if (p.age >= p.life) { items[i] = items[--count]; continue; }
+                    if (p.age >= p.life) continue;
                     float drag = Mathf.Exp(-p.drag * dt);
                     p.vx *= drag; p.vy *= drag; p.vz *= drag;
                     p.vy += p.lift * dt;
                     p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
                     if (p.y < p.floor) { p.y = p.floor; p.vy = Mathf.Abs(p.vy) * 0.2f; }
                     p.rot += p.spin * dt;
+                    if (kept != j) items[(start + kept) % n] = p;
+                    kept++;
                 }
+                count = kept;
             }
 
             public void Draw()
             {
                 for (int i = 0; i < count; i++)
                 {
-                    ref var p = ref items[i];
+                    ref var p = ref items[(start + i) % items.Length];
                     float k = p.age / p.life;
                     // fade in over the first sliver, out over the rest
                     float fade = Mathf.Min(1, k / p.fadeIn) * (1 - Mathf.Pow(k, p.fadePow));
@@ -84,7 +92,7 @@ namespace Graveway
                 batch.Draw();
             }
 
-            public void Clear() { count = 0; cursor = 0; }
+            public void Clear() { count = 0; start = 0; }
             public int Count => count;
         }
 

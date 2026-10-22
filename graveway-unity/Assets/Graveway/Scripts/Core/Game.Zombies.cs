@@ -377,8 +377,7 @@ namespace Graveway
             z.yaw = Mathf.Atan2(-dx, -dz);                // fall away from the shot
             z.model.root.transform.localRotation = M.Yaw(z.yaw);
             z.model.SetFlash(false);
-            if (!z.model.root.activeSelf) z.model.root.SetActive(true);
-            z.model.Restart("Death", 0.05f);
+            z.model.Restart("Death", 0.05f);          // (behind cover, it falls unseen, as on the web)
             z.flash = 0;
             Burst(z.x, 1.1f * z.scale, z.z, (int)(10 + z.scale * 6), Hex.C(0x5a0909), speed: 3.5f * z.scale, size: 0.11f * z.scale);
             Sfx.Die(Pan(z.x));

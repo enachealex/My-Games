@@ -285,6 +285,7 @@ namespace Graveway
         // A short line near the top: "+35 health", a power-up's name.
         public void Toast(string text, string kind = null, Color? color = null)
         {
+            toastWrap.BringToFront();                 // over any modal, as on the web
             toast.text = text;
             toast.EnableInClassList("power", kind == "power");
             toast.style.color = color ?? (kind == "heal" ? Hex.C(0x7dff8a) : kind == "armor" ? Hex.C(0x5db4ff) : Hex.C(0xeef2ec));
@@ -313,7 +314,7 @@ namespace Graveway
             // Red flash when hurt; a slow pulse when health is low.
             hurtT = Mathf.Max(0, hurtT - Time.unscaledDeltaTime);
             var p = game.player;
-            bool low = game.state == Game.State.Playing && p != null && p.hp / p.maxHp < 0.3f;
+            bool low = p != null && (game.state == Game.State.Playing || (game.state == Game.State.Dying && !p.reported)) && p.hp / p.maxHp < 0.3f;
             float pulse = low ? 0.25f + 0.35f * (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 5.7f)) : 0;
             vignette.style.opacity = Mathf.Max(hurtT / 0.45f, pulse);
             SafeArea();
@@ -325,7 +326,12 @@ namespace Graveway
         {
             if (root.panel?.focusController?.focusedElement is TextField) return;     // typing a note
             var st = game.state;
-            if (GameKeys.Down(Key.P) && st == Game.State.Paused && current == "pause") game.Resume();
+            // P, here only: handled in two places, each undid the other.
+            if (GameKeys.Down(Key.P))
+            {
+                if (st == Game.State.Playing) game.Pause();
+                else if (st == Game.State.Paused && current == "pause") game.Resume();
+            }
             if (GameKeys.Down(Key.N) && (st == Game.State.Playing || st == Game.State.Paused) && !IsShown(note))
             {
                 game.Pause();
@@ -342,20 +348,35 @@ namespace Graveway
 
         bool AnyModal() => IsShown(note) || IsShown(notesModal) || IsShown(settingsModal) || IsShown(result);
 
-        // Keep the screens clear of notches and the gesture bar.
+        // Keep the screens clear of notches and the gesture bar. They're
+        // absolutely placed, so the root's padding wouldn't reach them: each
+        // is inset instead. (Modals are centred cards, well clear already.)
         Rect lastSafe;
+        Vector2 lastSize;
         void SafeArea()
         {
             var s = Screen.safeArea;
-            if (s == lastSafe || root.panel == null) return;
-            lastSafe = s;
-            var topLeft = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(s.xMin, Screen.height - s.yMax));
-            var bottomRight = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(s.xMax, Screen.height - s.yMin));
             var size = root.layout.size;
-            root.style.paddingTop = topLeft.y;
-            root.style.paddingLeft = topLeft.x;
-            if (size.x > 0) root.style.paddingRight = Mathf.Max(0, size.x - bottomRight.x);
-            if (size.y > 0) root.style.paddingBottom = Mathf.Max(0, size.y - bottomRight.y);
+            if ((s == lastSafe && size == lastSize) || root.panel == null || size.x <= 0) return;
+            lastSafe = s;
+            lastSize = size;
+            // As shares of the screen, so it holds when the UI draws into a
+            // texture of another size (the tests' pictures).
+            float w = Mathf.Max(1, Screen.width), h = Mathf.Max(1, Screen.height);
+            foreach (var screen in new[] { hud, menu, select, market })
+            {
+                screen.style.top = (h - s.yMax) / h * size.y;
+                screen.style.bottom = s.yMin / h * size.y;
+                screen.style.left = s.xMin / w * size.x;
+                screen.style.right = (w - s.xMax) / w * size.x;
+            }
+        }
+
+        // Back from the background: look for a newer build again, at most
+        // every 15 minutes, as the web version does.
+        void OnApplicationPause(bool paused)
+        {
+            if (!paused && Time.realtimeSinceStartup - updates.checkedAt > 15 * 60) StartCoroutine(updates.Check(false));
         }
 
         // The joystick appears under your thumb.

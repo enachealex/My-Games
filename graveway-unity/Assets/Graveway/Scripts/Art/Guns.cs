@@ -40,7 +40,6 @@ namespace Graveway
             var g = cat.FindGun(KitGun[model]);
             var gun = new GunModel { group = new GameObject("gun " + model) };
             var t = gun.group.transform;
-            Show(t, g.body, cat);
 
             // What it comes with for every slot it has, and nothing for the rest.
             var parts = new Dictionary<string, string>();
@@ -48,7 +47,17 @@ namespace Graveway
             if (wdef != null) foreach (var slot in wdef.slots) parts[slot] = Tunables.FittedPart(wdef, slot, fitted).id;
             string F(string slot, string def = null) => parts.TryGetValue(slot, out var v) ? v : def;
             float bore = Mathf.Max(0.025f, g.width * 0.18f);    // about how thick the barrel is
-            var muzzle = g.muzzle;
+
+            // A short barrel draws the whole gun shorter, from the grip, as
+            // the web version does (0.82 of its length); its fittings move with it.
+            string barrel = F("barrel");
+            float shorten = barrel == "short" ? 0.82f : 1;
+            Vector3 Z(Vector3 v) => new Vector3(v.x, v.y, v.z * shorten);
+            var body = new GameObject("body").transform;
+            body.SetParent(t, false);
+            body.localScale = new Vector3(1, 1, shorten);
+            Show(body, g.body, cat);
+            Vector3 muzzle = Z(g.muzzle), sightAt = Z(g.sight), railAt = Z(g.rail), stockAt = Z(g.stock), well = Z(g.mag);
 
             void Add(GeoBuilder b, int color, float glow = 0.15f)
             {
@@ -74,8 +83,12 @@ namespace Graveway
                 Show(holder, p, cat);
             }
 
+            // Grip: wrapped in its colour where the hand holds it.
+            string grip = F("grip");
+            int wrap = grip == "rubber" ? 0x24262a : grip == "stippled" ? 0x6a5a40 : grip == "ergo" ? 0x3a3e46 : 0;
+            if (wrap != 0) Add(new GeoBuilder().Box(bore * (grip == "ergo" ? 1.9f : 1.6f), 0.13f, 0.08f, 0, -0.07f, 0), wrap);
+
             // Barrel: longer sticks out further, heavy wears a sleeve.
-            string barrel = F("barrel");
             if (barrel == "long")
             {
                 Add(new GeoBuilder().Cylinder(bore * 0.5f, bore * 0.5f, 0.15f, 8, M.T(muzzle.x, muzzle.y, muzzle.z + 0.075f) * M.Rx(Mathf.PI / 2)), Dark);
@@ -83,7 +96,6 @@ namespace Graveway
             }
             else if (barrel == "heavy")
                 Add(new GeoBuilder().Cylinder(bore * 0.85f, bore * 0.85f, 0.18f, 8, M.T(muzzle.x, muzzle.y, muzzle.z - 0.1f) * M.Rx(Mathf.PI / 2)), Dark);
-            else if (barrel == "short") muzzle.z -= 0.06f;
 
             // Muzzle
             string mz = F("muzzle", "none");
@@ -96,48 +108,47 @@ namespace Graveway
 
             // Sight on top
             string sight = F("sight", "iron");
-            if (sight == "scope") Part("scope", g.sight);
+            if (sight == "scope") Part("scope", sightAt);
             else if (sight == "reddot")
             {
-                Add(new GeoBuilder().Box(0.05f, 0.05f, 0.075f, g.sight.x, g.sight.y + 0.027f, g.sight.z), Dark);
-                Glint(new GeoBuilder().Box(0.022f, 0.022f, 0.009f, g.sight.x, g.sight.y + 0.036f, g.sight.z - 0.04f), 0xff3030);
+                Add(new GeoBuilder().Box(0.05f, 0.05f, 0.075f, sightAt.x, sightAt.y + 0.027f, sightAt.z), Dark);
+                Glint(new GeoBuilder().Box(0.022f, 0.022f, 0.009f, sightAt.x, sightAt.y + 0.036f, sightAt.z - 0.04f), 0xff3030);
             }
             else if (sight == "holo")
-                Add(new GeoBuilder().Box(0.075f, 0.068f, 0.027f, g.sight.x, g.sight.y + 0.045f, g.sight.z + 0.015f)
-                    .Box(0.075f, 0.018f, 0.09f, g.sight.x, g.sight.y + 0.009f, g.sight.z), Dark);
+                Add(new GeoBuilder().Box(0.075f, 0.068f, 0.027f, sightAt.x, sightAt.y + 0.045f, sightAt.z + 0.015f)
+                    .Box(0.075f, 0.018f, 0.09f, sightAt.x, sightAt.y + 0.009f, sightAt.z), Dark);
 
             // Under the handguard
             string rail = F("rail", "none");
-            if (rail == "foregrip") Part("foregrip", g.rail);
-            else if (rail == "angled") Part("foregrip", g.rail, tilt: -35, stretch: 0.8f);
+            if (rail == "foregrip") Part("foregrip", railAt);
+            else if (rail == "angled") Part("foregrip", railAt, tilt: -35, stretch: 0.8f);
             else if (rail == "light" || rail == "laser")
             {
-                Part("light", g.rail);
-                Glint(new GeoBuilder().Box(0.03f, 0.03f, 0.009f, g.rail.x, g.rail.y - 0.04f, g.rail.z + 0.09f), rail == "laser" ? 0xff2a2a : 0xfff6d8);
+                Part("light", railAt);
+                Glint(new GeoBuilder().Box(0.03f, 0.03f, 0.009f, railAt.x, railAt.y - 0.04f, railAt.z + 0.09f), rail == "laser" ? 0xff2a2a : 0xfff6d8);
             }
 
             // Stock, behind the grip
             // (A little into the gun, so it reads as fitted, not floating.)
             string stock = F("stock");
-            var butt = g.stock + new Vector3(0, 0, 0.1f);
+            var butt = stockAt + new Vector3(0, 0, 0.1f);
             if (stock == "light") Part("stock", butt, thick: 0.7f);
             else if (stock == "heavy") Part("stock", butt, thick: 1.3f);
             else if (stock == "precision") Part("stock", butt, stretch: 1.25f);
 
             // Magazine: longer, a drum, or a bright pull tab.
             string mag = F("mag", "factory");
-            var well = g.mag;
             if (mag == "extended") Add(new GeoBuilder().Box(bore * 1.2f, 0.14f, 0.075f, well.x, well.y - 0.06f, well.z), Dark);
             else if (mag == "drum") Add(new GeoBuilder().Cylinder(0.1f, 0.1f, bore * 1.6f, 14, M.T(well.x, well.y - 0.08f, well.z) * M.Rz(Mathf.PI / 2)), Dark);
             else if (mag == "quick") Add(new GeoBuilder().Box(bore * 1.3f, 0.03f, 0.09f, well.x, well.y - 0.008f, well.z), 0xe0b020, 0.35f);
 
             // Its outline with the parts on, roughly, for framing pictures.
-            var b = g.bounds;
+            var b = new Bounds(Z(g.bounds.center), new Vector3(g.bounds.size.x, g.bounds.size.y, g.bounds.size.z * shorten));
             b.Encapsulate(muzzle);
             if (stock == "light" || stock == "heavy" || stock == "precision") b.Encapsulate(butt - new Vector3(0, 0.12f, 0.45f));
             if (mag != "factory") b.Encapsulate(well - new Vector3(0, 0.18f, 0));
-            if (sight == "scope") b.Encapsulate(g.sight + new Vector3(0, 0.1f, 0));
-            if (rail != "none") b.Encapsulate(g.rail - new Vector3(0, 0.17f, 0));
+            if (sight == "scope") b.Encapsulate(sightAt + new Vector3(0, 0.1f, 0));
+            if (rail != "none") b.Encapsulate(railAt - new Vector3(0, 0.17f, 0));
             gun.bounds = b;
 
             t.localScale = Vector3.one * (Length[model] / g.length);

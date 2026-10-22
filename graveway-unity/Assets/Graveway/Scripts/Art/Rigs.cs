@@ -124,9 +124,75 @@ namespace Graveway
 
         public static Rig Zombie(string kind)
         {
-            var rig = Make(ZombieModel[kind], kind, 1);
+            string id = ZombieModel[kind];
+            var rig = Make(id, kind, 1);
+            Eyes(rig, id, Tunables.Zombies[kind].eyes);
             Art.BlobShadow(rig.root.transform, 1.1f);
             return rig;
+        }
+
+        // Glowing eyes, as the web version's zombies have: flat colour that
+        // the dark and the fog don't touch, on the eyelids (or either side of
+        // the head) where the face is, found once per model from its idle
+        // pose and kept in each eye's bone's own space.
+        static readonly Dictionary<string, Vector3[]> eyeSpots = new Dictionary<string, Vector3[]>();
+        static Mesh eyeMesh;
+
+        static void Eyes(Rig rig, string id, Color color)
+        {
+            Transform l = Find(rig.model, "Eyelid.L"), r = Find(rig.model, "Eyelid.R"), head = Find(rig.model, "Head");
+            var bones = l && r ? new[] { l, r } : head ? new[] { head, head } : null;
+            if (bones == null) return;                                      // the runner has no head
+            rig.Snap("Idle");
+            if (!eyeSpots.TryGetValue(id, out var spots)) eyeSpots[id] = spots = FindEyes(rig, bones, l == null);
+            eyeMesh ??= new GeoBuilder().Box(1, 1, 1).Build("eye");
+            var mat = Art.Eyes(color);
+            for (int i = 0; i < 2; i++)
+            {
+                var eye = new GameObject("eye").transform;
+                eye.SetParent(bones[i], false);
+                eye.localPosition = spots[i];
+                eye.rotation = rig.root.transform.rotation;
+                var s = bones[i].lossyScale;
+                eye.localScale = new Vector3(0.075f / s.x, 0.045f / s.y, 0.025f / s.z);   // metres, at walker size
+                eye.gameObject.AddComponent<MeshFilter>().sharedMesh = eyeMesh;
+                var mr = eye.gameObject.AddComponent<MeshRenderer>();
+                mr.sharedMaterial = mat;
+                mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                mr.receiveShadows = false;
+            }
+        }
+
+        // The front of the face in front of each eye bone: of the posed
+        // mesh's vertices around it (or either side of the head), the one
+        // furthest forward.
+        static Vector3[] FindEyes(Rig rig, Transform[] bones, bool fromHead)
+        {
+            SkinnedMeshRenderer body = null;
+            foreach (var smr in rig.model.GetComponentsInChildren<SkinnedMeshRenderer>())
+                if (body == null || smr.sharedMesh.vertexCount > body.sharedMesh.vertexCount) body = smr;
+            var baked = new Mesh();
+            body.BakeMesh(baked, false);
+            var toWorld = body.transform.localToWorldMatrix;
+            var verts = baked.vertices;
+            Object.Destroy(baked);
+            // (In metres: the rig stands Person tall here, before any kind's scale.)
+            var spots = new Vector3[2];
+            for (int i = 0; i < 2; i++)
+            {
+                var b = bones[i].position;
+                var at = fromHead ? b + new Vector3(i == 0 ? 0.08f : -0.08f, 0.1f, 0) : b;
+                float best = float.NegativeInfinity;
+                var front = at + Vector3.forward * 0.1f;
+                foreach (var v in verts)
+                {
+                    var w = toWorld.MultiplyPoint3x4(v);
+                    if (Mathf.Abs(w.x - at.x) > 0.04f || Mathf.Abs(w.y - at.y) > (fromHead ? 0.12f : 0.04f)) continue;
+                    if (w.z > best) { best = w.z; front = w; }
+                }
+                spots[i] = bones[i].InverseTransformPoint(front + Vector3.forward * 0.01f);
+            }
+            return spots;
         }
 
         static Rig Make(string id, string name, float bulk)

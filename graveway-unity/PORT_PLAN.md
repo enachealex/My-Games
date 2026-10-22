@@ -194,6 +194,9 @@ Everything but the phone is done. The first APK built on 21 October 2026:
       covered by EditMode tests.
 - [x] HUD: stop rebuilding strings and changing widths every frame, and
       split it into one view per screen.
+- [x] For the phone: skinning runs on the GPU in batches, and zombie
+      models import without their bone GameObjects (only the eye bones
+      are kept), which is a lot less for the CPU with 64 about.
 - **Done when** 64 animated zombies hold 60 fps on the phone.
 
 ### Phase 2: the street and destruction (`props.js`, `world.js`)
@@ -296,7 +299,36 @@ CSS). Portraits and gun pictures are rendered from the 3D models
 
 ### Phase 8: check everything against the web version, then switch
 
-- [ ] Go through `docs/web-version-reference.md` item by item.
+- [x] Go through `docs/web-version-reference.md` item by item (21 October
+      2026). About 780 items checked; every gameplay number matches
+      (weapons, all 45 parts, survivors, upgrades, power-ups, zombies, the
+      director, props, set pieces, costs and seeding). 18 differences
+      turned up. Fixed:
+      - zombies' eyes glow again (flat colour, no light or fog), on their
+        eyelids or either side of the head; runners are headless skeletons
+      - the HUD and menus keep clear of notches (the safe area insets each
+        screen; padding the root didn't reach them)
+      - toasts show over the modals
+      - P pauses and resumes from one place (two handlers undid each other)
+      - a zombie killed behind cover falls unseen
+      - the low-health pulse runs through the fall, not behind the results
+      - the version shows its build number, in Settings and on sent notes
+      - the update check runs again on coming back, at most every 15 min
+      - the menu's shade at the top and bottom
+      - "Overrun" in the normal colour
+      - grip types and short barrels show on the real guns
+      - effect sprites keep their order and a full pool drops the oldest
+
+      Accepted as they are:
+      - each sound is compressed on its own, not the whole mix live
+        (Sfx.cs explains); stacked blasts can be a little louder
+      - portraits have a solid background, not a transparent one
+      - the CONDEMNED sign and the 2× badge use a pixel font
+      - the notes box isn't monospaced
+      - Android's "remove animations" setting isn't read
+      - there's no launch splash image (Android shows the icon)
+      - lighting is matched by eye to the web version's screenshots,
+        not by formula
 - [ ] Playtest, then retire the web APK. The web version stays in the repo.
 
 ## After the port: playtest notes (20 October 2026)

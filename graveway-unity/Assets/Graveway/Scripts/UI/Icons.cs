@@ -221,6 +221,30 @@ namespace Graveway
             return e;
         }
 
+        // The menu's shade over the street (index.html's #menu gradient):
+        // dark at the top, clear through the middle, darker at the bottom.
+        static Texture2D menuShade;
+        public static Texture2D MenuShade
+        {
+            get
+            {
+                if (menuShade) return menuShade;
+                const int H = 128;
+                var t = new Texture2D(1, H, TextureFormat.RGBA32, false) { name = "menu shade", wrapMode = TextureWrapMode.Clamp };
+                for (int y = 0; y < H; y++)
+                {
+                    float f = 1 - (y + 0.5f) / H;                        // 0 at the top of the screen
+                    float a = f < 0.3f ? Mathf.Lerp(0.85f, 0, f / 0.3f)
+                            : f < 0.52f ? 0
+                            : f < 0.82f ? Mathf.Lerp(0, 0.92f, (f - 0.52f) / 0.3f)
+                            : 0.92f;
+                    t.SetPixel(0, y, new Color(13 / 255f, 20 / 255f, 24 / 255f, a));
+                }
+                t.Apply(false, true);
+                return menuShade = t;
+            }
+        }
+
         // The red edge that flashes when you're hurt.
         public static Texture2D Vignette
         {

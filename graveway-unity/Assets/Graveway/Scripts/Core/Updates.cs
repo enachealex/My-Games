@@ -35,6 +35,7 @@ namespace Graveway
         public Release newer;                // a build to install, or null
         public bool busy;
         public string status = "";
+        public float checkedAt = -1e9f;      // Time.realtimeSinceStartup of the last check
         public event Action Changed;
 
         // This build's Android version code: 0 in the editor, which only
@@ -108,6 +109,7 @@ namespace Graveway
                 }
             }
             busy = false;
+            checkedAt = Time.realtimeSinceStartup;
             Changed?.Invoke();
         }
 

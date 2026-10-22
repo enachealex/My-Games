@@ -274,8 +274,8 @@ namespace Graveway.Tests
             yield return null;
             var loaded = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, string>>
             {
-                { "rifle", new System.Collections.Generic.Dictionary<string, string> { { "barrel", "long" }, { "muzzle", "suppressor" }, { "sight", "scope" }, { "rail", "light" }, { "stock", "heavy" }, { "mag", "extended" } } },
-                { "smg", new System.Collections.Generic.Dictionary<string, string> { { "muzzle", "comp" }, { "sight", "reddot" }, { "rail", "foregrip" }, { "stock", "light" }, { "mag", "drum" } } },
+                { "rifle", new System.Collections.Generic.Dictionary<string, string> { { "barrel", "long" }, { "muzzle", "suppressor" }, { "sight", "scope" }, { "rail", "light" }, { "stock", "heavy" }, { "mag", "extended" }, { "grip", "stippled" } } },
+                { "smg", new System.Collections.Generic.Dictionary<string, string> { { "barrel", "short" }, { "muzzle", "comp" }, { "sight", "reddot" }, { "rail", "foregrip" }, { "stock", "light" }, { "mag", "drum" }, { "grip", "rubber" } } },
                 { "shotgun", new System.Collections.Generic.Dictionary<string, string> { { "barrel", "heavy" }, { "muzzle", "choke" }, { "sight", "holo" }, { "rail", "laser" }, { "stock", "precision" }, { "mag", "quick" } } },
                 { "pistol", new System.Collections.Generic.Dictionary<string, string> { { "muzzle", "suppressor" }, { "sight", "reddot" }, { "rail", "laser" }, { "mag", "extended" } } },
             };

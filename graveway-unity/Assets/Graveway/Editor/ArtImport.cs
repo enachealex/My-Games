@@ -23,7 +23,13 @@ namespace Graveway.EditorTools
         static readonly Regex Rigged = new Regex(@"ZombieApocalypseKit/Characters/|UltimateModular(Men|Women)/|UniversalAnimationLibrary/", RegexOptions.IgnoreCase);
         static readonly Regex Looping = new Regex(@"idle|walk|run|jog|sprint|crawl|strafe|swim|dance|_loop", RegexOptions.IgnoreCase);
 
+        const string HeadBone = "CharacterArmature/Root/Body/Hips/Abdomen/Torso/Neck/Head";
+        static readonly string[] EyeBones = { HeadBone, HeadBone + "/Eyelid.L", HeadBone + "/Eyelid.R" };
+
         static bool Ours(string path) => path.StartsWith(Root) && path.EndsWith(".fbx", System.StringComparison.OrdinalIgnoreCase);
+
+        // Bumped when the settings below change, so Unity imports again.
+        public override uint GetVersion() => 3;
 
         void OnPreprocessModel()
         {
@@ -33,6 +39,18 @@ namespace Graveway.EditorTools
             mi.animationType = rigged ? ModelImporterAnimationType.Generic : ModelImporterAnimationType.None;
             mi.importAnimation = rigged;
             mi.avatarSetup = rigged ? ModelImporterAvatarSetup.CreateFromThisModel : ModelImporterAvatarSetup.NoAvatar;
+            // Zombies carry nothing, so their bones needn't be GameObjects:
+            // with up to 64 about, that's a lot less for a phone to update.
+            // (Survivors keep theirs: the gun hangs off a hand.)
+            mi.optimizeGameObjects = assetPath.Contains("/Characters/Zombie_");
+            // All but the bones the glowing eyes hang from (Rigs.cs): the
+            // eyelids where there are some, else the head; the runner's a
+            // skeleton with no head at all.
+            // Readable, so Rigs.cs can find where their faces are on a phone.
+            if (mi.optimizeGameObjects) mi.isReadable = true;
+            if (mi.optimizeGameObjects)
+                mi.extraExposedTransformPaths = assetPath.Contains("Zombie_Ribcage") ? new string[0]
+                    : assetPath.Contains("Zombie_Chubby") ? new[] { HeadBone } : EyeBones;
             mi.importCameras = false;
             mi.importLights = false;
             mi.importBlendShapes = false;

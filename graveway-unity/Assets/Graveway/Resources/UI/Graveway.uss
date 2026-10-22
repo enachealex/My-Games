@@ -78,7 +78,7 @@
 .stat-value { width: 96px; font-size: 13px; -unity-text-align: middle-right; -unity-font-style: bold; }
 
 /* ── Menu ─────────────────────────────────────────────────────────────── */
-.menu { justify-content: space-between; padding: 16px 16px 20px 16px; }
+.menu { justify-content: space-between; padding: 16px 16px 20px 16px; -unity-background-scale-mode: stretch-to-fill; }
 .menu-top { flex-direction: row; justify-content: space-between; align-items: center; }
 .title { align-items: center; margin-top: 30px; }
 .title-row { flex-direction: row; }

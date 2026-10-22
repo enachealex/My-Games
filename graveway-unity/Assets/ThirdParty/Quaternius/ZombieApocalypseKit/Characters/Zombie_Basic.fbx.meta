@@ -14,7 +14,7 @@ ModelImporter:
     legacyGenerateAnimations: 4
     bakeSimulation: 0
     resampleCurves: 1
-    optimizeGameObjects: 0
+    optimizeGameObjects: 1
     removeConstantScaleCurves: 0
     motionNodeName: 
     animationImportErrors: 
@@ -28,7 +28,10 @@ ModelImporter:
     animationPositionError: 0.5
     animationScaleError: 0.5
     animationWrapMode: 0
-    extraExposedTransformPaths: []
+    extraExposedTransformPaths:
+    - CharacterArmature/Root/Body/Hips/Abdomen/Torso/Neck/Head
+    - CharacterArmature/Root/Body/Hips/Abdomen/Torso/Neck/Head/Eyelid.L
+    - CharacterArmature/Root/Body/Hips/Abdomen/Torso/Neck/Head/Eyelid.R
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16

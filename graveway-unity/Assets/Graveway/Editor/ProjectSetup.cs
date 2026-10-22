@@ -56,6 +56,8 @@ namespace Graveway.EditorTools
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.Vulkan, GraphicsDeviceType.OpenGLES3 });
             PlayerSettings.Android.optimizedFramePacing = true;
+            // Skin the characters on the GPU, in batches, not on the CPU.
+            PlayerSettings.meshDeformation = MeshDeformation.GPUBatched;
             // Full screen comes from the default "requested visible insets"
             // (none: no status or navigation bar), with the HUD kept clear of
             // notches by Hud.SafeArea.
@@ -151,6 +153,7 @@ namespace Graveway.EditorTools
             Make("Instanced", Shader.Find("Graveway/Instanced"), m => { });
             Make("Sprite", Shader.Find("Graveway/Sprite"), m => { });
             Make("SightShadow", Shader.Find("Graveway/SightShadow"), m => m.SetColor("_Color", new Color32(0x02, 0x04, 0x06, 178)));
+            Make("Eyes", Shader.Find("Graveway/Eyes"), m => { });
             // See-through dark blobs under people and things.
             Make("Shadow", unlit, m =>
             {

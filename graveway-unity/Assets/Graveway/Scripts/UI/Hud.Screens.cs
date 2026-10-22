@@ -22,6 +22,7 @@ namespace Graveway
         void BuildMenu()
         {
             menu = El("screen menu", root);
+            menu.style.backgroundImage = Icons.MenuShade;
             var top = El("menu-top", menu);
             mCoins = Coins(top, 0, "wallet");
             var gear = new Button(() => { Sfx.Click(); OpenSettings(); });
@@ -251,7 +252,7 @@ namespace Graveway
             NoteButton(ps, "Leave a note");
 
             result = Modal(out var rc, scroll: true);
-            rTitle = Lbl("card-title red", rc, "OVERRUN");
+            rTitle = Lbl("card-title", rc, "OVERRUN");
             rDist = Lbl("r-dist", rc);
             rSub = Lbl("card-sub", rc);
             rStats = El("", rc);
@@ -468,6 +469,8 @@ namespace Graveway
             sUpdate.text = build + (updates.busy || string.IsNullOrEmpty(updates.status) ? "." : $" · {updates.status}.");
         }
 
-        static string BuildLabel => $"v{Application.version} · {(Application.platform == RuntimePlatform.Android ? "Android" : Application.isEditor ? "Editor" : Application.platform.ToString())}";
+        // As the web version's: "v0.2 (build 2) · Android", in Settings and on sent notes.
+        static string BuildLabel => $"v{Application.version}{(Updates.Code > 0 ? $" (build {Updates.Code})" : "")} · " +
+                                    (Application.platform == RuntimePlatform.Android ? "Android" : Application.isEditor ? "Editor" : Application.platform.ToString());
     }
 }
