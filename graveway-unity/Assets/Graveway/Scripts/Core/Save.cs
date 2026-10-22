@@ -296,7 +296,7 @@ namespace Graveway
             return output;
         }
 
-        // The guns equipped in the Black Market: up to LoadoutSlots - 1, carried
+        // The guns equipped in the Armory: up to LoadoutSlots - 1, carried
         // besides the survivor's own. Until first chosen, the priciest owned.
         public static List<string> Loadout()
         {
@@ -310,7 +310,7 @@ namespace Graveway
         }
 
         // What a survivor carries into a run: their own gun first, then the
-        // equipped ones in Black Market order.
+        // equipped ones in Armory order.
         public static List<string> RunWeapons(CharacterDef c)
         {
             var eq = Loadout();

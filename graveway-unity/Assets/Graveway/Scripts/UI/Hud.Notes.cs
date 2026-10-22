@@ -115,7 +115,7 @@ namespace Graveway
                 return $"{g.Character.name} · {Mathf.FloorToInt(g.Distance)} m (stage {g.Stage + 1}) · {g.Weapon.Name} · {Mathf.RoundToInt(g.run.time)}s in · " +
                     $"{Mathf.CeilToInt(p.hp)}/{Mathf.RoundToInt(p.maxHp)} HP{armor} · {g.run.kills} kills · {g.AliveCount()} zombies up · {fps}";
             }
-            string where = current == "market" ? "Black Market" : current == "select" ? "Survivor select" : "Menu";
+            string where = current == "armory" ? "Armory" : current == "select" ? "Survivor select" : "Menu";
             return $"{where} · {LoadoutText()} · {fps}";
         }
 
@@ -274,7 +274,7 @@ namespace Graveway
             return string.Join("\n", lines);
         }
 
-        // ── Shared by the Black Market and the notes ─────────────────────
+        // ── Shared by the Armory and the notes ───────────────────────────
         // A button that makes its own sound: buying plays the till, a refusal
         // the buzz with a nudge.
         static Button Quiet(string cls, VisualElement parent, Action<Button> onClick, string text = "")

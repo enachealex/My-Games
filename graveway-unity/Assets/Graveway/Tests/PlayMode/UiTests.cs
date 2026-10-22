@@ -50,10 +50,10 @@ namespace Graveway.Tests
         }
 
         [UnityTest]
-        public IEnumerator BlackMarketUnlocksAGunAndFitsAPart()
+        public IEnumerator ArmoryUnlocksAGunAndFitsAPart()
         {
             Save.Data.coins = 100000;
-            Click(ui, "Black Market");
+            Click(ui, "Armory");
             yield return null;
             var w = Tunables.Weapon("smg");
             Press(Find<Button>(ui, b => b.ClassListContains("wcard") && Says(b, w.name), "the SMG's card"));
@@ -87,7 +87,7 @@ namespace Graveway.Tests
 
             game.hud.Back();
             yield return null;
-            Assert.That(Visible(Button(ui, "PLAY")), "Back from the Black Market goes to the menu");
+            Assert.That(Visible(Button(ui, "PLAY")), "Back from the Armory goes to the menu");
         }
 
         [UnityTest]
@@ -96,7 +96,7 @@ namespace Graveway.Tests
             var u = Tunables.PlayerUpgrades[0];
             int cost = Tunables.PlayerUpgradeCost(u.id, 0);
             Save.Data.coins = cost;
-            Click(ui, "Black Market");
+            Click(ui, "Armory");
             yield return null;
             Click(ui, "Survivor");
             yield return null;
@@ -221,20 +221,20 @@ namespace Graveway.Tests
             yield return Seconds(0.5f);
             photo.Shot("5-select");
             game.hud.Back();
-            Click(ui, "Black Market");
+            Click(ui, "Armory");
             Press(Find<Button>(ui, b => b.ClassListContains("wcard") && Says(b, "SMG"), "the SMG's card"));
             yield return Seconds(0.5f);
-            photo.Shot("6-market");
+            photo.Shot("6-armory");
             var smg = Tunables.Weapon("smg");
             Press(Find<Button>(ui, b => b.ClassListContains("slotrow") && Says(b, Tunables.PartSlots[smg.slots[0]].ToUpperInvariant()), "the first slot"));
             yield return null;
             var scroll = ui.Query<ScrollView>(className: "a-body").First();
             scroll.scrollOffset = new Vector2(0, 100000);
             yield return Seconds(0.5f);
-            photo.Shot("7-market-parts");
+            photo.Shot("7-armory-parts");
             Click(ui, "Survivor");
             yield return Seconds(0.5f);
-            photo.Shot("8-market-survivor");
+            photo.Shot("8-armory-survivor");
             game.hud.Back();
             yield return null;
             Press(Find<Button>(ui, b => b.ClassListContains("icon-btn") && b.parent.ClassListContains("menu-top"), "the settings button"));
@@ -265,7 +265,7 @@ namespace Graveway.Tests
             photo.Shot("14-result");
         }
 
-        // Every gun bare and with a full set of parts, as the Black Market
+        // Every gun bare and with a full set of parts, as the Armory
         // shows them, to Logs/shots/gun-*.png.
         [UnityTest]
         public IEnumerator GunPictures()

@@ -1,6 +1,5 @@
-// The Black Market (the web version's Armory): unlock guns, choose which
-// to carry, fit parts, and upgrade the survivor. A port of that part of
-// graveway/src/ui.js.
+// The Armory: unlock guns, choose which to carry, fit parts, and upgrade
+// the survivor. A port of that part of graveway/src/ui.js.
 
 using System;
 using System.Collections.Generic;
@@ -12,45 +11,45 @@ namespace Graveway
 {
     public sealed partial class Hud
     {
-        string marketTab = "weapons", selWeapon = "pistol", openSlot, marketFrom = "menu";
+        string armoryTab = "weapons", selWeapon = "pistol", openSlot, armoryFrom = "menu";
         bool partsDirty;
         VisualElement aCoins, aContent;
         ScrollView aBody;
         Button tabWeapons, tabSurvivor;
 
-        void BuildMarket()
+        void BuildArmory()
         {
-            market = El("screen market", root);
-            market.pickingMode = PickingMode.Position;
-            var head = El("a-head", market);
-            var back = new Button(() => { Sfx.Click(); CloseMarket(); });
+            armory = El("screen armory", root);
+            armory.pickingMode = PickingMode.Position;
+            var head = El("a-head", armory);
+            var back = new Button(() => { Sfx.Click(); CloseArmory(); });
             back.AddToClassList("icon-btn");
             back.Add(Icons.Back());
             head.Add(back);
-            Lbl("a-head-title", head, "BLACK MARKET");
+            Lbl("a-head-title", head, "ARMORY");
             aCoins = Coins(head, 0, "wallet");
-            var tabs = El("tabs", market);
-            tabWeapons = new Button(() => { Sfx.Click(); marketTab = "weapons"; RenderMarket(); }) { text = "Weapons" };
-            tabSurvivor = new Button(() => { Sfx.Click(); marketTab = "survivor"; RenderMarket(); }) { text = "Survivor" };
+            var tabs = El("tabs", armory);
+            tabWeapons = new Button(() => { Sfx.Click(); armoryTab = "weapons"; RenderArmory(); }) { text = "Weapons" };
+            tabSurvivor = new Button(() => { Sfx.Click(); armoryTab = "survivor"; RenderArmory(); }) { text = "Survivor" };
             foreach (var t in new[] { tabWeapons, tabSurvivor }) { t.AddToClassList("tab"); tabs.Add(t); }
             aBody = Scroller();
             aBody.AddToClassList("a-body");
-            market.Add(aBody);
+            armory.Add(aBody);
             aContent = El("a-content", aBody);
         }
 
         // from: "select" when opened from survivor select, which Back returns to.
-        void OpenMarket(string from)
+        void OpenArmory(string from)
         {
-            marketFrom = from;
+            armoryFrom = from;
             openSlot = null;
-            if (from == "select") marketTab = "weapons";
+            if (from == "select") armoryTab = "weapons";
             Shown(result, false);
-            RenderMarket();
-            Show("market");
+            RenderArmory();
+            Show("armory");
         }
 
-        void CloseMarket()
+        void CloseArmory()
         {
             if (partsDirty)
             {
@@ -59,18 +58,18 @@ namespace Graveway
                 RefreshPortraits();
                 game.ShowMenu();
             }
-            if (marketFrom == "select") { RenderSelect(); Show("select"); return; }
+            if (armoryFrom == "select") { RenderSelect(); Show("select"); return; }
             ShowMenu();
         }
 
-        void RenderMarket(bool keepScroll = false)
+        void RenderArmory(bool keepScroll = false)
         {
             var scroll = aBody.scrollOffset;
             SetCoins(aCoins, Save.Data.coins);
-            tabWeapons.EnableInClassList("on", marketTab == "weapons");
-            tabSurvivor.EnableInClassList("on", marketTab == "survivor");
+            tabWeapons.EnableInClassList("on", armoryTab == "weapons");
+            tabSurvivor.EnableInClassList("on", armoryTab == "survivor");
             aContent.Clear();
-            if (marketTab == "weapons") WeaponsTab(); else SurvivorTab();
+            if (armoryTab == "weapons") WeaponsTab(); else SurvivorTab();
             if (keepScroll) aBody.schedule.Execute(() => aBody.scrollOffset = scroll);
         }
 
@@ -91,7 +90,7 @@ namespace Graveway
             {
                 var w1 = w0;
                 bool owned = IsOwned(w1), on = owned && eq.Contains(w1.id);
-                var card = new Button(() => { if (selWeapon != w1.id) openSlot = null; selWeapon = w1.id; Sfx.Click(); RenderMarket(true); });
+                var card = new Button(() => { if (selWeapon != w1.id) openSlot = null; selWeapon = w1.id; Sfx.Click(); RenderArmory(true); });
                 card.AddToClassList("wcard");
                 card.EnableInClassList("eq", on);
                 card.EnableInClassList("sel", w1.id == selWeapon);
@@ -174,7 +173,7 @@ namespace Graveway
             var slots = El("lo-slots", box);
             void Slot(string id, string label, string cls)
             {
-                var b = new Button(() => { if (selWeapon != id) openSlot = null; selWeapon = id; Sfx.Click(); RenderMarket(true); });
+                var b = new Button(() => { if (selWeapon != id) openSlot = null; selWeapon = id; Sfx.Click(); RenderArmory(true); });
                 b.AddToClassList("lo-slot");
                 if (cls != null) b.AddToClassList(cls);
                 b.Add(Icons.Gun(id, cls == "own" ? Hex.C(0xc9d2cc) : cls == "dup" ? Hex.C(0x6d7a73) : Icons.Accent));
@@ -204,7 +203,7 @@ namespace Graveway
                 string slot = slot0;
                 var cur = Tunables.FittedPart(w, slot, fitted);
                 bool open = openSlot == slot;
-                var row = new Button(() => { openSlot = openSlot == slot ? null : slot; Sfx.Click(); RenderMarket(true); });
+                var row = new Button(() => { openSlot = openSlot == slot ? null : slot; Sfx.Click(); RenderArmory(true); });
                 row.AddToClassList("slotrow");
                 row.EnableInClassList("open", open);
                 Lbl("slot-name", row, Tunables.PartSlots[slot].ToUpperInvariant());
@@ -257,7 +256,7 @@ namespace Graveway
             g.fitted[slot] = part.id;
             partsDirty = true;
             Save.Persist();
-            RenderMarket(true);
+            RenderArmory(true);
         }
 
         void BuyGun(WeaponDef w, VisualElement button)
@@ -279,7 +278,7 @@ namespace Graveway
             eq.Add(w.id);
             Sfx.Buy();
             Save.Persist();
-            RenderMarket(true);
+            RenderArmory(true);
         }
 
         void Equip(string id, VisualElement button)
@@ -290,7 +289,7 @@ namespace Graveway
             else eq.Add(id);
             Sfx.Click();
             Save.Persist();
-            RenderMarket(true);
+            RenderArmory(true);
         }
 
         // ── Survivor upgrades ────────────────────────────────────────────
@@ -336,7 +335,7 @@ namespace Graveway
             Save.Data.coins -= cost;
             Sfx.Buy();
             Save.Persist();
-            RenderMarket(true);
+            RenderArmory(true);
         }
 
         // What a part does, as short labelled changes: (text, good?, special?).

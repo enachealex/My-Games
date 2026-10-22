@@ -84,7 +84,7 @@ touching the game logic.
 | `Scripts/Core/StickInput.cs` | The floating joystick, any number of fingers, and keyboard keys (Input System) | `src/input.js` |
 | `Scripts/UI/Hud.cs` | HUD, banners, toasts, the back button | `src/ui.js`, `index.html` |
 | `Scripts/UI/Hud.Screens.cs` | Menu, survivor select, pause, results, settings | `src/ui.js` |
-| `Scripts/UI/Hud.Market.cs` | The Black Market (the web's Armory): guns, loadout, parts and survivor upgrades | `src/ui.js` |
+| `Scripts/UI/Hud.Armory.cs` | The Armory: guns, loadout, parts and survivor upgrades | `src/ui.js` |
 | `Scripts/UI/Hud.Notes.cs` | Playtest notes and Send to Claude | `src/ui.js` |
 | `Scripts/UI/Studio.cs`, `Icons.cs` | Portraits and gun pictures rendered from the models; vector icons | `src/preview.js` |
 | `Resources/UI/Graveway.uss` | The UI's look | `index.html` CSS |

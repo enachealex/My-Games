@@ -286,7 +286,7 @@ namespace Graveway
             var c = character;
             var stats = Tunables.StatsFor(c, Save.Data.pup);
             // Your survivor's own gun first, then the ones equipped in the
-            // Black Market, each with its parts, and the models in their hands to match.
+            // Armory, each with its parts, and the models in their hands to match.
             var p = new Player
             {
                 x = 0, z = World.StartPz, yaw = Mathf.PI, hp = stats.maxHp, maxHp = stats.maxHp,

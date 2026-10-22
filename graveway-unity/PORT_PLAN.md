@@ -12,7 +12,7 @@ Each phase is one or more PRs. Tick items off here as they land.
 
 The whole game is ported in code: the street, props and destruction, the
 zombie AI and fog of war, combat, power-ups, effects, sound, haptics, and
-every menu (Black Market, notes, settings). The survivors and zombies are
+every menu (Armory, notes, settings). The survivors and zombies are
 real animated models now (Quaternius's Zombie Apocalypse Kit, CC0), and the
 UI uses Bebas Neue. Still to come:
 
@@ -33,7 +33,7 @@ The simulation uses the web version's numbers as they are: the road runs up
 build rotation matrices with the same components, so Unity draws a mirror
 image of the web street. Only the joystick and keys account for it
 (screen-right is world −x), signs and billboards flip their texture so text
-reads, and the Black Market's gun pictures are shot from the other side.
+reads, and the Armory's gun pictures are shot from the other side.
 
 ## Decisions (October 2026)
 
@@ -271,9 +271,9 @@ CSS). Portraits and gun pictures are rendered from the 3D models
 
 - [x] Menu over the street, survivor select (swipe and arrows, 3D
       portraits), loadout.
-- [x] The Black Market (the web version's Armory, renamed on 21 October
-      2026): guns, parts with a 3D gun preview and effect chips, and
-      survivor upgrades.
+- [x] The Armory: guns, parts with a 3D gun preview and effect chips, and
+      survivor upgrades. (The Black Market is a separate shop: playtest
+      note 4.)
 - [x] Results with tips, pause, settings, playtest tools.
 - [x] Playtest notes, and Send to Claude as a GitHub issue on My-Games.
 - [x] Back-button stack, safe areas, banners and toasts.

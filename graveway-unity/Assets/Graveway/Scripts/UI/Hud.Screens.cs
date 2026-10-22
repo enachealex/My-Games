@@ -45,7 +45,7 @@ namespace Graveway
             mBest = Lbl("m-big", best, "—");
             mRuns = Lbl("m-small", best, "No runs yet");
             Btn("PLAY", "primary big", bottom, OpenSelect);
-            Btn("Black Market", "", bottom, () => OpenMarket("menu"));
+            Btn("Armory", "", bottom, () => OpenArmory("menu"));
             Lbl("hint", bottom, "Drag anywhere to move. Aiming and shooting are automatic.");
         }
 
@@ -195,7 +195,7 @@ namespace Graveway
             var lt = El("grow", load);
             Lbl("small-caps", lt, "ALSO CARRYING");
             Lbl("perk-name", lt, more.Count > 0 ? string.Join(", ", more) : "Nothing else");
-            Btn("Loadout", "small", load, () => OpenMarket("select"));
+            Btn("Loadout", "small", load, () => OpenArmory("select"));
 
             cDots.Clear();
             for (int i = 0; i < Tunables.Characters.Length; i++)
@@ -261,7 +261,7 @@ namespace Graveway
             var rs = El("stack", rc);
             Btn("RUN AGAIN", "primary big", rs, Play);
             var rr = El("row-btns", rs);
-            Btn("Black Market", "", rr, () => { game.ShowMenu(); OpenMarket("menu"); });
+            Btn("Armory", "", rr, () => { game.ShowMenu(); OpenArmory("menu"); });
             Btn("Menu", "", rr, ToMenu);
             NoteButton(rs, "Leave a note about this run");
 
@@ -335,13 +335,13 @@ namespace Graveway
             "Zombies can hide behind walls and tankers. Step out to get a clear look.",
             "A suppressor keeps gunfire from waking the zombies further up the road.",
             "Every part trades something. Check the green and red under each one.",
-            "Pick which guns you carry under Black Market → Weapons. Your survivor's own always comes.",
+            "Pick which guns you carry under Armory → Weapons. Your survivor's own always comes.",
         };
 
         string Tip()
         {
             var (cost, label) = CheapestUpgrade();
-            if (label != null && cost <= Save.Data.coins) return $"You can afford {label} in the Black Market.";
+            if (label != null && cost <= Save.Data.coins) return $"You can afford {label} in the Armory.";
             return Tips[UnityEngine.Random.Range(0, Tips.Length)];
         }
 

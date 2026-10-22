@@ -2,7 +2,7 @@
 // and the page in index.html, on UI Toolkit, built in code and styled by
 // Resources/UI/Graveway.uss. Split by screen: this file has the shared
 // parts and the in-run HUD; Hud.Screens.cs the menu, survivor select,
-// pause, results and settings; Hud.Market.cs the Black Market; Hud.Notes.cs the
+// pause, results and settings; Hud.Armory.cs the Armory; Hud.Notes.cs the
 // playtest notes.
 //
 // Only buttons can be touched; everything else ignores the pointer, so a
@@ -32,7 +32,7 @@ namespace Graveway
         Game game;
         UIDocument doc;
         VisualElement root;
-        string current = "menu";             // which screen: menu, select, market, hud, pause, result
+        string current = "menu";             // which screen: menu, select, armory, hud, pause, result
         Dictionary<string, Texture2D> portraits = new Dictionary<string, Texture2D>();
         bool portraitsWanted = true;
 
@@ -64,7 +64,7 @@ namespace Graveway
             BuildHud();
             BuildMenu();
             BuildSelect();
-            BuildMarket();
+            BuildArmory();
             BuildOverlays();
             BuildModals();
             foreach (var l in root.Query<Label>(className: "card-title").ToList()) Fit(l.parent, l);
@@ -200,14 +200,14 @@ namespace Graveway
         }
 
         // ── Screens ──────────────────────────────────────────────────────
-        VisualElement hud, menu, select, market;
+        VisualElement hud, menu, select, armory;
 
         void Show(string name)
         {
             current = name;
             Shown(menu, name == "menu");
             Shown(select, name == "select");
-            Shown(market, name == "market");
+            Shown(armory, name == "armory");
             Shown(hud, name == "hud" || name == "pause");
             Shown(pause, name == "pause");
         }
@@ -233,7 +233,7 @@ namespace Graveway
             if (IsShown(notesModal)) { CloseNotes(); return; }
             if (IsShown(settingsModal)) { CloseSettings(); return; }
             if (IsShown(result)) { ToMenu(); return; }
-            if (current == "market") { CloseMarket(); return; }
+            if (current == "armory") { CloseArmory(); return; }
             if (current == "select") { ToMenu(); return; }
             if (game.state == Game.State.Playing) { game.Pause(); return; }
             if (game.state == Game.State.Paused) { game.Resume(); return; }
@@ -363,7 +363,7 @@ namespace Graveway
             // As shares of the screen, so it holds when the UI draws into a
             // texture of another size (the tests' pictures).
             float w = Mathf.Max(1, Screen.width), h = Mathf.Max(1, Screen.height);
-            foreach (var screen in new[] { hud, menu, select, market })
+            foreach (var screen in new[] { hud, menu, select, armory })
             {
                 screen.style.top = (h - s.yMax) / h * size.y;
                 screen.style.bottom = s.yMin / h * size.y;
