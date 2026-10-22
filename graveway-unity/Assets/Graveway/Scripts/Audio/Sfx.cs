@@ -54,6 +54,8 @@ namespace Graveway
         static void ResetStatics()
         {
             voices = null;
+            loopVoice = null;
+            looping = null;
             last.Clear();
         }
 
@@ -131,6 +133,36 @@ namespace Graveway
         public static void Collapse() { if (Throttle("collapse", 1)) Play("collapse"); }
         public static void Milestone() { if (Throttle("milestone", 0.5f)) Play("milestone"); }
         public static void Slam() { if (Throttle("slam", 0.3f)) Play("slam"); }
+        public static void Jet() { if (Throttle("jet", 1)) Play("jet"); }
+        public static void Rotor() { if (Throttle("rotor", 1)) Play("rotor"); }
+
+        // One looping sound (the helicopter overhead), on a voice of its own
+        // so a busy fight can't take it. Cheap to call every frame.
+        static AudioSource loopVoice;
+        static string looping;
+
+        public static void Loop(string key, bool on)
+        {
+            on &= enabled && voices != null && voices[0] != null;
+            if (!on)
+            {
+                if (looping != null && loopVoice) loopVoice.Stop();
+                looping = null;
+                return;
+            }
+            if (looping == key) return;
+            if (!loopVoice)
+            {
+                loopVoice = voices[0].gameObject.AddComponent<AudioSource>();
+                loopVoice.playOnAwake = false;
+                loopVoice.spatialBlend = 0;
+                loopVoice.loop = true;
+            }
+            loopVoice.clip = clips[key][0];
+            loopVoice.volume = 0.8f;
+            loopVoice.Play();
+            looping = key;
+        }
 
         // ── Playing ──────────────────────────────────────────────────────
         // audio.js's throttle(): drops a sound if the same one played less
@@ -358,6 +390,27 @@ namespace Graveway
                 m.Noise(dur: 0.45f, freq: 160, lowpass: true, vol: 0.9f);
                 m.Tone(freq: 70, to: 30, dur: 0.4f, type: Wave.Sine, vol: 0.5f);
             });
+
+            // The Black Market's (not in audio.js): a jet coming in low and
+            // roaring overhead, and a helicopter's rotor beating closer, then
+            // looping while it's here. The noise buffer runs dry after about
+            // a second, so long sounds are layered from short ones.
+            Fixed("jet", m =>
+            {
+                m.Noise(dur: 1.0f, freq: 450, lowpass: true, vol: 0.12f, attack: 0.6f);
+                m.Noise(dur: 1.0f, freq: 800, lowpass: true, vol: 0.3f, attack: 0.3f, delay: 0.8f);
+                m.Noise(dur: 1.1f, freq: 1600, q: 0.6f, vol: 0.6f, attack: 0.2f, sweep: 0.3f, delay: 1.6f);
+                m.Tone(freq: 340, to: 150, dur: 2.6f, type: Wave.Sawtooth, vol: 0.035f, delay: 0.4f, attack: 1.2f);
+            });
+            Fixed("rotor", m =>
+            {
+                for (int i = 0; i < 44; i++) m.Noise(dur: 0.05f, freq: 140, lowpass: true, vol: 0.05f + 0.4f * i / 43f, delay: i / 12f);
+            });
+            Fixed("rotor:loop", m =>
+            {
+                for (int i = 0; i < 12; i++) m.Noise(dur: 0.05f, freq: 140, lowpass: true, vol: 0.4f, delay: i / 12f);
+                m.Until(1);     // a whole second, so the beat keeps time round the loop
+            });
             return r;
         }
 
@@ -403,6 +456,9 @@ namespace Graveway
                 if (end > buf.Length) System.Array.Resize(ref buf, Math.Max(end, buf.Length * 2));
                 if (end > len) len = end;
             }
+
+            // Silence to `seconds`, for a loop that has to be that long.
+            public void Until(float seconds) => Reserve(Samples(seconds));
 
             // White noise through a band-pass (or low-pass) filter whose
             // frequency can sweep exponentially to freq * sweep.

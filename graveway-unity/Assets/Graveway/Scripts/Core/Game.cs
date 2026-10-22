@@ -48,6 +48,7 @@ namespace Graveway
     public sealed class RunStats
     {
         public int kills, bonus, startAt;
+        public bool skipBoss;                // the Black Market's "Skip the boss", waiting for one
         public float coins, time, startZ;
         public Zombie boss;
         public bool banked;                  // its takings are in the save
@@ -254,6 +255,7 @@ namespace Graveway
                 Save.Bank(kept);
                 hud.RunKept(kept, unfinished: false);
             }
+            ClearSupport();
             world?.Dispose();
             world = null;
             foreach (var z in zombies) Recycle(z);
@@ -400,6 +402,7 @@ namespace Graveway
             if (raw > 0) fps += (1 / raw - fps) * 0.05f;
             time += dt;
             input.Update();
+            SupportSound();
             if (GameKeys.Back) hud.Back();
             if (state == State.Playing) Keys();
 
@@ -412,6 +415,7 @@ namespace Graveway
                 if ((run.noteT -= dt) <= 0) { run.noteT = 10; Save.Running(Record()); }
                 UpdatePlayer(dt, input.Move);
                 director.Update(dt, Distance);
+                UpdateSupport(dt);
             }
             else if (state == State.Dying)
             {

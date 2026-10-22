@@ -98,6 +98,13 @@ namespace Graveway
 
         public void SpawnBoss()
         {
+            // The Black Market's "Skip the boss": this one never turns up.
+            if (run != null && run.skipBoss)
+            {
+                run.skipBoss = false;
+                hud.Banner("No boss this time", "The Black Market saw to it");
+                return;
+            }
             float x = 0, z = player.z - 38;
             World.ResolveColliders(world.props, ref x, ref z, 1.3f);
             run.boss = SpawnZombie("boss", x, z, Stage, chase: true);

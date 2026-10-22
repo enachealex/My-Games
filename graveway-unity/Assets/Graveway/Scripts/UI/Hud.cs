@@ -65,6 +65,7 @@ namespace Graveway
             BuildMenu();
             BuildSelect();
             BuildArmory();
+            BuildBlackMarket();
             BuildOverlays();
             BuildModals();
             foreach (var l in root.Query<Label>(className: "card-title").ToList()) Fit(l.parent, l);
@@ -208,6 +209,7 @@ namespace Graveway
             Shown(menu, name == "menu");
             Shown(select, name == "select");
             Shown(armory, name == "armory");
+            Shown(blackMarket, name == "blackmarket");
             Shown(hud, name == "hud" || name == "pause");
             Shown(pause, name == "pause");
         }
@@ -215,6 +217,7 @@ namespace Graveway
         public void ShowHud()
         {
             hudCache.Clear();
+            packKey = -1;
             Shown(result, false);
             Show("hud");
         }
@@ -234,6 +237,7 @@ namespace Graveway
             if (IsShown(settingsModal)) { CloseSettings(); return; }
             if (IsShown(result)) { ToMenu(); return; }
             if (current == "armory") { CloseArmory(); return; }
+            if (current == "blackmarket") { ShowMenu(); return; }
             if (current == "select") { ToMenu(); return; }
             if (game.state == Game.State.Playing) { game.Pause(); return; }
             if (game.state == Game.State.Paused) { game.Resume(); return; }
@@ -363,7 +367,7 @@ namespace Graveway
             // As shares of the screen, so it holds when the UI draws into a
             // texture of another size (the tests' pictures).
             float w = Mathf.Max(1, Screen.width), h = Mathf.Max(1, Screen.height);
-            foreach (var screen in new[] { hud, menu, select, armory })
+            foreach (var screen in new[] { hud, menu, select, armory, blackMarket })
             {
                 screen.style.top = (h - s.yMax) / h * size.y;
                 screen.style.bottom = s.yMin / h * size.y;
@@ -464,6 +468,7 @@ namespace Graveway
             hMag = Lbl("mag", ammoRow, "/ 12");
             Lbl("tap", hWeapon, "TAP TO RELOAD");
             hReload = El("reload-fill", hWeapon);
+            BuildPack();
         }
 
         public void UpdateHud()
@@ -471,6 +476,7 @@ namespace Graveway
             var p = game.player;
             var r = game.run;
             if (p == null || r == null) return;
+            UpdatePack();
             float d = game.Distance;
             if (Changed("dist", (int)d)) hDist.text = $"{N(d)} m";
             if (Changed("stage", game.Stage)) hStage.text = $"STAGE {game.Stage + 1}";

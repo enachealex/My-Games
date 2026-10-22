@@ -197,6 +197,16 @@
 .pip.on { background-color: rgb(155, 225, 93); }
 .uprow > .btn { min-width: 92px; }
 
+/* ── Black Market ───────────────────────────────────────────────────── */
+.bm-item { margin-bottom: 10px; padding: 14px; }
+.bm-row { flex-direction: row; align-items: center; }
+.item-icon { width: 44px; height: 44px; margin-right: 12px; flex-shrink: 0; }
+.item-icon-sm { width: 26px; height: 26px; margin: 0 0 2px 0; }
+.bm-words { flex-grow: 1; flex-shrink: 1; margin-right: 10px; }
+.bm-name { font-size: 16px; -unity-font-style: bold; }
+.bm-blurb { font-size: 13px; color: rgb(154, 166, 160); white-space: normal; margin-top: 2px; }
+.bm-have { font-size: 12px; color: rgb(155, 225, 93); -unity-font-style: bold; margin-top: 4px; }
+
 /* ── HUD ──────────────────────────────────────────────────────────────── */
 .hud { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
 .h-top { flex-direction: row; align-items: center; padding: 10px 12px 0 12px; }
@@ -209,9 +219,9 @@
 .h-prog-fill { height: 100%; width: 100%; background-color: rgb(155, 225, 93); transform-origin: left; }
 .h-coins { flex-direction: row; align-items: center; -unity-font-style: bold; padding: 6px 10px; border-radius: 10px;
     background-color: rgba(14, 20, 24, 0.86); border-width: 1px; border-color: rgba(255, 255, 255, 0.1); margin-right: 10px; }
-.h-kills { position: absolute; left: 12px; top: 60px; font-size: 12px; -unity-font-style: bold; color: rgb(154, 166, 160);
+.h-kills { position: absolute; left: 12px; top: 84px; font-size: 12px; -unity-font-style: bold; color: rgb(154, 166, 160);
     text-shadow: 0 1px 4px rgb(0, 0, 0); }
-.h-debug { position: absolute; left: 12px; top: 76px; font-size: 11px; -unity-font-style: bold; color: rgb(255, 209, 102);
+.h-debug { position: absolute; left: 12px; top: 100px; font-size: 11px; -unity-font-style: bold; color: rgb(255, 209, 102);
     text-shadow: 0 1px 4px rgb(0, 0, 0); }
 .h-boss { position: absolute; left: 15%; right: 15%; top: 62px; align-items: center; }
 .h-boss-label { font-size: 15px; -unity-font-style: bold; letter-spacing: 2px; color: rgb(255, 154, 138); text-shadow: 0 2px 6px rgb(0, 0, 0); }
@@ -322,3 +332,14 @@
     -unity-font-definition: url("Fonts/BebasNeue-Regular.ttf");
     -unity-font-style: normal;
 }
+
+/* The backpack in a run: the Black Market's items, on the left edge, above
+   your health, within thumb reach. */
+.h-pack { position: absolute; left: 12px; bottom: 200px; }
+.pack-btn { width: 56px; height: 56px; margin-top: 8px; border-radius: 14px; border-width: 1px; border-color: rgba(155, 225, 93, 0.55);
+    background-color: rgba(14, 20, 24, 0.86); align-items: center; justify-content: center; }
+.pack-btn.busy { opacity: 0.4; }
+.pack-btn > .item-icon { width: 34px; height: 34px; margin-right: 0; }
+.pack-n { position: absolute; right: 4px; bottom: 2px; font-size: 13px; -unity-font-style: bold; }
+.pack-t { position: absolute; left: 0; right: 0; top: -17px; font-size: 12px; -unity-font-style: bold; color: rgb(155, 225, 93);
+    -unity-text-align: middle-center; text-shadow: 0 1px 4px rgb(0, 0, 0); }

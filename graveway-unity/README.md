@@ -69,6 +69,7 @@ touching the game logic.
 | `Scripts/Core/Game.Zombies.cs` | Spawning, steering, attacking, smashing, dying | `src/game.js` |
 | `Scripts/Core/Game.Combat.cs` | Firing, bullets, ammo effects, grenades, explosions | `src/game.js` |
 | `Scripts/Core/Game.Pickups.cs` | Coins, health, armor and power-ups | `src/game.js` |
+| `Scripts/Core/Game.Support.cs` | The Black Market's items in a run: airstrikes, the helicopter, backup survivors, skipping a boss | |
 | `Scripts/Combat/Weapon.cs` | A gun's stats from its parts, ammo, reloads, recoil | `src/weapons.js` |
 | `Scripts/Combat/Director.cs` | Who spawns, where and when, from the distance | `src/director.js` |
 | `Scripts/World/World.cs` | The endless street in chunks: buildings, alleys, props, pickups | `src/world.js` |
@@ -80,11 +81,12 @@ touching the game logic.
 | `Scripts/Art/Guns.cs` | The real guns, with their fitted parts | `src/models.js`, `src/preview.js` |
 | `Scripts/Art/` (the rest) | Guns, props and pickups built in code, and painted textures | `src/models.js` |
 | `Scripts/Render/Batches.cs` + `Shaders/` | Instanced drawing of coins, bullets, particles and debris; the fog shadow shader | |
-| `Scripts/Audio/Sfx.cs`, `Haptics.cs` | The 29 sounds, synthesised at start-up; vibration | `src/audio.js` |
+| `Scripts/Audio/Sfx.cs`, `Haptics.cs` | The web version's 29 sounds plus the jet and the rotor, synthesised at start-up; vibration | `src/audio.js` |
 | `Scripts/Core/StickInput.cs` | The floating joystick, any number of fingers, and keyboard keys (Input System) | `src/input.js` |
 | `Scripts/UI/Hud.cs` | HUD, banners, toasts, the back button | `src/ui.js`, `index.html` |
 | `Scripts/UI/Hud.Screens.cs` | Menu, survivor select, pause, results, settings | `src/ui.js` |
 | `Scripts/UI/Hud.Armory.cs` | The Armory: guns, loadout, parts and survivor upgrades | `src/ui.js` |
+| `Scripts/UI/Hud.BlackMarket.cs` | The Black Market, and the backpack on the HUD | |
 | `Scripts/UI/Hud.Notes.cs` | Playtest notes and Send to Claude | `src/ui.js` |
 | `Scripts/UI/Studio.cs`, `Icons.cs` | Portraits and gun pictures rendered from the models; vector icons | `src/preview.js` |
 | `Resources/UI/Graveway.uss` | The UI's look | `index.html` CSS |

@@ -8,13 +8,15 @@ namespace Graveway.Tests
 {
     public class SfxTests
     {
-        // The sfx names in audio.js, with each gun model's shot and both groans.
+        // The sfx names in audio.js, with each gun model's shot and both
+        // groans, and the Black Market's jet and helicopter.
         static readonly string[] Names =
         {
             "shot:pistol", "shot:launcher", "shot:smg", "shot:shotgun", "shot:rifle", "shot:minigun",
             "hit", "die", "groan", "groan:big", "coin", "pickup", "powerup", "shock", "toss", "hurt",
             "reload", "swap", "click", "buy", "denied", "win", "lose", "crumble", "boom", "bigBoom",
             "thunk", "ignite", "clang", "ricochet", "chip", "rumble", "collapse", "milestone", "slam",
+            "jet", "rotor", "rotor:loop",
         };
 
         [Test]

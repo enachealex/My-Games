@@ -119,6 +119,15 @@ namespace Graveway
         public Explosion(float radius, float damage, float impulse) { this.radius = radius; this.damage = damage; this.impulse = impulse; }
     }
 
+    // Something from the Black Market, called in during a run from the
+    // backpack. delay: how long you hear it coming before it arrives.
+    public sealed class ItemDef
+    {
+        public string id, name, blurb;
+        public int price;
+        public float delay;
+    }
+
     public sealed class PowerUpDef
     {
         public string id, name, tag;
@@ -188,6 +197,41 @@ namespace Graveway
 
         // How many guns you take into a run, counting your survivor's own.
         public const int LoadoutSlots = 4;
+
+        // ── The Black Market (playtest note 4) ───────────────────────────
+        // A shop of its own, apart from the Armory: things to call in during
+        // a run, bought with coins and carried in a backpack. None arrive at
+        // once: you hear the jet or the helicopter coming first.
+        public const int BackpackSize = 6;
+        public static readonly ItemDef[] Items =
+        {
+            new ItemDef { id = "strafe", name = "Strafing run", price = 120, delay = 3,
+                blurb = "A jet rakes the road ahead with cannon fire, 25 m of it." },
+            new ItemDef { id = "cluster", name = "Cluster strike", price = 150, delay = 3,
+                blurb = "A dozen bomblets scattered across the road ahead." },
+            new ItemDef { id = "napalm", name = "Incendiary strike", price = 180, delay = 3,
+                blurb = "Sets a strip of road ahead burning for 8 seconds." },
+            new ItemDef { id = "backup", name = "Backup survivor", price = 200, delay = 4,
+                blurb = "Another survivor joins you with a random gun, until they fall." },
+            new ItemDef { id = "heli", name = "Helicopter", price = 250, delay = 4,
+                blurb = "Hovers over you and guns down zombies for 30 seconds." },
+            new ItemDef { id = "skipboss", name = "Skip the boss", price = 300, delay = 0,
+                blurb = "The next boss never turns up." },
+        };
+
+        // What the items do when they get there.
+        public static class Support
+        {
+            public const int StrafeHits = 20;                  // cannon hits in a line up the road
+            public const float StrafeAhead = 6, StrafeLength = 25, StrafeRadius = 1.3f, StrafeDamage = 70, StrafePropDamage = 40;
+            public const int ClusterBombs = 12;                // scattered round a point ahead
+            public const float ClusterAhead = 16, ClusterWidth = 5.5f, ClusterDepth = 7;
+            public static readonly Explosion ClusterBlast = new Explosion(2.6f, 140, 9);
+            public const float NapalmAhead = 14, NapalmDepth = 6, NapalmTime = 8, NapalmDps = 30, NapalmBurn = 3;
+            public const float HeliTime = 30, HeliRange = 22, HeliDamage = 22, HeliRate = 9;   // seconds, metres, per shot, shots a second
+            public const int MaxBackup = 3;
+            public const float BackupHp = 100;
+        }
 
         // ── Gun parts ────────────────────────────────────────────────────
         public static readonly Dictionary<string, string> PartSlots = new Dictionary<string, string>
@@ -429,6 +473,7 @@ namespace Graveway
         public static WeaponDef Weapon(string id) => System.Array.Find(Weapons, w => w.id == id) ?? Weapons[0];
         public static CharacterDef Character(string id) => System.Array.Find(Characters, c => c.id == id) ?? Characters[0];
         public static PowerUpDef PowerUp(string id) => System.Array.Find(PowerUps, p => p.id == id) ?? PowerUps[0];
+        public static ItemDef Item(string id) => System.Array.Find(Items, i => i.id == id);
 
         // A power-up id, picked by weight; r is a random number in [0, 1).
         public static string PickPowerup(float r)

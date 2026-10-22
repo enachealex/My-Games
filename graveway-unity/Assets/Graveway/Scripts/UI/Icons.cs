@@ -196,6 +196,77 @@ namespace Graveway
             return e;
         }
 
+        // The Black Market's items: filled shapes on a 24 x 24 grid.
+        public static VectorIcon Item(string id, Color tint)
+        {
+            var e = new VectorIcon((p, r) =>
+            {
+                float k = Mathf.Min(r.width, r.height) / 24, ox = r.x + (r.width - 24 * k) / 2, oy = r.y + (r.height - 24 * k) / 2;
+                Vector2 P(float x, float y) => new Vector2(ox + x * k, oy + y * k);
+                void Poly(params float[] xy)
+                {
+                    p.BeginPath();
+                    p.MoveTo(P(xy[0], xy[1]));
+                    for (int i = 2; i < xy.Length; i += 2) p.LineTo(P(xy[i], xy[i + 1]));
+                    p.ClosePath();
+                    p.Fill();
+                }
+                void Dot(float x, float y, float rad)
+                {
+                    p.BeginPath();
+                    p.Arc(P(x, y), rad * k, 0, 360);
+                    p.Fill();
+                }
+                switch (id)
+                {
+                    case "strafe":       // a jet, nose up the screen
+                        Poly(12, 1.5f, 13.6f, 8, 21.5f, 13, 21.5f, 15, 13.6f, 13, 13.6f, 18, 16.5f, 20.5f, 16.5f, 22, 12, 21, 7.5f, 22, 7.5f, 20.5f,
+                             10.4f, 18, 10.4f, 13, 2.5f, 15, 2.5f, 13, 10.4f, 8);
+                        break;
+                    case "cluster":      // bomblets
+                        Dot(7, 15, 3.6f); Dot(17, 15, 3.6f); Dot(12, 7.5f, 3.6f);
+                        Poly(6, 18, 8, 18, 8.6f, 21.5f, 5.4f, 21.5f);
+                        Poly(16, 18, 18, 18, 18.6f, 21.5f, 15.4f, 21.5f);
+                        break;
+                    case "napalm":       // a flame
+                        p.BeginPath();
+                        p.MoveTo(P(12, 1.5f));
+                        p.BezierCurveTo(P(16.5f, 7.5f), P(20.5f, 11), P(19.5f, 16));
+                        p.BezierCurveTo(P(18.5f, 21), P(14.5f, 22.5f), P(12, 22.5f));
+                        p.BezierCurveTo(P(9.5f, 22.5f), P(5.5f, 21), P(4.5f, 16));
+                        p.BezierCurveTo(P(3.8f, 12), P(7.5f, 9.5f), P(8.8f, 6));
+                        p.BezierCurveTo(P(10, 9), P(11, 10), P(12, 11));
+                        p.BezierCurveTo(P(13.2f, 8), P(13.2f, 5), P(12, 1.5f));
+                        p.ClosePath();
+                        p.Fill();
+                        break;
+                    case "heli":         // a helicopter, side on
+                        Poly(1.5f, 4.5f, 22.5f, 4.5f, 22.5f, 6, 1.5f, 6);
+                        Poly(11.2f, 6, 12.8f, 6, 12.8f, 8.5f, 11.2f, 8.5f);
+                        Dot(9.5f, 13, 5);
+                        Poly(13.5f, 11.2f, 21.5f, 10.8f, 21.5f, 13.4f, 13.5f, 14.8f);
+                        Poly(20.5f, 8, 22.5f, 8, 22.5f, 13.4f, 20.5f, 13.4f);
+                        Poly(5, 19.5f, 15, 19.5f, 15, 21, 5, 21);
+                        Poly(7, 17.5f, 8.2f, 17.5f, 8.2f, 19.5f, 7, 19.5f);
+                        Poly(11.8f, 17.5f, 13, 17.5f, 13, 19.5f, 11.8f, 19.5f);
+                        break;
+                    case "backup":       // another survivor
+                        Dot(9, 6.5f, 3.6f);
+                        Poly(2.5f, 21.5f, 3.5f, 13.5f, 9, 11, 14.5f, 13.5f, 15.5f, 21.5f);
+                        Poly(18, 7.5f, 20.2f, 7.5f, 20.2f, 10.8f, 23.5f, 10.8f, 23.5f, 13, 20.2f, 13, 20.2f, 16.3f, 18, 16.3f, 18, 13,
+                             14.7f, 13, 14.7f, 10.8f, 18, 10.8f);
+                        break;
+                    default:             // skip the boss: skip forward
+                        Poly(2.5f, 5, 11, 12, 2.5f, 19);
+                        Poly(11, 5, 19.5f, 12, 11, 19);
+                        Poly(19.5f, 5, 22, 5, 22, 19, 19.5f, 19);
+                        break;
+                }
+            }, tint);
+            e.AddToClassList("item-icon");
+            return e;
+        }
+
         // ── Textures for what USS can't draw ─────────────────────────────
         static Texture2D coin, vignette;
 

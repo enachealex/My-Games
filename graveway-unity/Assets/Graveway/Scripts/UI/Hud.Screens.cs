@@ -45,7 +45,10 @@ namespace Graveway
             mBest = Lbl("m-big", best, "—");
             mRuns = Lbl("m-small", best, "No runs yet");
             Btn("PLAY", "primary big", bottom, OpenSelect);
-            Btn("Armory", "", bottom, () => OpenArmory("menu"));
+            // Two shops: guns and parts, and things to call in during a run.
+            var shops = El("row-btns", bottom);
+            Btn("Armory", "", shops, () => OpenArmory("menu"));
+            Btn("Black Market", "", shops, OpenBlackMarket);
             Lbl("hint", bottom, "Drag anywhere to move. Aiming and shooting are automatic.");
         }
 

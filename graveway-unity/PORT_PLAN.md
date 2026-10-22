@@ -356,7 +356,13 @@ complete. The web version stays frozen, so these land in Unity only.
    None of them are immediate: you hear the plane or helicopter coming
    first.
 
-   Proposed design (to confirm before building):
+   *(Built, 21 October 2026, as designed below: `Hud.BlackMarket.cs` for
+   the shop and the backpack, `Game.Support.cs` for the items in a run,
+   numbers in `Tunables.Items` and `Tunables.Support`. The helicopter
+   hovers low over the road's edge just ahead rather than over you, so it
+   stays out of the camera's way.)*
+
+   The design:
    - A "Black Market" button on the menu beside the Armory, opening its
      own screen: each item with a picture, what it does, its price, and
      how many are in the backpack.

@@ -58,6 +58,7 @@ namespace Graveway
         public Dictionary<string, int> pup = new Dictionary<string, int>();   // survivor upgrades, e.g. maxHp: 1
         public Settings settings = new Settings();
         public RunRecord running;            // the run under way, in case the app closes mid-run; null between runs
+        public List<string> backpack = new List<string>();   // Black Market items, by id, kept between runs
     }
 
     // What a run has earned so far.
@@ -221,6 +222,9 @@ namespace Graveway
             if (data.owned == null || data.owned.Count == 0) data.owned = new List<string> { "pistol" };
             data.parts ??= new Dictionary<string, GunParts>();
             data.pup ??= new Dictionary<string, int>();
+            data.backpack ??= new List<string>();
+            data.backpack.RemoveAll(id => Tunables.Item(id) == null);
+            if (data.backpack.Count > Tunables.BackpackSize) data.backpack.RemoveRange(Tunables.BackpackSize, data.backpack.Count - Tunables.BackpackSize);
             data.settings ??= new Settings();
             if (data.settings.quality != "low") data.settings.quality = "high";
         }
