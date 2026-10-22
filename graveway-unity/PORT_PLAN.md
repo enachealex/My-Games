@@ -345,9 +345,9 @@ complete. The web version stays frozen, so these land in Unity only.
    survivor, thrown out like grenades.
 3. **Weapon pickups:** temporary boosts to damage, accuracy, rate of fire,
    reload speed and range.
-4. **A shop for coins**, for when favourite guns are maxed out. Bought
-   items go in a **backpack on the left of the screen**, within thumb
-   reach, and are used from there:
+4. **The Black Market: a shop for coins**, separate from the Armory, for
+   when favourite guns are maxed out. Bought items go in a **backpack on
+   the left of the screen**, within thumb reach, and are used from there:
    - airstrikes: cluster strike, strafing run, incendiary
    - helicopter air support for 30 s (the timer starts at its first shot)
    - extra survivors to fight alongside you, each with a random weapon
@@ -355,6 +355,25 @@ complete. The web version stays frozen, so these land in Unity only.
 
    None of them are immediate: you hear the plane or helicopter coming
    first.
+
+   Proposed design (to confirm before building):
+   - A "Black Market" button on the menu beside the Armory, opening its
+     own screen: each item with a picture, what it does, its price, and
+     how many are in the backpack.
+   - Prices to start from: strafing run 120, cluster strike 150,
+     incendiary strike 180, backup survivor 200, helicopter 250, skip the
+     next boss 300. (A walker drops about 3 coins; a good run banks a few
+     hundred.)
+   - The backpack holds up to 6 items, kept between runs. In a run it's a
+     column of buttons on the left edge; tap one to call it in.
+   - Airstrikes come in down the road ahead of you after 3 s of jet noise:
+     a strafing run is a line of cannon hits 25 m long; a cluster strike
+     scatters about 12 bomblets; incendiary sets a strip burning for 8 s.
+   - The helicopter arrives after 4 s of rotor noise, hovers over you and
+     fires at the nearest zombies for 30 s from its first shot.
+   - A backup survivor is one of the other three, with a random gun from
+     the six, fighting beside you until they fall or the run ends.
+   - "Skip the next boss" is used up when the next boss would come.
 5. **New weapons:** sniper rifle and rocket launcher.
 6. **New environments after every 2 bosses.** A helicopter lands about
    25 m ahead; walking up to it plays a cut scene of the survivor climbing
