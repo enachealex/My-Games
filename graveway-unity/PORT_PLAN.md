@@ -384,6 +384,52 @@ complete. The web version stays frozen, so these land in Unity only.
 6. **New environments after every 2 bosses.** A helicopter lands about
    25 m ahead; walking up to it plays a cut scene of the survivor climbing
    aboard and being dropped off in the new environment.
+
+   Proposed design (to confirm before building, 23 October 2026):
+   - **Three places to start, in a loop**, all from art already in the
+     project (the Zombie Apocalypse Kit has props the street doesn't use
+     yet):
+     - **Downtown**: today's street at night.
+     - **The docks**: shipping containers stacked two high where the
+       buildings were, a water tower, pipes, trucks, tyre stacks and
+       cones; floodlights on poles for street lamps; sodium-orange light
+       and a sea-green fog. Containers stop bullets and can't be broken;
+       trucks go up like cars.
+     - **The highway at dusk**: no buildings, open ground either side with
+       trees built in code; concrete barriers along the edges (tanks can
+       break them), a jammed convoy of trucks and cars, traffic lights,
+       the town sign; a purple and orange dusk.
+     After the highway, back downtown (another part of the city), and
+     round again.
+   - **When**: after every second boss. Bosses come at 500 m and every
+     500 m after, so the helicopter comes at 1,000 m, 2,000 m, 3,000 m.
+     (Or after every boss, from 500 m, so the docks come much sooner.)
+   - **The evac**: once that boss is down, "Evac incoming" and rotor noise.
+     The helicopter (the Black Market's) lands about 25 m ahead on a
+     cleared stretch, with a green ring and a smoke flare. The road's
+     blocked behind it, so the only way on is aboard. Zombies keep coming
+     until you get there.
+   - **The cut scene** (about 6 s; a tap skips it after the first time):
+     walk into the ring and the camera swings round, the survivor runs
+     and jumps aboard, the helicopter lifts off up the road, and it fades
+     to black with the new place's name. It fades back in on the
+     helicopter coming down there; the survivor hops out and it leaves.
+     Coins for making it out: 100 for each evac so far.
+   - **What carries over**: the distance (still counting), the stage and
+     how tough zombies are, health and armour, guns and ammo, power-ups
+     running, the backpack, and backup survivors (they come along).
+     Airstrikes and a support helicopter still on the way are called
+     off, and stay in the backpack.
+   - **What changes**: the scenery, which props there are and what they
+     do, and the light and fog. Zombies are the same everywhere for now.
+   - **Scoreboard and hats**: each score says the furthest place reached;
+     a hat for reaching the docks, another for the highway.
+   - **Playtest tools**: "Start runs at" gets 950 m (the second boss moments
+     away), and a "Call the evac" button.
+   - **Built in steps**: (1) places in the street builder, the evac and
+     cut scene, and the docks; (2) the highway; (3) better trees from
+     Quaternius's nature pack, if the code-built ones don't look good
+     enough (that would be a download for you to approve).
 7. **Survivors are bought** (22 October 2026). You start as Rook; the
    others are unlocked on survivor select: Wren 1,200, Bram 2,000, Juno
    5,000 (doubled with the guns, note 8), each more than the gun they
