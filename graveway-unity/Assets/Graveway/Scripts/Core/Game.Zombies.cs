@@ -103,6 +103,7 @@ namespace Graveway
             {
                 run.skipBoss = false;
                 hud.Banner("No boss this time", "The Black Market saw to it");
+                BossPassed();
                 return;
             }
             float x = 0, z = player.z - 38;
@@ -154,7 +155,7 @@ namespace Graveway
                 bool isBoss = run != null && z == run.boss;
                 if (z.z > p.z + (isBoss ? 60 : 45))
                 {
-                    if (isBoss) run.boss = null;
+                    if (isBoss) { run.boss = null; BossPassed(); }
                     Recycle(z);
                     zombies.RemoveAt(i);
                     continue;
@@ -426,7 +427,7 @@ namespace Graveway
             }
             if (z.kind == "boss")
             {
-                if (run != null) run.bosses++;
+                if (run != null) { run.bosses++; BossPassed(); }
                 shake = 0.8f;
                 hud.Banner("Boss down!", $"+{z.t.coins} coins on the ground");
                 Sfx.Slam();

@@ -70,9 +70,10 @@ touching the game logic.
 | `Scripts/Core/Game.Combat.cs` | Firing, bullets, ammo effects, grenades, explosions | `src/game.js` |
 | `Scripts/Core/Game.Pickups.cs` | Coins, health, armor and power-ups | `src/game.js` |
 | `Scripts/Core/Game.Support.cs` | The Black Market's items in a run: airstrikes, the helicopter, backup survivors, skipping a boss | |
+| `Scripts/Core/Game.Evac.cs` | The evac after every second boss: the helicopter, its cut scene, and on to the next place | |
 | `Scripts/Combat/Weapon.cs` | A gun's stats from its parts, ammo, reloads, recoil | `src/weapons.js` |
 | `Scripts/Combat/Director.cs` | Who spawns, where and when, from the distance | `src/director.js` |
-| `Scripts/World/World.cs` | The endless street in chunks: buildings, alleys, props, pickups | `src/world.js` |
+| `Scripts/World/World.cs` | The endless street in chunks, in each place it runs through (downtown, the docks, the highway): scenery, alleys, props, pickups | `src/world.js` |
 | `Scripts/World/PropSystem.cs` | Prop damage, fires, wrecks, toppling, the condemned building | `src/props.js` |
 | `Scripts/World/NavGrid.cs` | The zombies' flow-field pathfinding | `src/nav.js` |
 | `Scripts/World/Sight.cs` | Fog of war and its ground shadows | `src/fog.js` |

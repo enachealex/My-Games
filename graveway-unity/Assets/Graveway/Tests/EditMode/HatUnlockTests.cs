@@ -34,8 +34,8 @@ namespace Graveway.Tests
             PlayerPrefs.DeleteKey(Key + ".notes");
         }
 
-        static RunRecord Run(int distance, int kills = 0, int bosses = 0, bool board = true) =>
-            new RunRecord { distance = distance, kills = kills, bosses = bosses, character = "rook", board = board };
+        static RunRecord Run(int distance, int kills = 0, int bosses = 0, bool board = true, int place = 0) =>
+            new RunRecord { distance = distance, kills = kills, bosses = bosses, character = "rook", board = board, place = place };
 
         [Test]
         public void EveryHatFitsEverySurvivor()
@@ -49,7 +49,7 @@ namespace Graveway.Tests
                 foreach (var model in Rigs.SurvivorModel.Values)
                     Assert.That(System.Array.Exists(art.on, p => p.id == model), $"{h.id} on {model}");
                 Assert.That(h.target, Is.GreaterThan(0));
-                Assert.That(new[] { "best", "metres", "kills", "bosses", "runs" }, Does.Contain(h.stat), h.id);
+                Assert.That(new[] { "best", "metres", "kills", "bosses", "runs", "place" }, Does.Contain(h.stat), h.id);
             }
         }
 
@@ -68,6 +68,19 @@ namespace Graveway.Tests
             Assert.That(Save.Stat("runs"), Is.EqualTo(3));
             Save.Bank(Run(40));
             Assert.That(Save.NewHats, Is.Empty);
+        }
+
+        // Getting to the docks, and then the highway, by helicopter.
+        [Test]
+        public void PlacesUnlockTheirHats()
+        {
+            Save.Bank(Run(1200, place: 1));
+            Assert.That(Save.NewHats, Does.Contain("beanie"));
+            Assert.That(Save.LastScore.place, Is.EqualTo(1), "the scoreboard says how far it got");
+            Save.Bank(Run(80));
+            Assert.That(Save.Stat("place"), Is.EqualTo(1), "the furthest, not the last");
+            Save.Bank(Run(2100, place: 2));
+            Assert.That(Save.NewHats, Does.Contain("cone"));
         }
 
         [Test]

@@ -104,6 +104,72 @@ MonoBehaviour:
       m_Center: {x: 0, y: 0.11694134, z: -0.000000007450581}
       m_Extent: {x: 0.23577686, y: 0.11368976, z: 0.10726325}
     light: {x: 0, y: 0.11694134, z: -0.000000007450581}
+  - id: Container_Green
+    model: {fileID: 919132149155446097, guid: 66342bbfffe5ffd4a87b9e68e5c3c94a, type: 3}
+    bounds:
+      m_Center: {x: 0.00000023841858, y: 1.3392838, z: 0}
+      m_Extent: {x: 2.8542662, y: 1.3017304, z: 1.2803026}
+    light: {x: 0.00000023841858, y: 1.3392838, z: 0}
+  - id: Container_Red
+    model: {fileID: 919132149155446097, guid: 5a1ca02e5ba61904fa239c0b296292a2, type: 3}
+    bounds:
+      m_Center: {x: -0.023858547, y: 1.2922927, z: 0.0065416098}
+      m_Extent: {x: 2.8539963, y: 1.3017304, z: 1.2797031}
+    light: {x: -0.023858547, y: 1.2922927, z: 0.0065416098}
+  - id: WaterTower
+    model: {fileID: 919132149155446097, guid: e4fb30812d78aa947ba67e41ba6422dd, type: 3}
+    bounds:
+      m_Center: {x: 0, y: 4.657706, z: 0.00000023841858}
+      m_Extent: {x: 1.3228517, y: 4.6898975, z: 1.3542408}
+    light: {x: 0, y: 4.657706, z: 0.00000023841858}
+  - id: Pipes
+    model: {fileID: 919132149155446097, guid: 58ff977459ea6b74082e902d9b99a963, type: 3}
+    bounds:
+      m_Center: {x: 0.000027120113, y: 0.34049898, z: 0}
+      m_Extent: {x: 0.37409288, y: 0.3356735, z: 1.6776696}
+    light: {x: 0.000027120113, y: 0.34049898, z: 0}
+  - id: Pallet
+    model: {fileID: 919132149155446097, guid: 4ec409ebd3edcab42bfe8475ba06dc0d, type: 3}
+    bounds:
+      m_Center: {x: -0.009804308, y: 0.07228514, z: 0}
+      m_Extent: {x: 0.44626743, y: 0.07002359, z: 0.60848176}
+    light: {x: -0.009804308, y: 0.07228514, z: 0}
+  - id: Wheels_Stack
+    model: {fileID: 919132149155446097, guid: f1aa9d1fd2951434f8e6959a753403eb, type: 3}
+    bounds:
+      m_Center: {x: 0.021125317, y: 0.3056876, z: -0.0012612045}
+      m_Extent: {x: 0.32878423, y: 0.30568838, z: 0.28593457}
+    light: {x: 0.021125317, y: 0.3056876, z: -0.0012612045}
+  - id: TrafficCone_2
+    model: {fileID: 919132149155446097, guid: d050fedb86a863240bc4722d1a5209a1, type: 3}
+    bounds:
+      m_Center: {x: 0.000000029802322, y: 0.35954875, z: 0.000000059604645}
+      m_Extent: {x: 0.29770172, y: 0.36779624, z: 0.2977017}
+    light: {x: 0.000000029802322, y: 0.35954875, z: 0.000000059604645}
+  - id: TrafficBarrier_1
+    model: {fileID: 919132149155446097, guid: 88dc6be624b98184e987d6e430190d5b, type: 3}
+    bounds:
+      m_Center: {x: 0, y: 0.56248975, z: 0}
+      m_Extent: {x: 0.7776649, y: 0.55599165, z: 0.44031093}
+    light: {x: 0, y: 0.56248975, z: 0}
+  - id: TrafficLight_1
+    model: {fileID: 919132149155446097, guid: cf6e5750270db574cae4de92e3c07d25, type: 3}
+    bounds:
+      m_Center: {x: -0.58478945, y: 2.3172452, z: 0.58558923}
+      m_Extent: {x: 0.7564679, y: 2.3319278, z: 0.7556671}
+    light: {x: -0.58478945, y: 2.3172452, z: 0.58558923}
+  - id: TownSign
+    model: {fileID: 919132149155446097, guid: 6d22bd53d97ff6e42a0af4a4d3a9e3e1, type: 3}
+    bounds:
+      m_Center: {x: 2.5334845, y: 2.6535928, z: 0}
+      m_Extent: {x: 2.992385, y: 2.6758397, z: 0.86760086}
+    light: {x: 2.5334845, y: 2.6535928, z: 0}
+  - id: Vehicle_Truck
+    model: {fileID: 919132149155446097, guid: e512fcdf358996a46b69cb6d529d9097, type: 3}
+    bounds:
+      m_Center: {x: 0, y: 1.4426574, z: -0.43520737}
+      m_Extent: {x: 1.3546412, y: 1.4419839, z: 2.6277838}
+    light: {x: 0.000000019868216, y: 0.89927125, z: 2.0260265}
   guns:
   - body:
       id: Pistol
@@ -251,6 +317,7 @@ MonoBehaviour:
       rotation: {x: -0.051960923, y: -0.00027473003, z: -0.000014294531, w: 0.9986491}
     model: 
     bare: {fileID: 0}
+    palette: 0
   - id: straw
     mesh: {fileID: 4300000, guid: dd069af6f3ab90848a7f593cfec908f7, type: 2}
     colors:
@@ -283,6 +350,7 @@ MonoBehaviour:
       rotation: {x: -0.051960923, y: -0.00027473003, z: -0.000014294531, w: 0.9986491}
     model: 
     bare: {fileID: 0}
+    palette: 0
   - id: mohawk
     mesh: {fileID: 4300000, guid: 79457441ccc6bbb4f93602c15626d7e2, type: 2}
     colors:
@@ -314,6 +382,7 @@ MonoBehaviour:
       rotation: {x: -0.051960923, y: -0.00027473003, z: -0.000014294531, w: 0.9986491}
     model: 
     bare: {fileID: 0}
+    palette: 0
   - id: hood
     mesh: {fileID: 4300000, guid: dd2b0124350e40e499e6f51c795650ff, type: 2}
     colors:
@@ -345,6 +414,7 @@ MonoBehaviour:
       rotation: {x: -0.051960927, y: -0.00027473006, z: -0.000014294533, w: 0.99864906}
     model: 
     bare: {fileID: 0}
+    palette: 0
   - id: witch
     mesh: {fileID: 4300000, guid: 756192332720ca64c91dff3f6bf50285, type: 2}
     colors:
@@ -377,6 +447,7 @@ MonoBehaviour:
       rotation: {x: -0.051960923, y: -0.00027473, z: -0.000014294531, w: 0.9986491}
     model: 
     bare: {fileID: 0}
+    palette: 0
   - id: crown
     mesh: {fileID: 4300000, guid: 6354f9ddf59466f4ebedb743b429691d, type: 2}
     colors:
@@ -408,16 +479,83 @@ MonoBehaviour:
       rotation: {x: -0.051960923, y: -0.00027473003, z: -0.000014294531, w: 0.9986491}
     model: 
     bare: {fileID: 0}
+    palette: 0
+  - id: beanie
+    mesh: {fileID: 4300000, guid: 6e73518501069cf45b77d9fe2bd857e2, type: 2}
+    colors:
+    - {r: 0.17254902, g: 0.2509804, b: 0.3764706, a: 1}
+    - {r: 0.13333334, g: 0.19607843, b: 0.29803923, a: 1}
+    on:
+    - id: Characters_Shaun
+      mesh: {fileID: 4300000, guid: 6e73518501069cf45b77d9fe2bd857e2, type: 2}
+      colors: []
+      position: {x: -0.0000034191007, y: 0.0047918563, z: 0.00010403243}
+      scale: {x: 0.026620511, y: 0.026620524, z: 0.026620517}
+      rotation: {x: -0.05196093, y: -0.00027473, z: -0.000014294531, w: 0.9986491}
+    - id: Characters_Matt
+      mesh: {fileID: 4300000, guid: 6e73518501069cf45b77d9fe2bd857e2, type: 2}
+      colors: []
+      position: {x: -0.000003153403, y: 0.004245965, z: -0.00037887588}
+      scale: {x: 0.026620511, y: 0.026620524, z: 0.026620517}
+      rotation: {x: -0.05196093, y: -0.00027473, z: -0.000014294531, w: 0.9986491}
+    - id: Characters_Sam
+      mesh: {fileID: 4300000, guid: 6e73518501069cf45b77d9fe2bd857e2, type: 2}
+      colors: []
+      position: {x: -0.0000030861781, y: 0.004458131, z: -0.00050159945}
+      scale: {x: 0.026702624, y: 0.026702637, z: 0.026702631}
+      rotation: {x: -0.051960927, y: -0.00027473003, z: -0.000014294532, w: 0.9986491}
+    - id: Characters_Lis
+      mesh: {fileID: 4300000, guid: 6e73518501069cf45b77d9fe2bd857e2, type: 2}
+      colors: []
+      position: {x: -0.0000032918228, y: 0.0040810695, z: -0.00012729625}
+      scale: {x: 0.026702626, y: 0.026702639, z: 0.026702633}
+      rotation: {x: -0.051960923, y: -0.00027473003, z: -0.000014294531, w: 0.9986491}
+    model: 
+    bare: {fileID: 0}
+    palette: 0
+  - id: cone
+    mesh: {fileID: 4300000, guid: 81d13145e2691d541a5a2adf621fb0ea, type: 2}
+    colors: []
+    on:
+    - id: Characters_Shaun
+      mesh: {fileID: 4300000, guid: 81d13145e2691d541a5a2adf621fb0ea, type: 2}
+      colors: []
+      position: {x: -0.0000034191007, y: 0.0047918563, z: 0.00010403243}
+      scale: {x: 0.026620511, y: 0.026620524, z: 0.026620517}
+      rotation: {x: -0.05196093, y: -0.00027473, z: -0.000014294531, w: 0.9986491}
+    - id: Characters_Matt
+      mesh: {fileID: 4300000, guid: 81d13145e2691d541a5a2adf621fb0ea, type: 2}
+      colors: []
+      position: {x: -0.000003153403, y: 0.004245965, z: -0.00037887588}
+      scale: {x: 0.026620511, y: 0.026620524, z: 0.026620517}
+      rotation: {x: -0.05196093, y: -0.00027473, z: -0.000014294531, w: 0.9986491}
+    - id: Characters_Sam
+      mesh: {fileID: 4300000, guid: 81d13145e2691d541a5a2adf621fb0ea, type: 2}
+      colors: []
+      position: {x: -0.0000030861781, y: 0.004458131, z: -0.00050159945}
+      scale: {x: 0.026702624, y: 0.026702637, z: 0.026702631}
+      rotation: {x: -0.051960927, y: -0.00027473003, z: -0.000014294532, w: 0.9986491}
+    - id: Characters_Lis
+      mesh: {fileID: 4300000, guid: 81d13145e2691d541a5a2adf621fb0ea, type: 2}
+      colors: []
+      position: {x: -0.0000032918228, y: 0.0040810695, z: -0.00012729625}
+      scale: {x: 0.026702626, y: 0.026702639, z: 0.026702633}
+      rotation: {x: -0.051960923, y: -0.00027473003, z: -0.000014294531, w: 0.9986491}
+    model: 
+    bare: {fileID: 0}
+    palette: 1
   - id: rookcap
     mesh: {fileID: 4300000, guid: 18711942c38e594428894492495e90b1, type: 2}
     colors: []
     on: []
     model: Characters_Shaun
     bare: {fileID: 4300000, guid: 995b6d89b67b30a40bb7a8584e736349, type: 2}
+    palette: 0
   - id: junobeanie
     mesh: {fileID: 4300000, guid: c347ae3b6e3f9bc42b8d2e9f29979a3a, type: 2}
     colors: []
     on: []
     model: Characters_Sam
     bare: {fileID: 4300000, guid: c525543cd2a78f34b9773046b3d2bd1b, type: 2}
+    palette: 0
   zombieAtlas: {fileID: 2800000, guid: cc5120ad36d94ad46a315ba3181fca55, type: 3}

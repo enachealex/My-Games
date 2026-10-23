@@ -124,7 +124,7 @@ namespace Graveway
             dx /= l; dz /= l;
             var def = p.def;
 
-            if (p.kind == "car" || p.kind == "tanker")
+            if (p.kind == "car" || p.kind == "tanker" || p.kind == "truck")
             {
                 Wreck(p, cause);
                 return;

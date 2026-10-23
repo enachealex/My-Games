@@ -71,6 +71,7 @@ namespace Graveway
             BuildBlackMarket();
             BuildScores();
             BuildHats();
+            BuildCurtain();
             BuildOverlays();
             BuildModals();
             foreach (var l in root.Query<Label>(className: "card-title").ToList()) Fit(l.parent, l);
@@ -229,6 +230,42 @@ namespace Graveway
             Show("hud");
         }
 
+        // ── The evac's cut scene ─────────────────────────────────────────
+        // No HUD, and a curtain that goes to black (and back) with where
+        // you're going; once one's been seen, a tap on it skips.
+        VisualElement curtain;
+        Label curtainTitle, curtainLine, curtainSkip;
+
+        void BuildCurtain()
+        {
+            curtain = El("curtain", root);
+            curtain.pickingMode = PickingMode.Position;
+            curtainTitle = Lbl("curtain-title", curtain);
+            curtainLine = Lbl("curtain-line", curtain);
+            curtainSkip = Lbl("curtain-skip", curtain, "Tap to skip");
+            curtain.RegisterCallback<PointerDownEvent>(_ => game.SkipEvac());
+            Shown(curtain, false);
+        }
+
+        public void CutScene()
+        {
+            HideBanner();
+            Shown(hud, false);
+            current = "cut";
+        }
+
+        public void Curtain(float black, string title, string line, bool canSkip)
+        {
+            Shown(curtain, true);
+            curtain.style.backgroundColor = new Color(0, 0, 0, black);
+            curtainTitle.text = title;
+            curtainLine.text = line;
+            curtainTitle.style.opacity = curtainLine.style.opacity = Mathf.Clamp01(black * 2 - 0.8f);
+            Shown(curtainSkip, canSkip);
+        }
+
+        public void CurtainOff() { if (curtain != null) Shown(curtain, false); }
+
         public void ShowPause()
         {
             pauseLevel.text = $"{N(game.Distance)} m · stage {game.Stage + 1}";
@@ -240,6 +277,7 @@ namespace Graveway
         // running run, and only leave the app from the main menu.
         public void Back()
         {
+            if (current == "cut") { game.SkipEvac(); return; }
             if (IsShown(note)) { CloseNote(); return; }
             if (IsShown(notesModal)) { CloseNotes(); return; }
             if (IsShown(settingsModal)) { CloseSettings(); return; }

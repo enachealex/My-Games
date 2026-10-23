@@ -135,7 +135,7 @@ namespace Graveway.EditorTools
             cat.props = BuildProps();
             cat.guns = BuildGuns();
             cat.parts = BuildParts();
-            cat.hats = BuildHats().Concat(BuildOwnHats()).ToArray();
+            cat.hats = BuildHats().Concat(BuildMadeHats()).Concat(BuildOwnHats()).ToArray();
             cat.zombieAtlas = AssetDatabase.LoadAssetAtPath<Texture2D>(Kit + "Zombie_Atlas.png");
             EditorUtility.SetDirty(cat);
             AssetDatabase.SaveAssets();
@@ -150,6 +150,10 @@ namespace Graveway.EditorTools
             "Environment/PlasticBarrier", "Environment/StreetLights", "Environment/Barrel",
             "Environment/TrashBag_1", "Environment/TrashBag_2", "Environment/Wheel", "Environment/Pallet_Broken",
             "Environment/TrafficCone_1", "Environment/CinderBlock",
+            // The docks and the highway.
+            "Environment/Container_Green", "Environment/Container_Red", "Environment/WaterTower", "Environment/Pipes",
+            "Environment/Pallet", "Environment/Wheels_Stack", "Environment/TrafficCone_2", "Environment/TrafficBarrier_1",
+            "Environment/TrafficLight_1", "Environment/TownSign", "Vehicles/Vehicle_Truck",
         };
 
         static ArtCatalog.Prop[] BuildProps()
@@ -332,6 +336,21 @@ namespace Graveway.EditorTools
         static ArtCatalog.Hat[] BuildHats()
         {
             Directory.CreateDirectory(HatsDir);
+            var heads = SurvivorHeads();
+            var hats = new System.Collections.Generic.List<ArtCatalog.Hat>();
+            foreach (var (id, file, keep, size, aboveBrow) in HatSources)
+            {
+                var hat = LiftHat(id, file, keep, aboveBrow, out var width);
+                var on = heads.Select(h => Placed(h.id, hat.mesh, null, h.toBone * Matrix4x4.TRS(h.top, Quaternion.identity, Vector3.one * (size * h.width / width)))).ToArray();
+                hat.on = on;
+                hats.Add(hat);
+            }
+            return hats.ToArray();
+        }
+
+        // Each survivor's head: into its bone's space, its top, how wide.
+        static System.Collections.Generic.List<(string id, Matrix4x4 toBone, Vector3 top, float width)> SurvivorHeads()
+        {
             var heads = new System.Collections.Generic.List<(string id, Matrix4x4 toBone, Vector3 top, float width)>();
             foreach (var id in Rigs.SurvivorModel.Values)
             {
@@ -356,66 +375,150 @@ namespace Graveway.EditorTools
                     if (cut.Length > 0 && cut.Max(p => p.x) - cut.Min(p => p.x) >= b.size.x * 0.6f) { top = y; break; }
                 }
                 heads.Add((id, mesh.bindposes[hb] * toModel.inverse, new Vector3(b.center.x, top, b.center.z), b.size.x));
-                Debug.Log($"Graveway: hat fit {id}: top {top:0.000} of {b.max.y:0.000}, width {b.size.x:0.000}");
                 Object.DestroyImmediate(inst);
             }
+            return heads;
+        }
 
-            var hats = new System.Collections.Generic.List<ArtCatalog.Hat>();
-            foreach (var (id, file, keep, size, aboveBrow) in HatSources)
+        // One hat lifted off a modular head, on the origin at the top of it.
+        static ArtCatalog.Hat LiftHat(string id, string file, string[] keep, bool aboveBrow, out float width)
+        {
+            var inst = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/ThirdParty/Quaternius/{file}.fbx"));
+            var smr = inst.GetComponentsInChildren<SkinnedMeshRenderer>().First(r => r.name.EndsWith("_Head"));
+            var src = smr.sharedMesh;
+            var toModel = smr.transform.localToWorldMatrix;
+            var v = src.vertices;
+            var n = src.normals;
+            var mats = smr.sharedMaterials;
+            string Mat(int s) => s < mats.Length && mats[s] ? mats[s].name : "";
+            Vector3 top;
+            (top, width) = file.Contains("Women") ? WomensHead : MensHead;
+
+            var verts = new System.Collections.Generic.List<Vector3>();
+            var norms = new System.Collections.Generic.List<Vector3>();
+            var subs = new System.Collections.Generic.List<int[]>();
+            var colors = new System.Collections.Generic.List<Color>();
+            for (int s = 0; s < src.subMeshCount; s++)
             {
-                var inst = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/ThirdParty/Quaternius/{file}.fbx"));
-                var smr = inst.GetComponentsInChildren<SkinnedMeshRenderer>().First(r => r.name.EndsWith("_Head"));
-                var src = smr.sharedMesh;
-                var toModel = smr.transform.localToWorldMatrix;
-                var v = src.vertices;
-                var n = src.normals;
-                var mats = smr.sharedMaterials;
-                string Mat(int s) => s < mats.Length && mats[s] ? mats[s].name : "";
-                var (top, width) = file.Contains("Women") ? WomensHead : MensHead;
-
-                var verts = new System.Collections.Generic.List<Vector3>();
-                var norms = new System.Collections.Generic.List<Vector3>();
-                var subs = new System.Collections.Generic.List<int[]>();
-                var colors = new System.Collections.Generic.List<Color>();
-                for (int s = 0; s < src.subMeshCount; s++)
+                if (keep != null && !keep.Contains(Mat(s))) continue;
+                var map = new System.Collections.Generic.Dictionary<int, int>();
+                var idx = src.GetIndices(s);
+                var tris = new System.Collections.Generic.List<int>();
+                for (int k = 0; k < idx.Length; k += 3)
                 {
-                    if (keep != null && !keep.Contains(Mat(s))) continue;
-                    var map = new System.Collections.Generic.Dictionary<int, int>();
-                    var idx = src.GetIndices(s);
-                    var tris = new System.Collections.Generic.List<int>();
-                    for (int k = 0; k < idx.Length; k += 3)
+                    var tri = new[] { idx[k], idx[k + 1], idx[k + 2] };
+                    if (aboveBrow && tri.Average(i => toModel.MultiplyPoint3x4(v[i]).y) < top.y - 0.05f) continue;
+                    foreach (int i in tri)
                     {
-                        var tri = new[] { idx[k], idx[k + 1], idx[k + 2] };
-                        if (aboveBrow && tri.Average(i => toModel.MultiplyPoint3x4(v[i]).y) < top.y - 0.05f) continue;
-                        foreach (int i in tri)
+                        if (!map.TryGetValue(i, out int j))
                         {
-                            if (!map.TryGetValue(i, out int j))
-                            {
-                                map[i] = j = verts.Count;
-                                verts.Add(toModel.MultiplyPoint3x4(v[i]) - top);
-                                norms.Add(toModel.MultiplyVector(n[i]).normalized);
-                            }
-                            tris.Add(j);
+                            map[i] = j = verts.Count;
+                            verts.Add(toModel.MultiplyPoint3x4(v[i]) - top);
+                            norms.Add(toModel.MultiplyVector(n[i]).normalized);
                         }
+                        tris.Add(j);
                     }
-                    subs.Add(tris.ToArray());
-                    colors.Add(mats[s] && mats[s].HasProperty("_BaseColor") ? mats[s].GetColor("_BaseColor") : Color.gray);
                 }
-                var hat = new Mesh { name = "hat " + id };
-                hat.SetVertices(verts);
-                hat.SetNormals(norms);
-                hat.subMeshCount = subs.Count;
-                for (int s = 0; s < subs.Count; s++) hat.SetTriangles(subs[s], s);
-                hat.RecalculateBounds();
+                subs.Add(tris.ToArray());
+                colors.Add(mats[s] && mats[s].HasProperty("_BaseColor") ? mats[s].GetColor("_BaseColor") : Color.gray);
+            }
+            var hat = new Mesh { name = "hat " + id };
+            hat.SetVertices(verts);
+            hat.SetNormals(norms);
+            hat.subMeshCount = subs.Count;
+            for (int s = 0; s < subs.Count; s++) hat.SetTriangles(subs[s], s);
+            hat.RecalculateBounds();
+            string path = $"{HatsDir}/{id}.asset";
+            var asset = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (asset == null) { AssetDatabase.CreateAsset(hat, path); asset = hat; }
+            else { EditorUtility.CopySerialized(hat, asset); asset.name = hat.name; }
+
+            Object.DestroyImmediate(inst);
+            return new ArtCatalog.Hat { id = id, mesh = asset, colors = colors.ToArray() };
+        }
+
+        // Hats made here rather than lifted off a head, in the same space (on
+        // the origin at the top of the men's bald head, in its metres), and
+        // fitted the same way: a knitted docker's beanie, and the kit's
+        // traffic cone.
+        static ArtCatalog.Hat[] BuildMadeHats()
+        {
+            var heads = SurvivorHeads();
+            var hats = new System.Collections.Generic.List<ArtCatalog.Hat>();
+            ArtCatalog.Hat Fit(string id, Mesh mesh, Color[] colors, bool palette)
+            {
                 string path = $"{HatsDir}/{id}.asset";
                 var asset = AssetDatabase.LoadAssetAtPath<Mesh>(path);
-                if (asset == null) { AssetDatabase.CreateAsset(hat, path); asset = hat; }
-                else { EditorUtility.CopySerialized(hat, asset); asset.name = hat.name; }
-
-                var on = heads.Select(h => Placed(h.id, asset, null, h.toBone * Matrix4x4.TRS(h.top, Quaternion.identity, Vector3.one * (size * h.width / width)))).ToArray();
-                hats.Add(new ArtCatalog.Hat { id = id, mesh = asset, colors = colors.ToArray(), on = on });
-                Object.DestroyImmediate(inst);
+                if (asset == null) { AssetDatabase.CreateAsset(mesh, path); asset = mesh; }
+                else { EditorUtility.CopySerialized(mesh, asset); asset.name = mesh.name; }
+                var on = heads.Select(h => Placed(h.id, asset, null, h.toBone * Matrix4x4.TRS(h.top, Quaternion.identity, Vector3.one * (h.width / MensHead.width)))).ToArray();
+                return new ArtCatalog.Hat { id = id, mesh = asset, colors = colors, on = on, palette = palette };
             }
+
+            // The beanie: a dome over the top of the head, and its turned-up band.
+            var dome = new System.Collections.Generic.List<Vector3>();
+            var domeN = new System.Collections.Generic.List<Vector3>();
+            var domeT = new System.Collections.Generic.List<int>();
+            const int segs = 14, rings = 6;
+            const float r = 0.118f, tall = 0.1f, baseY = -0.035f, cz = 0;
+            for (int k = 0; k <= rings; k++)
+            {
+                float a = k / (float)rings * Mathf.PI / 2, rr = Mathf.Cos(a) * r, y = baseY + Mathf.Sin(a) * tall;
+                for (int i = 0; i <= segs; i++)
+                {
+                    float b = i / (float)segs * Mathf.PI * 2;
+                    dome.Add(new Vector3(Mathf.Sin(b) * rr, y, cz + Mathf.Cos(b) * rr));
+                    domeN.Add(new Vector3(Mathf.Sin(b) * Mathf.Cos(a), Mathf.Sin(a), Mathf.Cos(b) * Mathf.Cos(a)).normalized);
+                }
+            }
+            for (int k = 0; k < rings; k++)
+                for (int i = 0; i < segs; i++)
+                {
+                    int a0 = k * (segs + 1) + i, a1 = a0 + 1, b0 = a0 + segs + 1, b1 = b0 + 1;
+                    domeT.AddRange(new[] { a0, b0, a1, a1, b0, b1 });
+                }
+            var band = new GeoBuilder().Cylinder(0.123f, 0.125f, 0.04f, segs, M.T(0, baseY + 0.008f, cz)).Build("band");
+            var beanie = new Mesh { name = "hat beanie" };
+            var verts = new System.Collections.Generic.List<Vector3>(dome);
+            var norms = new System.Collections.Generic.List<Vector3>(domeN);
+            int off = verts.Count;
+            verts.AddRange(band.vertices);
+            norms.AddRange(band.normals);
+            beanie.SetVertices(verts);
+            beanie.SetNormals(norms);
+            beanie.subMeshCount = 2;
+            beanie.SetTriangles(domeT, 0);
+            beanie.SetTriangles(band.triangles.Select(i => i + off).ToArray(), 1);
+            beanie.RecalculateBounds();
+            Object.DestroyImmediate(band);
+            hats.Add(Fit("beanie", beanie, new[] { Hex.C(0x2c4060), Hex.C(0x22324c) }, false));
+
+            // The cone: the kit's, about as tall as the head, without its flat
+            // base, sat just down on the crown.
+            var inst = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>($"{Kit}Environment/TrafficCone_1.fbx"));
+            var mf = inst.GetComponentInChildren<MeshFilter>();
+            var toModel = mf.transform.localToWorldMatrix;
+            var src = mf.sharedMesh;
+            var pts = src.vertices.Select(v => toModel.MultiplyPoint3x4(v)).ToArray();
+            var bb = new Bounds(pts[0], Vector3.zero);
+            foreach (var pt in pts) bb.Encapsulate(pt);
+            float s = 0.3f / bb.size.y;
+            float cut = bb.min.y + bb.size.y * 0.12f;
+            var cone = Object.Instantiate(src);
+            cone.name = "hat cone";
+            cone.SetVertices(pts.Select(pt => new Vector3(pt.x - bb.center.x, pt.y - cut - 0.02f / s, pt.z - bb.center.z) * s).ToArray());
+            cone.SetNormals(src.normals.Select(n => toModel.MultiplyVector(n).normalized).ToArray());
+            for (int sm = 0; sm < cone.subMeshCount; sm++)
+            {
+                var tris = cone.GetTriangles(sm);
+                var keepTris = new System.Collections.Generic.List<int>();
+                for (int k = 0; k < tris.Length; k += 3)
+                    if ((pts[tris[k]].y + pts[tris[k + 1]].y + pts[tris[k + 2]].y) / 3 > cut) keepTris.AddRange(new[] { tris[k], tris[k + 1], tris[k + 2] });
+                cone.SetTriangles(keepTris, sm);
+            }
+            cone.RecalculateBounds();
+            Object.DestroyImmediate(inst);
+            hats.Add(Fit("cone", cone, new Color[0], true));
             return hats.ToArray();
         }
 

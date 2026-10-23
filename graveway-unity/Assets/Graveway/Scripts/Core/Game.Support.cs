@@ -205,16 +205,35 @@ namespace Graveway
                 heliTail = new GeoBuilder().Box(0.06f, 1.6f, 0.2f).Build("tail rotor");
             }
             var p = player;
-            var h = new Heli { go = new GameObject("helicopter"), x = p.x - 14, y = 12, z = p.z - 32 };   // in from up the road
-            var t = h.go.transform;
-            t.SetParent(worldRoot, false);
-            Art.Show(t, heliBody, Art.Lit(Hex.C(0x3c4a32), 0.12f), "body");
-            h.rotor = Art.Show(t, heliRotor, Art.Lit(Hex.C(0x1c1e20)), "rotor").transform;
-            h.rotor.localPosition = new Vector3(0, 0.85f, 0);
-            h.tailRotor = Art.Show(t, heliTail, Art.Lit(Hex.C(0x1c1e20)), "tail rotor").transform;
-            h.tailRotor.localPosition = new Vector3(0.2f, 0.75f, -4.9f);
+            var h = new Heli { x = p.x - 14, y = 12, z = p.z - 32 };   // in from up the road
+            h.go = HeliModel(out h.rotor, out h.tailRotor);
+            h.go.transform.SetParent(worldRoot, false);
             h.shadow = Art.BlobShadow(worldRoot, 5, 0.45f);
             return h;
+        }
+
+        // The helicopter itself (the evac's too): body, rotor, tail rotor.
+        static GameObject HeliModel(out Transform rotor, out Transform tail)
+        {
+            if (heliBody == null)
+            {
+                heliBody = new GeoBuilder().Box(1.5f, 1.3f, 3.2f, 0, 0, 0).Box(1.2f, 0.7f, 1.2f, 0, -0.05f, 1.9f)
+                    .Box(0.35f, 0.35f, 3.6f, 0, 0.25f, -3.3f).Box(0.12f, 1.1f, 0.6f, 0, 0.75f, -4.9f)
+                    .Box(0.08f, 0.08f, 3.0f, -0.75f, -1.0f, 0).Box(0.08f, 0.08f, 3.0f, 0.75f, -1.0f, 0)
+                    .Box(0.08f, 0.45f, 0.08f, -0.75f, -0.8f, 0.9f).Box(0.08f, 0.45f, 0.08f, 0.75f, -0.8f, 0.9f)
+                    .Box(0.08f, 0.45f, 0.08f, -0.75f, -0.8f, -0.9f).Box(0.08f, 0.45f, 0.08f, 0.75f, -0.8f, -0.9f)
+                    .Build("helicopter");
+                heliRotor = new GeoBuilder().Box(7.5f, 0.06f, 0.3f).Box(0.3f, 0.06f, 7.5f).Build("rotor");
+                heliTail = new GeoBuilder().Box(0.06f, 1.6f, 0.2f).Build("tail rotor");
+            }
+            var go = new GameObject("helicopter");
+            var t = go.transform;
+            Art.Show(t, heliBody, Art.Lit(Hex.C(0x3c4a32), 0.12f), "body");
+            rotor = Art.Show(t, heliRotor, Art.Lit(Hex.C(0x1c1e20)), "rotor").transform;
+            rotor.localPosition = new Vector3(0, 0.85f, 0);
+            tail = Art.Show(t, heliTail, Art.Lit(Hex.C(0x1c1e20)), "tail rotor").transform;
+            tail.localPosition = new Vector3(0.2f, 0.75f, -4.9f);
+            return go;
         }
 
         void UpdateHeli(float dt)
@@ -384,6 +403,27 @@ namespace Graveway
         {
             Destroy(a.rig.root);
             Art.DestroyAll(a.gun.own);
+        }
+
+        // Off to another place: what's been called in but not come yet goes
+        // back in the backpack; a helicopter already here, and fires and
+        // cannon fire, stay behind; backup survivors come along.
+        void SupportAlong()
+        {
+            foreach (var inc in incoming)
+                if (Save.Data.backpack.Count < Tunables.BackpackSize) Save.Data.backpack.Add(inc.id);
+            Save.Persist();
+            incoming.Clear();
+            strips.Clear();
+            cannon.Clear();
+            DropHeli();
+            foreach (var a in allies.FindAll(a => a.dead)) DropAlly(a);
+            allies.RemoveAll(a => a.dead);
+            foreach (var a in allies)
+            {
+                a.x = Mathf.Clamp(player.x + a.side * 1.8f, -World.WalkHalf, World.WalkHalf);
+                a.z = player.z + 1.6f;
+            }
         }
 
         // Everything called in goes when the run does.

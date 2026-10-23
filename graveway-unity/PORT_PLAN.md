@@ -385,7 +385,15 @@ complete. The web version stays frozen, so these land in Unity only.
    25 m ahead; walking up to it plays a cut scene of the survivor climbing
    aboard and being dropped off in the new environment.
 
-   Proposed design (to confirm before building, 23 October 2026):
+   *(Built, 23 October 2026, as below: `Tunables.Places`, the street
+   builder's three versions in `World.cs`, the evac and its cut scene in
+   `Game.Evac.cs`, a run moved on by `Game.Relocate`. The hats for
+   reaching the docks and the highway are a docker beanie (made in code)
+   and the kit's traffic cone. Tested end to end in
+   `Tests/PlayMode/PlacesTests.cs`. Still to come: better trees, if the
+   ones built in code don't look good enough.)*
+
+   The design, as confirmed:
    - **Three places to start, in a loop**, all from art already in the
      project (the Zombie Apocalypse Kit has props the street doesn't use
      yet):

@@ -306,6 +306,77 @@ namespace Graveway
             return p;
         }
 
+        // A lorry from the kit, about 6 m long: the docks' and the highway's.
+        public static PropModel Truck(Rng rng)
+        {
+            var b = Kit.Find("Vehicle_Truck").bounds;
+            float s = 6f / b.size.z;
+            var p = new PropModel { group = new GameObject("truck"), hw = b.size.x * s / 2, hd = b.size.z * s / 2, height = b.size.y * s };
+            var t = p.group.transform;
+            bool lit = rng.Next() < 0.25f;
+            var truck = Kit.Place("Vehicle_Truck", t, s,
+                n => n == "Headlights" ? Art.Unlit(lit ? 0xfff0b0 : 0x4a4a40) : n == "BrakeLight" ? Art.Unlit(0x7a1010) : null);
+            foreach (var r in truck.GetComponentsInChildren<MeshRenderer>())
+            {
+                p.Keep(r);
+                if (r.sharedMaterials.Length > 1) p.burnBody = r;
+                else p.burnAlso.Add(r);
+            }
+            p.shadow = Art.BlobShadow(t, 6.4f, 0.5f);
+            return p;
+        }
+
+        // A shipping container from the kit, 6 m long along its local z.
+        public static PropModel Container(Rng rng)
+        {
+            var go = ContainerModel(rng, out float w, out float h);
+            var p = new PropModel { group = new GameObject("container"), hw = w / 2, hd = 3, height = h };
+            go.transform.SetParent(p.group.transform, false);
+            foreach (var r in go.GetComponentsInChildren<MeshRenderer>()) p.Keep(r);
+            return p;
+        }
+
+        // Just the look of one, for the stacks along the docks.
+        public static GameObject ContainerModel(Rng rng, out float width, out float height)
+        {
+            string id = rng.Next() < 0.5f ? "Container_Green" : "Container_Red";
+            var b = Kit.Find(id).bounds;
+            float s = 6f / b.size.x;
+            var holder = new GameObject("container");
+            var inner = Kit.Place(id, holder.transform, s);
+            inner.transform.localRotation = M.Yaw(Mathf.PI / 2);   // its length along z
+            width = b.size.z * s;
+            height = b.size.y * s;
+            return holder;
+        }
+
+        // A concrete road barrier from the kit, 2 m long.
+        public static PropModel Jersey()
+        {
+            var b = Kit.Find("TrafficBarrier_1").bounds;
+            float s = 2f / b.size.x;
+            var p = new PropModel { group = new GameObject("jersey"), hw = 1, hd = b.size.z * s / 2, height = b.size.y * s };
+            foreach (var r in Kit.Place("TrafficBarrier_1", p.group.transform, s).GetComponentsInChildren<MeshRenderer>()) p.Keep(r);
+            return p;
+        }
+
+        static Mesh crateBoxes;
+
+        // A pallet of wooden crates: the kit's pallet, boxes on it.
+        public static PropModel Crates(Rng rng)
+        {
+            crateBoxes ??= new GeoBuilder().Box(0.9f, 0.8f, 0.9f, -0.48f, 0.55f, -0.46f).Box(0.9f, 0.8f, 0.9f, 0.48f, 0.55f, -0.46f)
+                .Box(0.9f, 0.8f, 0.9f, -0.48f, 0.55f, 0.48f).Box(0.9f, 0.8f, 0.9f, 0.48f, 0.55f, 0.48f)
+                .Box(0.9f, 0.8f, 0.9f, -0.2f, 1.35f, 0).Build("crates");
+            var p = new PropModel { group = new GameObject("crates"), hw = 1, hd = 1, height = 1.75f };
+            var t = p.group.transform;
+            var pb = Kit.Find("Pallet").bounds;
+            foreach (var r in Kit.Place("Pallet", t, 2f / Mathf.Max(pb.size.x, pb.size.z)).GetComponentsInChildren<MeshRenderer>()) p.Keep(r);
+            p.Keep(At(t, crateBoxes, Art.Lit(new[] { 0x8a6a44, 0x7a5a38, 0x6e5a3e }[(int)(rng.Next() * 3)]), name: "boxes"));
+            p.shadow = Art.BlobShadow(t, 2.6f, 0.5f);
+            return p;
+        }
+
         static Mesh tankCab, tankGlass, tankChassis, tankTank, tankBands, tankWheels;
 
         // A fuel tanker: cab, chassis and a long tank. Rare, and very explosive.
@@ -412,28 +483,30 @@ namespace Graveway
         static Mesh lampPole, lampHead;
 
         // A street lamp. The collider is just the pole; the arm overhangs the road.
-        public static PropModel Lamp()
+        // Bigger (`size`), with a wider pool of its own colour, it's a
+        // floodlight on the docks.
+        public static PropModel Lamp(float size = 1, int color = 0xff9a3a, float pool = 7.5f)
         {
             if (lampPole == null)
             {
                 lampPole = new GeoBuilder().Cylinder(0.08f, 0.11f, 5.4f, 8, M.T(0, 2.7f, 0)).Box(0.1f, 0.1f, 1.6f, 0, 5.35f, 0.75f).Build("lamp pole");
                 lampHead = new GeoBuilder().Box(0.34f, 0.12f, 0.5f).Build("lamp head");
             }
-            var p = new PropModel { group = new GameObject("lamp"), hw = 0.13f, hd = 0.13f, height = 5.4f };
+            var p = new PropModel { group = new GameObject("lamp"), hw = 0.13f, hd = 0.13f, height = 5.4f * size };
             var t = p.group.transform;
             var light = new Vector3(0, 5.28f, 1.5f);
             if (Kit.Has("StreetLights"))
             {
                 // The kit's street light; its own glass dark, our glowing head
                 // just under it (it flickers and goes out on its own).
-                float s = 5.4f / Kit.Find("StreetLights").bounds.size.y;
+                float s = 5.4f * size / Kit.Find("StreetLights").bounds.size.y;
                 var lamp = Kit.Place("StreetLights", t, s, n => n == "Light" ? Art.Lit(0x2a2c30) : null);
                 foreach (var r in lamp.GetComponentsInChildren<MeshRenderer>()) p.Keep(r);
                 light = Kit.At("StreetLights", Kit.Find("StreetLights").light, s) - new Vector3(0, 0.06f, 0);
             }
             else p.Keep(At(t, lampPole, Art.Lit(0x3a3c40), name: "pole"));
             p.head = At(t, lampHead, Art.Unlit(0xffc979), light.x, light.y, light.z, "head");
-            p.pool = Art.GlowDecal(t, 0xff9a3a, 7.5f, 0.32f);
+            p.pool = Art.GlowDecal(t, color, pool, 0.32f);
             p.pool.transform.localPosition = new Vector3(light.x, 0.03f, light.z + 0.1f);
             return p;
         }

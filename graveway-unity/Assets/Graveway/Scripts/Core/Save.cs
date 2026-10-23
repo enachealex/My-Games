@@ -62,6 +62,7 @@ namespace Graveway
         public Settings settings = new Settings();
         public RunRecord running;            // the run under way, in case the app closes mid-run; null between runs
         public List<string> backpack = new List<string>();   // Black Market items, by id, kept between runs
+        public bool seenEvac;                // the evac's cut scene seen through once: a tap skips it now
         public string playerName = "";       // the name the last score went under, and the next will
         public List<Score> scores = new List<Score>();   // the scoreboard on this device, best first
         public Dictionary<string, int> progress;   // towards hats (Tunables.Hats); null in a save from before them
@@ -77,6 +78,7 @@ namespace Graveway
         public string name = "";             // whoever played it; "" if they didn't say
         public string character;             // survivor id
         public int distance, kills, coins, time;   // metres, zombies, coins, seconds
+        public int place;                    // the furthest place reached (0 downtown, 1 the docks...)
         public string at;                    // ISO time, UTC
     }
 
@@ -91,6 +93,7 @@ namespace Graveway
         public string character;             // survivor id
         public int time;                     // seconds
         public int bosses;                   // bosses beaten
+        public int place;                    // the furthest place reached: the nth of the run (Tunables.PlaceAt)
     }
 
     [Preserve, Serializable]
@@ -313,6 +316,7 @@ namespace Graveway
             p["kills"] = Stat("kills") + r.kills;
             p["bosses"] = Stat("bosses") + r.bosses;
             p["runs"] = Stat("runs") + 1;
+            p["place"] = Math.Max(Stat("place"), r.place);
             return Unlock();
         }
 
@@ -357,7 +361,7 @@ namespace Graveway
             var s = new Score
             {
                 id = Guid.NewGuid().ToString("N"), name = Data.playerName, character = r.character ?? Tunables.Characters[0].id,
-                distance = r.distance, kills = r.kills, coins = r.coins, time = r.time, at = DateTime.UtcNow.ToString("o"),
+                distance = r.distance, kills = r.kills, coins = r.coins, time = r.time, place = r.place, at = DateTime.UtcNow.ToString("o"),
             };
             var list = Data.scores;
             int i = 0;

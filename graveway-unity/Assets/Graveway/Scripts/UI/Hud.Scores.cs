@@ -63,7 +63,7 @@ namespace Graveway
                 row.Add(Portrait(c, "sm"));
                 var words = El("sc-words", row);
                 Lbl("sc-name" + (s.name.Length == 0 ? " none" : ""), words, s.name.Length > 0 ? s.name : "No name");
-                Lbl("sc-sub", words, $"{c.name} · {N(s.kills)} kills · {Day(s.at)}");
+                Lbl("sc-sub", words, $"{c.name} · {N(s.kills)} kills{(s.place > 0 ? " · " + Tunables.PlaceAt(s.place).name : "")} · {Day(s.at)}");
                 Lbl("sc-dist", row, $"{N(s.distance)} M");
             }
             if (mine != null) scBody.schedule.Execute(() => scBody.ScrollTo(mine));

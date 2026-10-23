@@ -54,14 +54,16 @@ namespace Graveway
         public bool banked;                  // its takings are in the save
         public bool fair;                    // started with no playtest tools on
         public int bosses;                   // beaten
+        public int place;                    // which place the road's in: the nth of the run (Tunables.PlaceAt)
+        public int bossesPassed;             // beaten, skipped or outrun: every second brings the evac
         public float noteT = 10;             // until it's next written down
     }
 
     public sealed partial class Game : MonoBehaviour
     {
-        public enum State { Menu, Playing, Paused, Dying }
+        public enum State { Menu, Playing, Paused, Dying, Evac }   // Evac: its cut scene
 
-        static readonly Color Fog = Hex.C(0x0d1418);
+        Light moon;
         const float Tau = Mathf.PI * 2;
 
         public State state;
@@ -134,18 +136,14 @@ namespace Graveway
             // brightens by 1/0.6 (made up for by the +0.94 EV exposure in
             // Settings/Graveway_PostFX). The sky light is three's hemisphere
             // light (8aa0c8 over 2a2018, intensity 1.25).
+            // Its colours are each place's own (Tunables.Places; Light below).
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = Fog;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = Hex.C(0x8aa0c8) * 0.65f;
-            RenderSettings.ambientEquatorColor = Hex.C(0x404c5e);
-            RenderSettings.ambientGroundColor = Hex.C(0x2a2018) * 0.58f;
 
             cam = new GameObject("Camera").AddComponent<Camera>();
             cam.transform.SetParent(transform);
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = Fog;
             cam.nearClipPlane = 0.1f;
             cam.farClipPlane = 90;
             cam.tag = "MainCamera";
@@ -155,13 +153,12 @@ namespace Graveway
 
             // Moonlight from above, the survivor's flashlight, and two lights
             // that only switch on for muzzle flashes and explosions.
-            var moon = new GameObject("Moon").AddComponent<Light>();
+            moon = new GameObject("Moon").AddComponent<Light>();
             moon.transform.SetParent(transform);
             moon.type = LightType.Directional;
-            moon.color = Hex.C(0xb0c4ff);
-            moon.intensity = 0.9f / Mathf.PI;
             moon.transform.rotation = Quaternion.LookRotation(new Vector3(8, -20, -6));
             moon.shadows = LightShadows.None;
+            Light(Tunables.Places[0]);
             flashlight = MakeLight("Flashlight", LightType.Spot, Hex.C(0xfff0d0), 70, 34);
             // Off until a shot or a blast: a light left on at zero still costs
             // a pass over everything it touches.
@@ -265,6 +262,7 @@ namespace Graveway
                 hud.RunKept(kept, unfinished: false);
             }
             ClearSupport();
+            EndEvac();
             world?.Dispose();
             world = null;
             foreach (var z in zombies) Recycle(z);
@@ -276,10 +274,50 @@ namespace Graveway
             run = null;
         }
 
+        // A place's light: its fog (and the sky behind it), the ambient sky,
+        // horizon and ground, and the moon.
+        void Light(PlaceDef pl)
+        {
+            RenderSettings.fogColor = pl.fog;
+            cam.backgroundColor = pl.fog;
+            RenderSettings.ambientSkyColor = pl.sky;
+            RenderSettings.ambientEquatorColor = pl.equator;
+            RenderSettings.ambientGroundColor = pl.ground;
+            moon.color = pl.moon;
+            moon.intensity = pl.moonLight / Mathf.PI;
+        }
+
+        public PlaceDef Place => Tunables.PlaceAt(run?.place ?? 0);
+
+        // On to the run's nth place: a new road from where the survivor
+        // stands, built for it, with nothing of the old one left (zombies,
+        // coins, fires, debris). Everything the survivor carries comes along.
+        public void Relocate(int n)
+        {
+            var pl = Tunables.PlaceAt(n);
+            run.place = n;
+            float z = player.z;
+            SupportAlong();
+            world?.Dispose();
+            foreach (var zb in zombies) Recycle(zb);
+            zombies.Clear();
+            run.boss = null;
+            ClearCombat();
+            propSys.Reset();
+            vfx.Clear();
+            sight.Clear();
+            world = new World(worldRoot, unchecked(seed + (uint)n * 7919u), z, pl) { lotsOfPowerups = Save.Data.settings.powers };
+            world.onCoins = spots => { foreach (var s in spots) AddCoin(s.x, 0.55f, s.y, 0, 0, 0, true); };
+            nav.Reset(z);
+            world.Update(z, time);
+            Light(pl);
+        }
+
         // The menu shows the first stretch of road with a few zombies about.
         public void ShowMenu()
         {
             ClearRun();
+            Light(Tunables.Places[0]);
             state = State.Menu;
             rng = new Rng(7);
             SetCharacter(Save.Data.character);
@@ -359,7 +397,8 @@ namespace Graveway
             seed = nextSeed ?? (uint)(System.DateTime.Now.Ticks / 10000 & 0xffff) ^ 0x5bd1u;
             nextSeed = null;
             rng = new Rng(seed);
-            world = new World(worldRoot, seed, startZ) { lotsOfPowerups = settings.powers };
+            world = new World(worldRoot, seed, startZ, Tunables.PlaceAt(0)) { lotsOfPowerups = settings.powers };
+            Light(Tunables.PlaceAt(0));
             world.onCoins = spots => { foreach (var s in spots) AddCoin(s.x, 0.55f, s.y, 0, 0, 0, true); };
             player = MakePlayer();
             player.z = player.furthest = startZ;
@@ -406,6 +445,7 @@ namespace Graveway
             character = character.id,
             time = Mathf.FloorToInt(run.time),
             bosses = run.bosses,
+            place = run.place,
         };
 
         // ── Frame ────────────────────────────────────────────────────────
@@ -430,7 +470,9 @@ namespace Graveway
                 UpdatePlayer(dt, input.Move);
                 director.Update(dt, Distance);
                 UpdateSupport(dt);
+                UpdateEvac(dt);
             }
+            else if (state == State.Evac) UpdateEvac(dt);
             else if (state == State.Dying)
             {
                 p.deadT += dt;
@@ -711,6 +753,15 @@ namespace Graveway
             RenderSettings.fogStartDistance = dist * 0.85f;
             RenderSettings.fogEndDistance = dist + 36;
             const float el = 0.92f;
+            // A cut scene's own shot (the evac's), eased into.
+            if (cutFrom.HasValue)
+            {
+                camPos = Vector3.Lerp(camPos, cutFrom.Value, Damp(2.2f, dt));
+                camLook = Vector3.Lerp(camLook, cutAt, Damp(3, dt));
+                cam.transform.position = camPos;
+                cam.transform.LookAt(camLook);
+                return;
+            }
             float tx = p.x * 0.55f, tz = p.z - lookAhead;
             camLook.x += (tx - camLook.x) * Damp(5, dt);
             camLook.z += (tz - camLook.z) * Damp(5, dt);

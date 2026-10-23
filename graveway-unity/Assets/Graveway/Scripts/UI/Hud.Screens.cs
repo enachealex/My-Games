@@ -11,7 +11,7 @@ namespace Graveway
 {
     public sealed partial class Hud
     {
-        static readonly int[] StartAt = { 0, 200, 500, 1000 };
+        static readonly int[] StartAt = { 0, 200, 500, 950 };   // 950: just short of the second boss, and the evac
 
         // ── Menu ─────────────────────────────────────────────────────────
         VisualElement mCoins, mChar, mBadge;
@@ -155,6 +155,7 @@ namespace Graveway
             Btn("Restart", "", pr, Play);
             Btn("Quit", "", pr, ToMenu);
             NoteButton(ps, "Leave a note");
+            Btn("Call the evac (playtest)", "note-btn", ps, () => { game.Resume(); game.PlaytestEvac(); });
 
             result = Modal(out var rc, scroll: true);
             rTitle = Lbl("card-title", rc, "OVERRUN");

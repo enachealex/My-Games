@@ -4,7 +4,10 @@
 // same run seed always lays out the same road.
 //
 // Chunks hold scenery (road, buildings, lamps, litter), pickups, and props:
-// wrecked cars, barricades, explosive barrels and brick walls. Props live in
+// wrecked cars, barricades, explosive barrels and brick walls. Each place
+// the road runs through (Tunables.Places) has its own: downtown's
+// buildings, the docks' stacked containers and floodlights, the highway's
+// trees, guard rails and jammed convoys. Props live in
 // `props`; what happens when they're shot, blown up or shoved is in
 // PropSystem. Whenever the set of standing props changes, `navDirty` is
 // raised and the navigation grid rebuilds.
@@ -93,6 +96,7 @@ namespace Graveway
         readonly Transform parent;
         readonly uint seed;
         public readonly float startZ;               // where this run's survivor starts
+        public readonly PlaceDef place;             // where the road runs: downtown, the docks, the highway
         readonly Dictionary<int, Built> chunks = new Dictionary<int, Built>();
         public List<Prop> props = new List<Prop>(); // every prop on the built road
         public List<RoughArea> rough = new List<RoughArea>();
@@ -104,11 +108,12 @@ namespace Graveway
         public bool lotsOfPowerups;                 // playtest tool: two power-ups on every chunk
         int first;
 
-        public World(Transform parent, uint seed, float startZ)
+        public World(Transform parent, uint seed, float startZ, PlaceDef place = null)
         {
             this.parent = parent;
             this.seed = seed;
             this.startZ = startZ;
+            this.place = place ?? Tunables.Places[0];
             first = Mathf.Max(0, Mathf.FloorToInt((Edge - (startZ + 30)) / Chunk));
         }
 
@@ -172,6 +177,12 @@ namespace Graveway
         // ── Materials and shared ground meshes ───────────────────────────
         static Material[] facadeMats;
         static Material roadMat, walkMat, curbMat, underMat, litterMat;
+        static Material apronMat, dockEdgeMat, yardMat, shoulderMat, railMat, fieldMat, trunkMat, pineMat;
+        static Mesh railMesh;
+        static readonly string[] DocksRoad = { "Wheel", "CinderBlock", "TrashBag_2" };
+        static readonly string[] DocksWalk = { "Wheels_Stack", "Pallet", "TrafficCone_1", "CinderBlock", "Pallet_Broken" };
+        static readonly string[] HighwayRoad = { "TrafficCone_1", "TrafficCone_2", "Wheel" };
+        static readonly string[] HighwayWalk = { "TrafficCone_2", "Wheel", "TrashBag_1", "CinderBlock" };
         static readonly string[] LitterRoad = { "TrashBag_1", "TrashBag_2", "Wheel", "CinderBlock" };
         static readonly string[] LitterWalk = { "TrashBag_1", "TrashBag_2", "Wheel", "CinderBlock", "TrafficCone_1", "Pallet_Broken" };
         static Material[] awningMats;
@@ -197,6 +208,25 @@ namespace Graveway
             walkMesh = new GeoBuilder().Box(3, 0.16f, Chunk, -(RoadHalf + 1.5f), 0.08f, 0).Box(3, 0.16f, Chunk, RoadHalf + 1.5f, 0.08f, 0).Build("sidewalks");
             curbMesh = new GeoBuilder().Box(0.18f, 0.2f, Chunk, -(RoadHalf + 0.09f), 0.1f, 0).Box(0.18f, 0.2f, Chunk, RoadHalf + 0.09f, 0.1f, 0).Build("kerbs");
             underMesh = new GeoBuilder().Flat(80, Chunk, M.T(0, -0.01f, 0)).Build("under");
+            // The docks: a concrete apron edged in yellow, a concrete yard.
+            apronMat = Art.LitOwn(Hex.C(0xa8a49a), Tex.Sidewalk);
+            apronMat.mainTextureScale = new Vector2(1, Chunk / 4);
+            dockEdgeMat = Art.Lit(0xc8a020);
+            yardMat = Art.Lit(0x232524);
+            // The highway: gravel shoulders, a guard rail along each, fields.
+            shoulderMat = Art.Lit(0x4c463e);
+            railMat = Art.Lit(0x8a9096);
+            fieldMat = Art.Lit(0x1e2a1a);
+            trunkMat = Art.Lit(0x3a2a1e);
+            pineMat = Art.Lit(0x24402a);
+            var rail = new GeoBuilder();
+            foreach (var s in new[] { -1, 1 })
+            {
+                float x = s * (WalkHalf + 0.15f);
+                rail.Box(0.06f, 0.3f, Chunk, x, 0.62f, 0);
+                for (float z = -Chunk / 2 + 1; z < Chunk / 2; z += 2) rail.Box(0.1f, 0.62f, 0.1f, x, 0.31f, z);
+            }
+            railMesh = rail.Build("guard rails");
         }
 
         // ── Building a chunk ─────────────────────────────────────────────
@@ -211,9 +241,17 @@ namespace Graveway
             chunks[i] = ch;
             var group = ch.group.transform;
 
-            // Ground: four shared meshes per chunk.
-            foreach (var (mesh, mat) in new[] { (roadMesh, roadMat), (walkMesh, walkMat), (curbMesh, curbMat), (underMesh, underMat) })
+            // Ground: four shared meshes per chunk, in the place's materials
+            // (and the highway's guard rails).
+            bool docks = place.id == "docks", highway = place.id == "highway";
+            var walkLook = docks ? apronMat : highway ? shoulderMat : walkMat;
+            var curbLook = docks ? dockEdgeMat : curbMat;
+            var underLook = docks ? yardMat : highway ? fieldMat : underMat;
+            foreach (var (mesh, mat) in new[] { (roadMesh, roadMat), (walkMesh, walkLook), (curbMesh, curbLook), (underMesh, underLook) })
                 Art.Show(group, mesh, mat, mesh.name).transform.localPosition = new Vector3(0, 0, zc);
+            if (highway) Art.Show(group, railMesh, railMat, railMesh.name).transform.localPosition = new Vector3(0, 0, zc);
+            if (docks) DocksSides(rng, ch, i, z0, z1);
+            if (highway) HighwaySides(rng, ch, i, z0, z1);
 
             // Buildings, with the odd alley for ambushes, and now and then a
             // condemned building you can bring down across the road. One mesh
@@ -222,8 +260,9 @@ namespace Graveway
             var awnings = new GeoBuilder[awningMats.Length];
             GeoBuilder Front(int k) => fronts[k] ??= new GeoBuilder();
             bool condemned = i % Tunables.CondemnedEvery == Tunables.CondemnedEvery - 2 && z0 < startZ - 40;
+            bool downtown = !docks && !highway;
             int condemnedSide = rng.Next() < 0.5f ? -1 : 1;
-            foreach (var s in new[] { -1, 1 })
+            foreach (var s in downtown ? new[] { -1, 1 } : new int[0])
             {
                 float z = z0;
                 bool setPiece = condemned && s == condemnedSide;
@@ -261,12 +300,13 @@ namespace Graveway
             for (int k = 0; k < fronts.Length; k++) Emit(ch, fronts[k], facadeMats[k], "buildings");
             for (int k = 0; k < awnings.Length; k++) Emit(ch, awnings[k], awningMats[k], "awnings");
 
-            // Lamps, every 16 m, alternating sides. They stop bullets and can
-            // be knocked down.
-            for (int k = 0; k < 2; k++)
+            // Lamps, every 16 m, alternating sides (floodlights on the docks;
+            // one a chunk on the highway). They stop bullets and can be
+            // knocked down.
+            for (int k = 0; k < (highway ? 1 : 2); k++)
             {
                 int s = (i + k) % 2 == 1 ? 1 : -1;
-                var lamp = Models.Lamp();
+                var lamp = docks ? Models.Lamp(1.3f, place.lamp, 9.5f) : Models.Lamp(1, place.lamp);
                 var p = AddProp("lamp", lamp, s * (RoadHalf + 0.6f), z0 - 6 - k * 16, s > 0 ? -Mathf.PI / 2 : Mathf.PI / 2, i, ch);
                 p.isLamp = true;
                 if (rng.Next() < 0.22f) animated.Add(new Animated { kind = "flicker", head = lamp.head, pool = lamp.pool, seed = rng.Next() * 100, chunk = i, prop = p });
@@ -285,7 +325,7 @@ namespace Graveway
                 float lx = walk ? s * Rand(RoadHalf + 0.4f, WalkHalf) : Rand(-RoadHalf, RoadHalf);
                 float sz = Rand(0.25f, 0.6f), h = Rand(0.4f, 0.9f), d = Rand(0.8f, 1.4f), lz = Rand(z1, z0);
                 if (!kit) { litter.Box(sz, sz * h, sz * d, lx, sz * 0.3f, lz); continue; }
-                var pick = walk ? LitterWalk : LitterRoad;
+                var pick = docks ? (walk ? DocksWalk : DocksRoad) : highway ? (walk ? HighwayWalk : HighwayRoad) : walk ? LitterWalk : LitterRoad;
                 string id = pick[(int)(h * 1000) % pick.Length];
                 var b = Kit.Find(id).bounds;
                 var junk = Kit.Place(id, ch.group.transform, sz * 1.8f / Mathf.Max(b.size.x, b.size.z));
@@ -388,7 +428,7 @@ namespace Graveway
             {
                 kind = kind, def = def, chunk = chunk, x = x, z = z, rot = rot, hw = model.hw, hd = model.hd, height = model.height,
                 cos = Mathf.Cos(rot), sin = Mathf.Sin(rot), r = Mathf.Sqrt(model.hw * model.hw + model.hd * model.hd),
-                hp = def.hp, maxHp = def.hp, model = model, group = t,
+                hp = def.hp, maxHp = def.hp, model = model, group = t, indestructible = def.hp == 0,
             };
             ch.own.AddRange(model.own);
             model.own.Clear();
@@ -413,6 +453,8 @@ namespace Graveway
         // One row of trouble across the road at z.
         void PlaceRow(Rng rng, float z, int chunk, Built ch)
         {
+            if (place.id == "docks") { DocksRow(rng, z, chunk, ch); return; }
+            if (place.id == "highway") { HighwayRow(rng, z, chunk, ch); return; }
             float Rand(float a, float b) => a + rng.Next() * (b - a);
             float r = rng.Next();
             Prop Add(string kind, PropModel model, float x, float zz, float rot) => AddProp(kind, model, x, zz, rot, chunk, ch);
@@ -470,6 +512,184 @@ namespace Graveway
                 var p = Add("fire", fb, Rand(-5, 5), z, 0);
                 animated.Add(new Animated { kind = "fire", flames = fb.flames, pool = fb.pool, poolMat = poolMat, poolColor = Hex.C(0xff7a2a), seed = rng.Next() * 100, chunk = chunk, prop = p });
             }
+        }
+
+        // ── The docks ────────────────────────────────────────────────────
+        // Containers stacked one to three high along both sides (now and
+        // then a gap zombies come through), a second row behind here and
+        // there, and a water tower beyond.
+        void DocksSides(Rng rng, Built ch, int i, float z0, float z1)
+        {
+            float Rand(float a, float b) => a + rng.Next() * (b - a);
+            var t = ch.group.transform;
+            void Stack(float x, float z, int high)
+            {
+                for (int k = 0; k < high; k++)
+                {
+                    var c = Models.ContainerModel(rng, out _, out float h);
+                    c.transform.SetParent(t, false);
+                    c.transform.localPosition = new Vector3(x + Rand(-0.15f, 0.15f), k * h, z);
+                    c.transform.localRotation = M.Yaw(Rand(-0.03f, 0.03f));
+                }
+            }
+            foreach (var s in new[] { -1, 1 })
+            {
+                for (float z = z0; z > z1 + 0.5f; z -= 6.4f)
+                {
+                    if (rng.Next() < 0.14f && z < startZ - 8)
+                    {
+                        alleys.Add(new Alley { x = s * (WalkHalf + 1.6f), z = z - 3.2f, side = s, chunk = i });
+                        continue;
+                    }
+                    Stack(s * (FacadeX + 1.5f), z - 3.2f, 1 + (int)(rng.Next() * 2.4f));
+                    if (rng.Next() < 0.35f) Stack(s * (FacadeX + 4.4f), z - 3.2f, 2 + (int)(rng.Next() * 2));
+                }
+            }
+            if (rng.Next() < 0.3f && Kit.Has("WaterTower"))
+            {
+                var tower = Kit.Place("WaterTower", t, 13f / Kit.Find("WaterTower").bounds.size.y);
+                tower.transform.localPosition = new Vector3((rng.Next() < 0.5f ? -1 : 1) * Rand(17, 22), 0, Rand(z1, z0));
+            }
+        }
+
+        void DocksRow(Rng rng, float z, int chunk, Built ch)
+        {
+            float Rand(float a, float b) => a + rng.Next() * (b - a);
+            float Side() => rng.Next() < 0.5f ? -1 : 1;
+            float r = rng.Next();
+            Prop Add(string kind, PropModel model, float x, float zz, float rot) => AddProp(kind, model, x, zz, rot, chunk, ch);
+            if (r < 0.3f)
+            {
+                // A lorry, mostly along the road, the odd barrel by it.
+                float x = Side() * Rand(1.8f, RoadHalf - 1.6f);
+                Add("truck", Models.Truck(rng), x, z, Rand(-0.3f, 0.3f) + (rng.Next() < 0.5f ? Mathf.PI : 0));
+                if (rng.Next() < 0.4f) Add("barrel", Models.ExplosiveBarrel(), x + Rand(-1.6f, 1.6f), z + (rng.Next() < 0.5f ? -3.4f : 3.4f), 0);
+            }
+            else if (r < 0.5f)
+            {
+                // A container dropped in the road: along it, or half across it.
+                bool across = rng.Next() < 0.4f;
+                float s = Side();
+                Add("container", Models.Container(rng), across ? s * Rand(2.6f, 3.4f) : s * Rand(2.4f, 4.6f), z,
+                    across ? Mathf.PI / 2 + Rand(-0.15f, 0.15f) : Rand(-0.15f, 0.15f));
+            }
+            else if (r < 0.65f)
+            {
+                // Pallets of crates.
+                int n = 1 + (int)(rng.Next() * 3);
+                float x = Rand(-5, 5 - n * 2.2f);
+                for (int k = 0; k < n; k++) Add("crates", Models.Crates(rng), x + k * 2.2f, z + Rand(-0.4f, 0.4f), Rand(-0.3f, 0.3f));
+            }
+            else if (r < 0.8f)
+            {
+                float x = Rand(-5, 5);
+                int n = 2 + (int)(rng.Next() * 3);
+                for (int k = 0; k < n; k++) Add("barrel", Models.ExplosiveBarrel(), x + Rand(-1, 1), z + Rand(-1, 1), 0);
+            }
+            else if (r < 0.92f) Barriers(rng, z, chunk, ch);
+            else Fire(rng, z, chunk, ch);
+        }
+
+        // ── The highway ──────────────────────────────────────────────────
+        // Trees in the fields either side (zombies come out of them), and
+        // now and then the town sign or a traffic light at the edge.
+        void HighwaySides(Rng rng, Built ch, int i, float z0, float z1)
+        {
+            float Rand(float a, float b) => a + rng.Next() * (b - a);
+            var trunks = new GeoBuilder();
+            var pines = new GeoBuilder();
+            foreach (var s in new[] { -1, 1 })
+            {
+                for (float z = z0 - Rand(0, 3); z > z1; z -= Rand(2.2f, 4.6f))
+                {
+                    float x = s * Rand(WalkHalf + 2.2f, WalkHalf + 20), h = Rand(3.5f, 7);
+                    trunks.Cylinder(0.12f, 0.2f, h * 0.35f, 6, M.T(x, h * 0.175f, z));
+                    pines.Cylinder(0, h * 0.26f, h * 0.55f, 7, M.T(x, h * 0.55f, z));
+                    pines.Cylinder(0, h * 0.19f, h * 0.4f, 7, M.T(x, h * 0.82f, z));
+                }
+                if (z0 < startZ - 8 && rng.Next() < 0.45f) alleys.Add(new Alley { x = s * (WalkHalf + 1.6f), z = Rand(z1 + 3, z0 - 3), side = s, chunk = i });
+            }
+            Emit(ch, trunks, trunkMat, "trunks");
+            Emit(ch, pines, pineMat, "pines");
+            var t = ch.group.transform;
+            if (rng.Next() < 0.18f && Kit.Has("TownSign"))
+            {
+                var sign = Kit.Place("TownSign", t, 6f / Kit.Find("TownSign").bounds.size.y);
+                int s = rng.Next() < 0.5f ? -1 : 1;
+                sign.transform.localPosition = new Vector3(s * (WalkHalf + 4), 0, Rand(z1 + 4, z0 - 4));
+                sign.transform.localRotation = M.Yaw(s > 0 ? -Mathf.PI / 2 : Mathf.PI / 2);
+            }
+            if (rng.Next() < 0.25f && Kit.Has("TrafficLight_1"))
+            {
+                var light = Kit.Place("TrafficLight_1", t, 5.5f / Kit.Find("TrafficLight_1").bounds.size.y);
+                int s = rng.Next() < 0.5f ? -1 : 1;
+                light.transform.localPosition = new Vector3(s * (WalkHalf + 0.8f), 0, Rand(z1 + 4, z0 - 4));
+                light.transform.localRotation = M.Yaw(s > 0 ? Mathf.PI : 0);
+            }
+        }
+
+        void HighwayRow(Rng rng, float z, int chunk, Built ch)
+        {
+            float Rand(float a, float b) => a + rng.Next() * (b - a);
+            float r = rng.Next();
+            Prop Add(string kind, PropModel model, float x, float zz, float rot) => AddProp(kind, model, x, zz, rot, chunk, ch);
+            if (z < startZ - Tunables.TankerFrom && rng.Next() < Tunables.TankerChance * 2)
+            {
+                float x = (rng.Next() < 0.5f ? -1 : 1) * Rand(2.4f, 4.4f);
+                Add("tanker", Models.Tanker(rng), x, z, Rand(-0.2f, 0.2f) + (rng.Next() < 0.5f ? Mathf.PI : 0));
+                return;
+            }
+            if (r < 0.45f)
+            {
+                // A jam: two or three cars and lorries, staggered across the lanes.
+                int n = 2 + (int)(rng.Next() * 2);
+                float x = Rand(-4.4f, -2.4f), step = Rand(2.8f, 3.6f);
+                for (int k = 0; k < n && x < RoadHalf - 1; k++, x += step)
+                {
+                    bool lorry = rng.Next() < 0.3f;
+                    Add(lorry ? "truck" : "car", lorry ? Models.Truck(rng) : Models.Car(rng), x, z + Rand(-2.5f, 2.5f), Rand(-0.45f, 0.45f));
+                }
+            }
+            else if (r < 0.7f) Barriers(rng, z, chunk, ch);
+            else if (r < 0.82f)
+            {
+                float x = Rand(-5, 5);
+                int n = 2 + (int)(rng.Next() * 3);
+                for (int k = 0; k < n; k++) Add("barrel", Models.ExplosiveBarrel(), x + Rand(-1, 1), z + Rand(-1, 1), 0);
+            }
+            else if (r < 0.93f)
+            {
+                // One left on the shoulder.
+                float s = rng.Next() < 0.5f ? -1 : 1;
+                bool lorry = rng.Next() < 0.4f;
+                Add(lorry ? "truck" : "car", lorry ? Models.Truck(rng) : Models.Car(rng), s * Rand(4, RoadHalf - 0.8f), z, Rand(-0.2f, 0.2f));
+            }
+            else Fire(rng, z, chunk, ch);
+        }
+
+        // Concrete barriers: a line, or most of the way across with a gap.
+        void Barriers(Rng rng, float z, int chunk, Built ch)
+        {
+            float Rand(float a, float b) => a + rng.Next() * (b - a);
+            bool choke = rng.Next() < 0.35f;
+            int n = choke ? 5 : 2 + (int)(rng.Next() * 2);
+            int gapAt = (int)(rng.Next() * (n + 1));
+            float x = choke ? -RoadHalf + 1.1f : Rand(-4, 4 - n * 2.05f);
+            float rot = choke ? 0 : Rand(-0.25f, 0.25f);
+            for (int k = 0; k < n; k++)
+            {
+                if (choke && k == gapAt) x += 2.6f;
+                AddProp("jersey", Models.Jersey(), x, z, rot, chunk, ch);
+                x += 2.05f;
+            }
+        }
+
+        void Fire(Rng rng, float z, int chunk, Built ch)
+        {
+            var fb = Models.FireBarrel();
+            var poolMat = fb.pool.sharedMaterial;
+            var p = AddProp("fire", fb, -5 + rng.Next() * 10, z, 0, chunk, ch);
+            animated.Add(new Animated { kind = "fire", flames = fb.flames, pool = fb.pool, poolMat = poolMat, poolColor = Hex.C(0xff7a2a), seed = rng.Next() * 100, chunk = chunk, prop = p });
         }
 
         void PlaceItem(Rng rng, string kind, float z, int chunk, Built ch, string power = null)

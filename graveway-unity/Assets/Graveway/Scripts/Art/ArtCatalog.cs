@@ -77,6 +77,7 @@ namespace Graveway
             // and the model's mesh without it. Coloured by the kit's palette.
             public string model;
             public Mesh bare;
+            public bool palette;             // coloured by the kit's palette, like an own hat (the cone)
         }
 
         public Entry[] models = Array.Empty<Entry>();

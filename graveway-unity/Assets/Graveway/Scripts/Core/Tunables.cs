@@ -131,12 +131,24 @@ namespace Graveway
 
     // A hat, and what unlocks it: `target` of a stat counted over runs with
     // no playtest tools on (Save.Stat): best (metres in one run), metres (in
-    // all), kills, bosses, runs. Once unlocked, any survivor can wear it.
+    // all), kills, bosses, runs, place (the furthest reached: 1 the docks, 2
+    // the highway). Once unlocked, any survivor can wear it.
     public sealed class HatDef
     {
         public string id, name, stat, goal;
         public int target;
         public string owner;                 // a survivor's own hat, part of their model: theirs alone
+    }
+
+    // A place the road runs through (playtest note 6), reached by helicopter
+    // after every second boss: its name, and its light. What's along it is
+    // World's, by id.
+    public sealed class PlaceDef
+    {
+        public string id, name, line;        // line: under its name, as you arrive
+        public Color fog, sky, equator, ground, moon;
+        public float moonLight = 0.9f;       // three.js intensity, as Game.Awake's
+        public int lamp = 0xff9a3a;          // the pools of light under its lamps
     }
 
     public sealed class PowerUpDef
@@ -467,6 +479,12 @@ namespace Graveway
             { "slab", new PropDef { hp = 320, material = "concrete", rubble = true } },
             { "condemned", new PropDef { hp = 900, material = "concrete", topples = true, collapse = true, crush = 2000,
                 bulletMult = 0.15f, blastMult = 1.6f } },
+            // The docks and the highway's.
+            { "truck", new PropDef { hp = 560, material = "metal", mass = 16, burns = true, smokeAt = 0.6f, fireAt = 0.3f,
+                explodes = new Explosion(6, 200, 20) } },
+            { "container", new PropDef { hp = 0, material = "metal" } },          // can't be broken or moved
+            { "jersey", new PropDef { hp = 340, material = "concrete", rubble = true } },
+            { "crates", new PropDef { hp = 150, material = "wood", mass = 2, rubble = true } },
         };
         // How often the road offers the big set pieces.
         public const int CondemnedEvery = 7;          // one condemned building every 7 chunks (~224 m)
@@ -490,6 +508,29 @@ namespace Graveway
         public static PowerUpDef PowerUp(string id) => System.Array.Find(PowerUps, p => p.id == id) ?? PowerUps[0];
         public static ItemDef Item(string id) => System.Array.Find(Items, i => i.id == id);
 
+        // ── Places ───────────────────────────────────────────────────────
+        // In order, round and round: a helicopter takes you on to the next
+        // after every BossesPerEvac bosses.
+        public const int BossesPerEvac = 2;
+        public const float EvacAhead = 25;           // how far up the road it lands
+        public const int EvacCoins = 100;            // for each evac so far, on making it out
+
+        public static readonly PlaceDef[] Places =
+        {
+            new PlaceDef { id = "downtown", name = "Downtown", line = "Get as far up the road as you can",
+                fog = Hex.C(0x0d1418), sky = Hex.C(0x8aa0c8) * 0.65f, equator = Hex.C(0x404c5e), ground = Hex.C(0x2a2018) * 0.58f,
+                moon = Hex.C(0xb0c4ff) },
+            new PlaceDef { id = "docks", name = "The Docks", line = "Stacked containers, and nowhere to hide",
+                fog = Hex.C(0x0c1918), sky = Hex.C(0x7aa8a4) * 0.6f, equator = Hex.C(0x3a4c4a), ground = Hex.C(0x2a2416) * 0.6f,
+                moon = Hex.C(0xa8d4cc), lamp = 0xffa040 },
+            new PlaceDef { id = "highway", name = "The Highway", line = "Out of the city, into the dusk",
+                fog = Hex.C(0x2a1c2c), sky = Hex.C(0xd8907a) * 0.75f, equator = Hex.C(0x6a4a58), ground = Hex.C(0x3a2a22) * 0.7f,
+                moon = Hex.C(0xffb48a), moonLight = 1.3f, lamp = 0xffb060 },
+        };
+
+        // The nth place of a run (0: where it starts), round again after the last.
+        public static PlaceDef PlaceAt(int n) => Places[((n % Places.Length) + Places.Length) % Places.Length];
+
         // ── Hats ─────────────────────────────────────────────────────────
         // The first cosmetics, in the order they tend to come.
         public static readonly HatDef[] Hats =
@@ -499,6 +540,8 @@ namespace Graveway
             new HatDef { id = "mohawk", name = "Mohawk", stat = "bosses", target = 1, goal = "Beat a boss" },
             new HatDef { id = "hood", name = "Hood", stat = "metres", target = 5000, goal = "Cover 5 km in all" },
             new HatDef { id = "witch", name = "Witch hat", stat = "best", target = 500, goal = "Get 500 m up the road" },
+            new HatDef { id = "beanie", name = "Docker beanie", stat = "place", target = 1, goal = "Make it to the docks" },
+            new HatDef { id = "cone", name = "Traffic cone", stat = "place", target = 2, goal = "Make it to the highway" },
             new HatDef { id = "crown", name = "Crown", stat = "bosses", target = 10, goal = "Beat 10 bosses" },
         };
 

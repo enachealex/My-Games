@@ -165,7 +165,7 @@ namespace Graveway
             var mats = new Material[h.mesh.subMeshCount];
             var cat = ArtCatalog.Get;
             for (int i = 0; i < mats.Length; i++)
-                mats[i] = !string.IsNullOrEmpty(h.model) ? Art.Lit(Hex.C(0xe7e7e7), 0, cat.zombieAtlas) : Art.Lit(h.colors[Mathf.Min(i, h.colors.Length - 1)]);
+                mats[i] = h.palette || !string.IsNullOrEmpty(h.model) ? Art.Lit(Hex.C(0xe7e7e7), 0, cat.zombieAtlas) : Art.Lit(h.colors[Mathf.Min(i, h.colors.Length - 1)]);
             r.sharedMaterials = mats;
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             r.receiveShadows = false;
