@@ -182,6 +182,27 @@ namespace Graveway.Tests
             Save.Wear("rook", "");
         }
 
+        // Every hat on every survivor, close up from the front, the side, the
+        // back and the other side, one picture each.
+        [UnityTest]
+        public IEnumerator CloseUps()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) Assert.Ignore("no GPU (-nographics), so nothing to see");
+            var angles = new[] { 0.35f, Mathf.PI / 2, Mathf.PI, -Mathf.PI / 2 };
+            var looks = new System.Collections.Generic.List<string> { "" };
+            foreach (var h in Tunables.Hats) looks.Add(h.id);
+            foreach (var c in Tunables.Characters)
+            {
+                foreach (var look in looks)
+                {
+                    var sheet = Studio.HeadShots(c, look, angles);
+                    Write(sheet, $"close-{c.id}-{(look == "" ? "none" : look)}");
+                    Object.Destroy(sheet);
+                }
+                yield return null;
+            }
+        }
+
         // Every hat on every survivor, as their portraits, side by side; and
         // each hat's own picture.
         [UnityTest]

@@ -8,6 +8,7 @@
 // Unity's mirror image back round (see Tunables.cs): muzzles point right.
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -92,6 +93,47 @@ namespace Graveway
             });
             guns[key] = tex;
             return tex;
+        }
+
+        // A survivor's head in a hat, close up, from each of these angles
+        // (radians round from the front), side by side: for seeing how a hat
+        // sits. Not cached.
+        public static Texture2D HeadShots(CharacterDef c, string hat, float[] angles, int size = 256)
+        {
+            if (!Available) return null;
+            Texture2D sheet = null;
+            Shoot(size, size, (set, cam) =>
+            {
+                cam.fieldOfView = 26;
+                Key(set, Hex.C(0xfff0dd), 2.4f, new Vector3(-2, 3, 4));
+                Key(set, Hex.C(0xb0c8ff), 1.4f, new Vector3(3, 2, -3));
+                Ambient(Hex.C(0xc8d8ff), Hex.C(0x3a2a20), 1.8f);
+                var m = Rigs.Survivor(c, ring: false);
+                Rigs.WearHat(m, hat);
+                m.root.transform.SetParent(set, false);
+                var head = m.model.GetComponentsInChildren<Transform>().First(t => t.name == "Head");
+                var at = head.position + Vector3.up * 0.18f;
+                sheet = new Texture2D(size * angles.Length, size, TextureFormat.RGB24, false);
+                for (int i = 0; i < angles.Length; i++)
+                {
+                    var dir = new Vector3(Mathf.Sin(angles[i]), 0.35f, Mathf.Cos(angles[i])).normalized;
+                    cam.transform.position = at + dir * 3.2f;
+                    cam.transform.LookAt(at);
+                    var shot = Capture(cam, size, size, "head");
+                    var rt = RenderTexture.GetTemporary(size, size, 0);
+                    Graphics.Blit(shot, rt);
+                    var prev = RenderTexture.active;
+                    RenderTexture.active = rt;
+                    sheet.ReadPixels(new Rect(0, 0, size, size), i * size, 0);
+                    RenderTexture.active = prev;
+                    RenderTexture.ReleaseTemporary(rt);
+                    Object.Destroy(shot);
+                }
+                sheet.Apply();
+                m.root.SetActive(false);
+                Object.Destroy(m.root);
+            });
+            return sheet;
         }
 
         // A hat on its own, three-quarters on from a little above. Cached.

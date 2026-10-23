@@ -136,6 +136,7 @@ namespace Graveway.EditorTools
             cat.guns = BuildGuns();
             cat.parts = BuildParts();
             cat.hats = BuildHats().Concat(BuildMadeHats()).Concat(BuildOwnHats()).ToArray();
+            cat.hatHeads = BuildHatHeads();
             cat.zombieAtlas = AssetDatabase.LoadAssetAtPath<Texture2D>(Kit + "Zombie_Atlas.png");
             EditorUtility.SetDirty(cat);
             AssetDatabase.SaveAssets();
@@ -475,7 +476,7 @@ namespace Graveway.EditorTools
                 for (int i = 0; i < segs; i++)
                 {
                     int a0 = k * (segs + 1) + i, a1 = a0 + 1, b0 = a0 + segs + 1, b1 = b0 + 1;
-                    domeT.AddRange(new[] { a0, b0, a1, a1, b0, b1 });
+                    domeT.AddRange(new[] { a0, a1, b0, a1, b1, b0 });      // facing out
                 }
             var band = new GeoBuilder().Cylinder(0.123f, 0.125f, 0.04f, segs, M.T(0, baseY + 0.008f, cz)).Build("band");
             var beanie = new Mesh { name = "hat beanie" };
@@ -520,6 +521,91 @@ namespace Graveway.EditorTools
             Object.DestroyImmediate(inst);
             hats.Add(Fit("cone", cone, new Color[0], true));
             return hats.ToArray();
+        }
+
+        // Each survivor's hair and eyes, as cells of the kit's palette.
+        static readonly (string model, (int u, int v)[] hair, (int u, int v) eyes)[] Heads =
+        {
+            ("Characters_Shaun", new[] { (2, 30) }, (0, 30)),
+            ("Characters_Matt", new[] { (2, 31) }, (0, 31)),
+            ("Characters_Sam", new[] { (19, 31), (22, 31) }, (13, 31)),
+            ("Characters_Lis", new[] { (2, 29), (5, 29) }, (0, 29)),
+        };
+
+        static (int, int) Cell(Vector2 uv) => ((int)(uv.x * 32), (int)(uv.y * 32));
+
+        // A head for wearing hats: from a little above the eyes (where a
+        // brim comes down to) up, the hair's squashed down under the top of
+        // the head and drawn in to the skull, so a crest or a mohawk stays
+        // inside whatever hat goes on. Hair lower down (a beard, dreads, the
+        // back) is left as it is. Their own hat comes off too.
+        static ArtCatalog.HatHead[] BuildHatHeads()
+        {
+            Directory.CreateDirectory(BareDir);
+            var fits = SurvivorHeads();
+            var made = new System.Collections.Generic.List<ArtCatalog.HatHead>();
+            foreach (var (model, hairCells, eyeCell) in Heads)
+            {
+                var inst = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>($"{Kit}Characters/{model}.fbx"));
+                var smr = inst.GetComponentInChildren<SkinnedMeshRenderer>();
+                var src = smr.sharedMesh;
+                int hb = System.Array.FindIndex(smr.bones, b => b.name == "Head");
+                var toModel = smr.transform.localToWorldMatrix;
+                var toMesh = toModel.inverse;
+                var v = src.vertices;
+                var uv = src.uv;
+                var w = src.boneWeights;
+                bool OnHead(int i) => w[i].boneIndex0 == hb && w[i].weight0 >= 0.5f;
+                var p = v.Select(x => toModel.MultiplyPoint3x4(x)).ToArray();
+                float top = fits.First(f => f.id == model).top.y;
+                float eyeTop = Enumerable.Range(0, v.Length).Where(i => OnHead(i) && Cell(uv[i]) == eyeCell).Max(i => p[i].y);
+                bool IsHair(int i) => OnHead(i) && hairCells.Contains(Cell(uv[i]));
+                float cut = eyeTop + (top - eyeTop) * 0.35f, under = top - 0.02f;
+                // The head's outline at the brow, hair and all (a few stray
+                // spikes left out): what the hair above is drawn in to.
+                var band = Enumerable.Range(0, v.Length).Where(i => OnHead(i) && p[i].y > eyeTop && p[i].y < cut).Select(i => p[i]).ToArray();
+                float Pct(System.Func<Vector3, float> f, float k) { var a = band.Select(f).OrderBy(x => x).ToArray(); return a[(int)((a.Length - 1) * k)]; }
+                float x0 = Pct(q => q.x, 0.03f), x1 = Pct(q => q.x, 0.97f), z0 = Pct(q => q.z, 0.03f), z1 = Pct(q => q.z, 0.97f);
+                float cx = (x0 + x1) / 2, hw = (x1 - x0) / 2, cz = (z0 + z1) / 2, hd = (z1 - z0) / 2;
+                float hairTop = Enumerable.Range(0, v.Length).Where(IsHair).Select(i => p[i].y).DefaultIfEmpty(top).Max();
+                float squash = hairTop > under ? (under - cut) / (hairTop - cut) : 1;
+                var nv = (Vector3[])v.Clone();
+                for (int i = 0; i < v.Length; i++)
+                {
+                    if (!IsHair(i) || p[i].y <= cut) continue;
+                    var q = p[i];
+                    float t = Mathf.Clamp01((q.y - cut) / 0.06f);
+                    float dx = q.x - cx, dz = q.z - cz, e = Mathf.Sqrt(dx * dx / (hw * hw) + dz * dz / (hd * hd));
+                    if (e > 1) { float f = Mathf.Lerp(1, 1 / e, t); dx *= f; dz *= f; }
+                    nv[i] = toMesh.MultiplyPoint3x4(new Vector3(cx + dx, cut + (q.y - cut) * squash, cz + dz));
+                }
+                var hatted = Object.Instantiate(src);
+                hatted.name = model + " hatted";
+                hatted.vertices = nv;
+                // Without their own hat.
+                var own = System.Array.Find(OwnHats, o => o.model == model);
+                if (own.cells != null)
+                    for (int s = 0; s < hatted.subMeshCount; s++)
+                    {
+                        var tris = hatted.GetTriangles(s);
+                        var keep = new System.Collections.Generic.List<int>();
+                        for (int k = 0; k < tris.Length; k += 3)
+                        {
+                            var u = (uv[tris[k]] + uv[tris[k + 1]] + uv[tris[k + 2]]) / 3;
+                            if (!(OnHead(tris[k]) && own.cells.Contains(Cell(u)))) keep.AddRange(new[] { tris[k], tris[k + 1], tris[k + 2] });
+                        }
+                        hatted.SetTriangles(keep, s);
+                    }
+                hatted.RecalculateBounds();
+                string path = $"{BareDir}/{model} hatted.asset";
+                var asset = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+                if (asset == null) { AssetDatabase.CreateAsset(hatted, path); asset = hatted; }
+                else { EditorUtility.CopySerialized(hatted, asset); asset.name = hatted.name; }
+                Debug.Log($"Graveway: hat head {model}: eyes {eyeTop:0.000}, cut {cut:0.000}, top {top:0.000}, hair to {hairTop:0.000} (x{squash:0.00}), skull {hw:0.00} x {hd:0.00} at z {cz:0.00}");
+                made.Add(new ArtCatalog.HatHead { model = model, hatted = asset });
+                Object.DestroyImmediate(inst);
+            }
+            return made.ToArray();
         }
 
         // The survivors' own hats, part of their models: the triangles of

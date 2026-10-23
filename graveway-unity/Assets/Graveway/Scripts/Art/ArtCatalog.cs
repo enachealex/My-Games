@@ -80,11 +80,22 @@ namespace Graveway
             public bool palette;             // coloured by the kit's palette, like an own hat (the cone)
         }
 
+        // A survivor's head for wearing a hat: their model's mesh with the
+        // hair above the brim squashed down and in, so it stays inside the
+        // hat, and without their own hat (if they have one).
+        [Serializable]
+        public sealed class HatHead
+        {
+            public string model;
+            public Mesh hatted;
+        }
+
         public Entry[] models = Array.Empty<Entry>();
         public Prop[] props = Array.Empty<Prop>();
         public Gun[] guns = Array.Empty<Gun>();
         public Placed[] parts = Array.Empty<Placed>();
         public Hat[] hats = Array.Empty<Hat>();
+        public HatHead[] hatHeads = Array.Empty<HatHead>();
         public Texture2D zombieAtlas;        // the Zombie Apocalypse Kit's colour palette
 
         static ArtCatalog loaded;
@@ -95,6 +106,7 @@ namespace Graveway
         public Prop FindProp(string id) => Array.Find(props, p => p.id == id);
         public Placed FindPart(string id) => Array.Find(parts, p => p.id == id);
         public Hat FindHat(string id) => Array.Find(hats, h => h.id == id);
+        public HatHead HatHeadOf(string model) => Array.Find(hatHeads, h => h.model == model);
         public Hat OwnHatOf(string model) => Array.Find(hats, h => !string.IsNullOrEmpty(h.model) && h.model == model);
     }
 }

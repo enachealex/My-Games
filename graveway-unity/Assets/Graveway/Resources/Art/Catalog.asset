@@ -558,4 +558,13 @@ MonoBehaviour:
     model: Characters_Sam
     bare: {fileID: 4300000, guid: c525543cd2a78f34b9773046b3d2bd1b, type: 2}
     palette: 0
+  hatHeads:
+  - model: Characters_Shaun
+    hatted: {fileID: 4300000, guid: b450f4e5a32d06a408c40fc3efed7ef7, type: 2}
+  - model: Characters_Matt
+    hatted: {fileID: 4300000, guid: 83333910cdf20b8409ee2791b6381a2a, type: 2}
+  - model: Characters_Sam
+    hatted: {fileID: 4300000, guid: eff700b45e377074bae5253a98d0b034, type: 2}
+  - model: Characters_Lis
+    hatted: {fileID: 4300000, guid: 2e23b2a07f075f64890b5fab5d012de0, type: 2}
   zombieAtlas: {fileID: 2800000, guid: cc5120ad36d94ad46a315ba3181fca55, type: 3}

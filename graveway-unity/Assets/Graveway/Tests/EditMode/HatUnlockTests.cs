@@ -51,6 +51,16 @@ namespace Graveway.Tests
                 Assert.That(h.target, Is.GreaterThan(0));
                 Assert.That(new[] { "best", "metres", "kills", "bosses", "runs", "place" }, Does.Contain(h.stat), h.id);
             }
+            // And every survivor has a head to wear them on: hair kept in
+            // under the hat, and no higher than their head as it comes.
+            foreach (var model in Rigs.SurvivorModel.Values)
+            {
+                var head = cat.HatHeadOf(model);
+                Assert.That(head?.hatted, Is.Not.Null, $"{model}'s head for hats");
+                var full = cat.Find(model).model.GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh;
+                Assert.That(head.hatted.vertexCount, Is.EqualTo(full.vertexCount), model);
+                Assert.That(head.hatted.bounds.max.y, Is.LessThanOrEqualTo(full.bounds.max.y + 1e-4f), model);
+            }
         }
 
         [Test]

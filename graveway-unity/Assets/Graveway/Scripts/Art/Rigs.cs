@@ -139,9 +139,15 @@ namespace Graveway
             if (rig.hatObject) Object.Destroy(rig.hatObject);
             rig.hat = hat;
             rig.hatObject = null;
+            // Their head as it comes for their own hat; without it for none;
+            // and for any other, the head made for hats (hair in, own hat off).
             var cat = ArtCatalog.Get;
             var own = cat.OwnHatOf(rig.model.name);
-            if (own != null && rig.skin) rig.skin.sharedMesh = hat == own.id ? rig.skinMesh : own.bare;
+            var hatted = cat.HatHeadOf(rig.model.name)?.hatted;
+            if (rig.skin)
+                rig.skin.sharedMesh = own != null && hat == own.id ? rig.skinMesh
+                    : hat == "" ? (own != null ? own.bare : rig.skinMesh)
+                    : hatted ? hatted : own != null ? own.bare : rig.skinMesh;
             if (own != null && hat == own.id) return;
             var h = hat.Length > 0 ? cat.FindHat(hat) : null;
             var place = h == null ? null : System.Array.Find(h.on, p => p.id == rig.model.name);

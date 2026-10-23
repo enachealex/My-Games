@@ -517,6 +517,14 @@ From the 0.6 playtest, 23 October 2026:
     Settings, not over it; a banner no longer shows through the pause
     card; the witch hat is smaller, so from above it doesn't hide whoever
     wears it. *(Done.)*
+17. **Hair poked through the hats** (Wren's mohawk above all), and the
+    beanie was built inside out. Each survivor now has a head for wearing
+    hats, made at import: the hair from a little above the eyes up is
+    squashed down under the top of the head and drawn in to its outline
+    at the brow, and their own hat comes off; hair lower down (beards,
+    dreads) stays as it is. Checked in close-ups of every hat on every
+    survivor from four sides (`HatTests.CloseUps`, into
+    `Logs/shots/hats/`). *(Done.)*
 
 ## How work gets checked
 
