@@ -488,6 +488,28 @@ Ideas, 23 October 2026:
     aren't used. Playtest tool: "Every hat". *(Done.)* More cosmetics
     next.
 
+From the 0.6 playtest, 23 October 2026:
+
+14. **Survivor select's arrows were out of place: swipe the cards
+    instead.** A carousel: the card follows a finger and glides on to
+    the next survivor (or back), with the neighbours peeking in at the
+    edges; the dots and the arrow keys still work. *(Done.)*
+15. **Their own hats come off.** Rook's cap and Juno's beanie are part of
+    their models, so other hats sat on top of them. Now each is a hat of
+    its own in their list, worn until another (or none) is picked: the
+    import lifts it out, and makes their model without it to wear the
+    rest. *(Done.)*
+16. **A look over every screen**, in pictures at three shapes of screen
+    (a tall phone, 16:9, a 3:4 tablet: `Tests/PlayMode/UiTourTests.cs`,
+    into `Logs/shots/tour/`). Fixed: the survivor card fits (one line for
+    their guns, and a portrait that shrinks where there's less room);
+    buttons side by side have a gap again (the rule used `:first-child`,
+    which Unity's style sheets don't have); a long gun name wraps in the
+    Armory rather than being cut off; the playtest notes open in place of
+    Settings, not over it; a banner no longer shows through the pause
+    card; the witch hat is smaller, so from above it doesn't hide whoever
+    wears it. *(Done.)*
+
 ## How work gets checked
 
 - Unity runs without a window on the dev PC (`-batchmode`), so builds,

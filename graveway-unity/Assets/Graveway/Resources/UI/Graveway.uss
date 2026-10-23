@@ -38,9 +38,8 @@
 .btn.off { opacity: 0.45; }
 .btn.note-btn { color: rgb(154, 166, 160); font-size: 14px; min-height: 42px; }
 .stack > .btn, .stack > .row-btns, .stack > .toggle { margin-top: 10px; }
-.row-btns { flex-direction: row; }
-.row-btns > .btn { flex-grow: 1; flex-basis: 0; }
-.row-btns > .btn:first-child { margin-right: 10px; }
+.row-btns { flex-direction: row; margin-left: -5px; margin-right: -5px; }
+.row-btns > .btn { flex-grow: 1; flex-basis: 0; margin-left: 5px; margin-right: 5px; }
 
 .icon-btn {
     width: 44px; height: 44px; border-radius: 12px; border-width: 1px; border-color: rgba(255, 255, 255, 0.1);
@@ -90,13 +89,12 @@
 .menu-bottom > * { margin-top: 10px; }
 .btn.update { min-height: 44px; font-size: 14px; color: rgb(155, 225, 93); border-color: rgba(155, 225, 93, 0.5);
     background-color: rgba(155, 225, 93, 0.14); }
-.menu-stats { flex-direction: row; }
+.menu-stats { flex-direction: row; margin-left: -5px; margin-right: -5px; }
 .m-card {
     flex-grow: 1; flex-basis: 0; flex-direction: row; align-items: center; padding: 10px 12px; border-radius: 18px;
     background-color: rgba(14, 20, 24, 0.86); border-width: 1px; border-color: rgba(255, 255, 255, 0.1); min-width: 0;
 }
-.m-card { margin: 0; }                  /* they're buttons now: none of a button's own */
-.m-card:first-child { margin-right: 10px; }
+.m-card { margin: 0 5px; }               /* they're buttons: none of a button's own margin */
 .m-card:hover { background-color: rgba(24, 32, 38, 0.92); }
 .m-card:active { scale: 0.98 0.98; }
 .m-chev { position: absolute; right: 12px; top: 0; bottom: 0; -unity-text-align: middle-right; font-size: 24px; color: rgb(154, 166, 160); }
@@ -115,10 +113,12 @@
 .a-head-title { flex-grow: 1; margin-left: 12px; font-size: 30px; -unity-font-style: bold; letter-spacing: 2px; }
 
 /* ── Survivor select ──────────────────────────────────────────────────── */
-.c-wrap { flex-grow: 1; flex-direction: row; align-items: center; padding: 0 8px; min-height: 0; }
-.c-arrow { width: 40px; height: 72px; border-radius: 12px; border-width: 1px; border-color: rgba(255, 255, 255, 0.1);
-    background-color: rgba(14, 20, 24, 0.86); font-size: 30px; padding: 0; margin: 0 3px; }
-.c-card { flex-grow: 1; max-height: 100%; }
+.c-wrap { flex-grow: 1; min-height: 0; overflow: hidden; }
+.c-track { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+.c-track.glide { transition-property: translate; transition-duration: 0.24s; transition-timing-function: ease-out-cubic; }
+.c-card { position: absolute; top: 0; bottom: 0; }
+.c-card.fade { transition-property: opacity, scale; transition-duration: 0.24s; }
+.c-card.side { opacity: 0.4; scale: 0.94 0.94; }
 .c-name { flex-direction: row; align-items: center; justify-content: space-between; }
 .c-name-text { font-size: 40px; -unity-font-style: bold; letter-spacing: 1px; }
 .perk {
@@ -129,7 +129,8 @@
 .perk-text { font-size: 13px; color: rgb(207, 216, 210); white-space: normal; }
 .perk.gunline { flex-direction: row; align-items: center; background-color: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.1); }
 .gun-icon { width: 64px; height: 24px; margin-right: 12px; }
-.perk.loadline { margin-top: 6px; justify-content: space-between; }
+.perk.hatline { margin-top: 6px; }
+.perk.gunline .perk-name { white-space: normal; }
 .c-foot { align-items: center; padding: 12px 16px 18px 16px; }
 .c-dots { flex-direction: row; margin-bottom: 12px; }
 .c-dot { width: 12px; height: 12px; border-radius: 6px; background-color: rgba(255, 255, 255, 0.2); margin: 0 4px; padding: 0; border-width: 0; }
@@ -157,6 +158,7 @@
 .wcard.sel { border-color: rgb(155, 225, 93); background-color: rgba(155, 225, 93, 0.08); }
 .wcard .gun-icon { width: 100%; height: 26px; margin: 0 0 2px 0; }
 .wn { font-size: 14px; -unity-font-style: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.wn.long { white-space: normal; font-size: 13px; -unity-text-align: upper-left; }
 .wt { font-size: 12px; color: rgb(154, 166, 160); -unity-font-style: bold; flex-direction: row; align-items: center; }
 .wcard.eq .wt { color: rgb(155, 225, 93); }
 .wsig { font-size: 11px; color: rgb(155, 225, 93); -unity-font-style: bold; }

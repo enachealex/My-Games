@@ -18,8 +18,10 @@ namespace Graveway
         public Transform model;              // the character, at its size
         public Animator animator;
         public Transform gunMount;           // survivors: grip at the origin, barrel along +z, in metres
-        public string hat = "";              // survivors: the hat they're wearing, by id; "" for none
+        public string hat;                   // survivors: the hat they're wearing, by id; "" for none
         public GameObject hatObject;
+        public SkinnedMeshRenderer skin;     // survivors: their body, and its mesh as it comes (own hat and all)
+        public Mesh skinMesh;
         public readonly Dictionary<string, GunModel> guns = new Dictionary<string, GunModel>();
         readonly HashSet<int> states = new HashSet<int>();
         readonly List<Renderer> renderers = new List<Renderer>();
@@ -107,6 +109,8 @@ namespace Graveway
         public static Rig Survivor(CharacterDef c, bool ring = true)
         {
             var rig = Make(SurvivorModel[c.id], c.name, c.look != null ? c.look.bulk : 1);
+            rig.skin = rig.model.GetComponentInChildren<SkinnedMeshRenderer>();
+            rig.skinMesh = rig.skin ? rig.skin.sharedMesh : null;
             // The kit's characters come holding every weapon in the kit: put
             // them away, and mount ours where they were, as held in Idle_Gun.
             Transform hand = Find(rig.model, "Middle1.L");
@@ -125,7 +129,9 @@ namespace Graveway
         }
 
         // A hat on a survivor's head, going where the head goes; none for ""
-        // (or for a hat the catalog hasn't got).
+        // (or for a hat the catalog hasn't got). A survivor's own hat is part
+        // of their model: wearing it is wearing the model as it comes, and
+        // anything else (or nothing) takes it off.
         public static void WearHat(Rig rig, string hat)
         {
             hat ??= "";
@@ -133,7 +139,11 @@ namespace Graveway
             if (rig.hatObject) Object.Destroy(rig.hatObject);
             rig.hat = hat;
             rig.hatObject = null;
-            var h = hat.Length > 0 ? ArtCatalog.Get.FindHat(hat) : null;
+            var cat = ArtCatalog.Get;
+            var own = cat.OwnHatOf(rig.model.name);
+            if (own != null && rig.skin) rig.skin.sharedMesh = hat == own.id ? rig.skinMesh : own.bare;
+            if (own != null && hat == own.id) return;
+            var h = hat.Length > 0 ? cat.FindHat(hat) : null;
             var place = h == null ? null : System.Array.Find(h.on, p => p.id == rig.model.name);
             var head = place == null ? null : Find(rig.model, "Head");
             if (!head) return;
@@ -153,7 +163,9 @@ namespace Graveway
             go.AddComponent<MeshFilter>().sharedMesh = h.mesh;
             var r = go.AddComponent<MeshRenderer>();
             var mats = new Material[h.mesh.subMeshCount];
-            for (int i = 0; i < mats.Length; i++) mats[i] = Art.Lit(h.colors[Mathf.Min(i, h.colors.Length - 1)]);
+            var cat = ArtCatalog.Get;
+            for (int i = 0; i < mats.Length; i++)
+                mats[i] = !string.IsNullOrEmpty(h.model) ? Art.Lit(Hex.C(0xe7e7e7), 0, cat.zombieAtlas) : Art.Lit(h.colors[Mathf.Min(i, h.colors.Length - 1)]);
             r.sharedMaterials = mats;
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             r.receiveShadows = false;

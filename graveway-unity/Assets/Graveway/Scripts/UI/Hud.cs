@@ -232,6 +232,7 @@ namespace Graveway
         public void ShowPause()
         {
             pauseLevel.text = $"{N(game.Distance)} m · stage {game.Stage + 1}";
+            HideBanner();
             Show("pause");
         }
 
@@ -314,6 +315,7 @@ namespace Graveway
                 portraitsWanted = false;
                 RefreshPortraits();
             }
+            FinishGlide();
             if (IsShown(banner) && Time.unscaledTime > bannerUntil) HideBanner();
             if (toastT > 0)
             {

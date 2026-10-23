@@ -84,7 +84,8 @@ touching the game logic.
 | `Scripts/Audio/Sfx.cs`, `Haptics.cs` | The web version's 29 sounds plus the jet and the rotor, synthesised at start-up; vibration | `src/audio.js` |
 | `Scripts/Core/StickInput.cs` | The floating joystick, any number of fingers, and keyboard keys (Input System) | `src/input.js` |
 | `Scripts/UI/Hud.cs` | HUD, banners, toasts, the back button | `src/ui.js`, `index.html` |
-| `Scripts/UI/Hud.Screens.cs` | Menu, survivor select (and unlocking survivors), pause, results, settings | `src/ui.js` |
+| `Scripts/UI/Hud.Screens.cs` | Menu, pause, results, settings | `src/ui.js` |
+| `Scripts/UI/Hud.Select.cs` | Survivor select: swiped cards, and unlocking survivors | `src/ui.js` |
 | `Scripts/UI/Hud.Armory.cs` | The Armory: guns, each survivor's loadout, parts and survivor upgrades | `src/ui.js` |
 | `Scripts/UI/Hud.BlackMarket.cs` | The Black Market, and the backpack on the HUD | |
 | `Scripts/UI/Hud.Scores.cs` | The scoreboard, and naming a run on the results | |
@@ -97,7 +98,7 @@ touching the game logic.
 | `Editor/AndroidManifestFlags.cs` | Android backup on, and the offer to keep the save when uninstalling | |
 | `Settings/` | The URP pipeline (mobile renderer, no shadow maps) and its post-processing: ACES and +0.94 EV, the web version's look | `game.js` renderer |
 | `Editor/ProjectSetup.cs` | App and Android settings, base materials, panel settings, the scene (menu: Graveway → Set up project) | `android.json` |
-| `Editor/ArtImport.cs` | How third-party models import, the art catalog with an Animator controller per character, hats lifted off the modular heads (`Resources/Art/Hats`), and a report of every model's clips, bones and size | |
+| `Editor/ArtImport.cs` | How third-party models import, the art catalog with an Animator controller per character, hats lifted off the modular heads (`Resources/Art/Hats`), Rook's cap and Juno's beanie lifted off theirs (with their models without them in `Resources/Art/Bare`), and a report of every model's clips, bones and size | |
 | `Editor/BuildScript.cs` + `build-android.ps1` | The APK build with no window, and installing it over USB | `tools/android/build-apk.mjs` |
 | `Tests/` | EditMode tests against the web version's numbers; PlayMode tests of the game and its menus | |
 

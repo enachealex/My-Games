@@ -249,6 +249,8 @@ MonoBehaviour:
       position: {x: -0.0000032918228, y: 0.0040810695, z: -0.00012729625}
       scale: {x: 0.026702626, y: 0.026702639, z: 0.026702633}
       rotation: {x: -0.051960923, y: -0.00027473003, z: -0.000014294531, w: 0.9986491}
+    model: 
+    bare: {fileID: 0}
   - id: straw
     mesh: {fileID: 4300000, guid: dd069af6f3ab90848a7f593cfec908f7, type: 2}
     colors:
@@ -279,6 +281,8 @@ MonoBehaviour:
       position: {x: -0.0000032918228, y: 0.0040810695, z: -0.00012729625}
       scale: {x: 0.026702626, y: 0.026702639, z: 0.026702633}
       rotation: {x: -0.051960923, y: -0.00027473003, z: -0.000014294531, w: 0.9986491}
+    model: 
+    bare: {fileID: 0}
   - id: mohawk
     mesh: {fileID: 4300000, guid: 79457441ccc6bbb4f93602c15626d7e2, type: 2}
     colors:
@@ -308,6 +312,8 @@ MonoBehaviour:
       position: {x: -0.0000032918228, y: 0.0040810695, z: -0.00012729625}
       scale: {x: 0.026702626, y: 0.026702639, z: 0.026702633}
       rotation: {x: -0.051960923, y: -0.00027473003, z: -0.000014294531, w: 0.9986491}
+    model: 
+    bare: {fileID: 0}
   - id: hood
     mesh: {fileID: 4300000, guid: dd2b0124350e40e499e6f51c795650ff, type: 2}
     colors:
@@ -337,6 +343,8 @@ MonoBehaviour:
       position: {x: -0.0000032918228, y: 0.0040810695, z: -0.00012729625}
       scale: {x: 0.025974372, y: 0.025974385, z: 0.025974378}
       rotation: {x: -0.051960927, y: -0.00027473006, z: -0.000014294533, w: 0.99864906}
+    model: 
+    bare: {fileID: 0}
   - id: witch
     mesh: {fileID: 4300000, guid: 756192332720ca64c91dff3f6bf50285, type: 2}
     colors:
@@ -347,26 +355,28 @@ MonoBehaviour:
       mesh: {fileID: 4300000, guid: 756192332720ca64c91dff3f6bf50285, type: 2}
       colors: []
       position: {x: -0.0000034191007, y: 0.0047918563, z: 0.00010403243}
-      scale: {x: 0.020715596, y: 0.020715607, z: 0.020715604}
-      rotation: {x: -0.051960927, y: -0.00027473006, z: -0.000014294533, w: 0.9986491}
+      scale: {x: 0.016831422, y: 0.016831432, z: 0.016831426}
+      rotation: {x: -0.051960927, y: -0.00027473012, z: -0.000014294532, w: 0.99864906}
     - id: Characters_Matt
       mesh: {fileID: 4300000, guid: 756192332720ca64c91dff3f6bf50285, type: 2}
       colors: []
       position: {x: -0.000003153403, y: 0.004245965, z: -0.00037887588}
-      scale: {x: 0.020715596, y: 0.020715607, z: 0.020715604}
-      rotation: {x: -0.051960927, y: -0.00027473006, z: -0.000014294533, w: 0.9986491}
+      scale: {x: 0.016831422, y: 0.016831432, z: 0.016831426}
+      rotation: {x: -0.051960927, y: -0.00027473012, z: -0.000014294532, w: 0.99864906}
     - id: Characters_Sam
       mesh: {fileID: 4300000, guid: 756192332720ca64c91dff3f6bf50285, type: 2}
       colors: []
       position: {x: -0.0000030861781, y: 0.004458131, z: -0.00050159945}
-      scale: {x: 0.020779496, y: 0.020779507, z: 0.020779502}
-      rotation: {x: -0.051960923, y: -0.00027473, z: -0.000014294532, w: 0.9986491}
+      scale: {x: 0.016883342, y: 0.016883349, z: 0.016883345}
+      rotation: {x: -0.051960927, y: -0.00027473006, z: -0.000014294532, w: 0.99864906}
     - id: Characters_Lis
       mesh: {fileID: 4300000, guid: 756192332720ca64c91dff3f6bf50285, type: 2}
       colors: []
       position: {x: -0.0000032918228, y: 0.0040810695, z: -0.00012729625}
-      scale: {x: 0.020779498, y: 0.02077951, z: 0.020779504}
-      rotation: {x: -0.051960927, y: -0.00027473003, z: -0.000014294532, w: 0.9986491}
+      scale: {x: 0.016883342, y: 0.01688335, z: 0.016883347}
+      rotation: {x: -0.051960923, y: -0.00027473, z: -0.000014294531, w: 0.9986491}
+    model: 
+    bare: {fileID: 0}
   - id: crown
     mesh: {fileID: 4300000, guid: 6354f9ddf59466f4ebedb743b429691d, type: 2}
     colors:
@@ -396,4 +406,18 @@ MonoBehaviour:
       position: {x: -0.0000032918228, y: 0.0040810695, z: -0.00012729625}
       scale: {x: 0.026702626, y: 0.026702639, z: 0.026702633}
       rotation: {x: -0.051960923, y: -0.00027473003, z: -0.000014294531, w: 0.9986491}
+    model: 
+    bare: {fileID: 0}
+  - id: rookcap
+    mesh: {fileID: 4300000, guid: 18711942c38e594428894492495e90b1, type: 2}
+    colors: []
+    on: []
+    model: Characters_Shaun
+    bare: {fileID: 4300000, guid: 995b6d89b67b30a40bb7a8584e736349, type: 2}
+  - id: junobeanie
+    mesh: {fileID: 4300000, guid: c347ae3b6e3f9bc42b8d2e9f29979a3a, type: 2}
+    colors: []
+    on: []
+    model: Characters_Sam
+    bare: {fileID: 4300000, guid: c525543cd2a78f34b9773046b3d2bd1b, type: 2}
   zombieAtlas: {fileID: 2800000, guid: cc5120ad36d94ad46a315ba3181fca55, type: 3}

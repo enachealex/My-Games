@@ -94,13 +94,13 @@ namespace Graveway.Tests
             Save.Data.hatsOwned.Add("hardhat");
             Press(Find<Button>(ui, b => b.ClassListContains("m-card") && Says(b, "SURVIVOR"), "the survivor card"));
             yield return null;
-            Assert.That(Visible(Find<Label>(ui, l => l.text == "None", "no hat yet")));
+            Assert.That(Visible(Find<Label>(ui, l => l.text == "Rook's cap", "his own cap, to start with")));
             Click(ui, "Hats");
             yield return null;
             Assert.That(Says(HatCard("Crown"), Tunables.Hat("crown").goal), "a locked hat shows what unlocks it");
             Press(HatCard("Crown"));
             yield return null;
-            Assert.That(Save.Hat("rook"), Is.Empty);
+            Assert.That(Save.Hat("rook"), Is.EqualTo("rookcap"), "a locked hat doesn't go on: he keeps his own");
             Press(HatCard("Hard hat"));
             yield return null;
             Assert.That(Save.Hat("rook"), Is.EqualTo("hardhat"));
@@ -116,6 +116,22 @@ namespace Graveway.Tests
             game.hud.Back();
             yield return null;
             Assert.That(Visible(Find<Label>(ui, l => l.text == "Hard hat", "the hat on the survivor's card")));
+
+            // No hat at all: the cap's off too, on the street.
+            Click(ui, "Hats");
+            yield return null;
+            Press(HatCard("No hat"));
+            yield return null;
+            Assert.That(Save.Hat("rook"), Is.Empty);
+            Assert.That(GameObject.Find("hat hardhat"), Is.Null);
+            bool bare = false;
+            var capless = ArtCatalog.Get.OwnHatOf(Rigs.SurvivorModel["rook"]).bare;
+            foreach (var r in Object.FindObjectsByType<SkinnedMeshRenderer>())
+                if (r.gameObject.activeInHierarchy && r.sharedMesh == capless) bare = true;
+            Assert.That(bare, "Rook without his cap");
+            Press(HatCard("Rook's cap"));
+            yield return null;
+            Assert.That(Save.Hat("rook"), Is.EqualTo("rookcap"));
         }
 
         // A run that gets far enough unlocks a hat, and the results say so.
@@ -174,9 +190,12 @@ namespace Graveway.Tests
             if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) Assert.Ignore("no GPU (-nographics), so nothing to see");
             Save.Data.settings.allHats = true;
             const int S = 256;
-            foreach (var h in Tunables.Hats)
+            var looks = new System.Collections.Generic.List<string> { "", "own" };
+            foreach (var h in Tunables.Hats) looks.Add(h.id);
+            foreach (var look in looks)
             {
-                foreach (var c in Tunables.Characters) Save.Data.hats[c.id] = h.id;
+                foreach (var c in Tunables.Characters) Save.Data.hats[c.id] = look == "own" ? Tunables.OwnHat(c.id)?.id ?? "" : look;
+                var h = new HatDef { id = look == "" ? "none" : look };
                 var faces = Studio.Portraits(S);
                 var row = new Texture2D(S * faces.Count, S, TextureFormat.RGB24, false);
                 int i = 0;
@@ -185,10 +204,19 @@ namespace Graveway.Tests
                 Write(row, "on-" + h.id);
                 Object.Destroy(row);
                 foreach (var t in faces.Values) Object.Destroy(t);
-                var pic = Studio.HatPicture(h.id);
-                Assert.That(pic, Is.Not.Null, h.id);
-                Write(pic, "hat-" + h.id);
+                if (Tunables.Hat(look) != null)
+                {
+                    var pic = Studio.HatPicture(h.id);
+                    Assert.That(pic, Is.Not.Null, h.id);
+                    Write(pic, "hat-" + h.id);
+                }
                 yield return null;
+            }
+            foreach (var own in Tunables.OwnHats)
+            {
+                var pic = Studio.HatPicture(own.id);
+                Assert.That(pic, Is.Not.Null, own.id);
+                Write(pic, "hat-" + own.id);
             }
         }
     }

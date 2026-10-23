@@ -15,6 +15,7 @@ namespace Graveway.Tests
         public static VisualElement Root(Game game) => game.hud.GetComponentInChildren<UIDocument>().rootVisualElement;
 
         // Shown, as far as the HUD's own show/hide goes (it sets display inline).
+        // Find also skips what's disabled (the survivor cards either side).
         public static bool Visible(VisualElement v)
         {
             for (var e = v; e != null; e = e.hierarchy.parent)
@@ -28,7 +29,7 @@ namespace Graveway.Tests
         public static T Find<T>(VisualElement root, Func<T, bool> match, string what) where T : VisualElement
         {
             foreach (var e in root.Query<T>().ToList())
-                if (Visible(e) && match(e)) return e;
+                if (Visible(e) && e.enabledInHierarchy && match(e)) return e;
             Assert.Fail($"nothing visible on screen matches: {what}");
             return null;
         }
@@ -44,6 +45,23 @@ namespace Graveway.Tests
         }
 
         public static void Click(VisualElement root, string text) => Press(Button(root, text));
+
+        // A finger drawn across an element: down at its middle, moved in a
+        // few steps, and up.
+        public static void Drag(VisualElement el, float dx, float dy = 0)
+        {
+            var from = el.worldBound.center;
+            void Send(EventBase e)
+            {
+                e.target = el;
+                el.SendEvent(e);
+                e.Dispose();
+            }
+            Send(PointerDownEvent.GetPooled(new Event { type = EventType.MouseDown, mousePosition = from, button = 0, clickCount = 1 }));
+            for (int i = 1; i <= 6; i++)
+                Send(PointerMoveEvent.GetPooled(new Event { type = EventType.MouseDrag, mousePosition = from + new Vector2(dx, dy) * i / 6, button = 0 }));
+            Send(PointerUpEvent.GetPooled(new Event { type = EventType.MouseUp, mousePosition = from + new Vector2(dx, dy), button = 0 }));
+        }
     }
 
     // The camera and the UI both drawn into textures for as long as it's
@@ -88,9 +106,9 @@ namespace Graveway.Tests
             var tex = new Texture2D(world.width, world.height, TextureFormat.RGBA32, false);
             tex.SetPixels32(under);
             tex.Apply();
-            string dir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Logs", "shots"));
-            Directory.CreateDirectory(dir);
-            File.WriteAllBytes(Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
+            string file = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Logs", "shots", name + ".png"));
+            Directory.CreateDirectory(Path.GetDirectoryName(file));
+            File.WriteAllBytes(file, tex.EncodeToPNG());
             UnityEngine.Object.Destroy(tex);
         }
 

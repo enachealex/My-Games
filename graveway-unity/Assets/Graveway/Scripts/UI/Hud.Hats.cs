@@ -57,12 +57,14 @@ namespace Graveway
             htTitle.text = $"{c.name.ToUpperInvariant()}'S HAT · {have} OF {Tunables.Hats.Length} UNLOCKED, FOR ANYONE";
             htCards.Clear();
             Card(null);
+            var own = Tunables.OwnHat(c.id);
+            if (own != null) Card(own);
             foreach (var h in Tunables.Hats) Card(h);
 
             void Card(HatDef h)
             {
                 string id = h?.id ?? "";
-                bool mine = h == null || Save.HasHat(id), on = id == wearing;
+                bool mine = h == null || h.owner != null || Save.HasHat(id), on = id == wearing;
                 Button b = null;
                 b = new Button(() => PickHat(h, b));
                 b.AddToClassList("hcard");
@@ -72,7 +74,7 @@ namespace Graveway
                 if (h != null) pic.style.backgroundImage = Studio.HatPicture(id);
                 else Lbl("hcard-none", pic, "—");
                 Lbl("hcard-name", b, h?.name ?? "No hat");
-                Lbl("hcard-sub", b, on ? "Wearing" : mine ? "Tap to wear" : h.goal);
+                Lbl("hcard-sub", b, on ? "Wearing" : h?.owner != null ? "Their own: tap to wear" : mine ? "Tap to wear" : h.goal);
                 if (!mine)
                 {
                     int now = Mathf.Min(Save.Stat(h.stat), h.target);
@@ -85,7 +87,7 @@ namespace Graveway
 
         void PickHat(HatDef h, VisualElement button)
         {
-            if (h != null && !Save.HasHat(h.id)) { Sfx.Denied(); Nudge(button); return; }
+            if (h != null && h.owner == null && !Save.HasHat(h.id)) { Sfx.Denied(); Nudge(button); return; }
             Sfx.Click();
             Save.Wear(htWho.id, h?.id ?? "");
             game.Dress();

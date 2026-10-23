@@ -95,7 +95,7 @@ namespace Graveway.Tests
             Assert.That(Save.Hat("bram"), Is.Empty, "not yours yet");
             Save.Data.hatsOwned.Add("crown");
             Assert.That(Save.Hat("bram"), Is.EqualTo("crown"));
-            Assert.That(Save.Hat("rook"), Is.Empty, "each survivor wears their own");
+            Assert.That(Save.Hat("wren"), Is.Empty, "each survivor wears their own choice");
             Save.Wear("rook", "crown");
             Save.Wear("bram", "");
             Save.Reload();
@@ -103,6 +103,31 @@ namespace Graveway.Tests
             Save.Data.settings.allHats = true;
             Save.Wear("juno", "witch");
             Assert.That(Save.Hat("juno"), Is.EqualTo("witch"), "the playtest tool lends every hat");
+        }
+
+        // Rook's cap and Juno's beanie are part of them: worn until they pick
+        // another hat or none, and nobody else's to wear.
+        [Test]
+        public void TheirOwnHatsComeOff()
+        {
+            Assert.That((Save.Hat("rook"), Save.Hat("juno"), Save.Hat("bram")), Is.EqualTo(("rookcap", "junobeanie", "")));
+            Save.Wear("rook", "");
+            Assert.That(Save.Hat("rook"), Is.Empty, "no hat, cap and all");
+            Save.Wear("juno", "junobeanie");
+            Save.Data.settings.allHats = true;
+            Save.Wear("bram", "rookcap");
+            Assert.That(Save.Hat("bram"), Is.Empty, "Rook's cap is Rook's");
+            Save.Reload();
+            Assert.That((Save.Hat("rook"), Save.Hat("juno")), Is.EqualTo(("", "junobeanie")));
+            var cat = ArtCatalog.Get;
+            foreach (var h in Tunables.OwnHats)
+            {
+                var art = cat.FindHat(h.id);
+                Assert.That(art, Is.Not.Null, h.id);
+                Assert.That(art.bare, Is.Not.Null, $"{h.id}: their model without it");
+                Assert.That(art.model, Is.EqualTo(Rigs.SurvivorModel[h.owner]));
+                Assert.That(art.mesh.triangles.Length, Is.GreaterThan(0), h.id);
+            }
         }
     }
 }

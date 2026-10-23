@@ -73,6 +73,10 @@ namespace Graveway
             public Mesh mesh;
             public Color[] colors;
             public Placed[] on = Array.Empty<Placed>();
+            // A survivor's own hat, part of their model: whose model (by id),
+            // and the model's mesh without it. Coloured by the kit's palette.
+            public string model;
+            public Mesh bare;
         }
 
         public Entry[] models = Array.Empty<Entry>();
@@ -90,5 +94,6 @@ namespace Graveway
         public Prop FindProp(string id) => Array.Find(props, p => p.id == id);
         public Placed FindPart(string id) => Array.Find(parts, p => p.id == id);
         public Hat FindHat(string id) => Array.Find(hats, h => h.id == id);
+        public Hat OwnHatOf(string model) => Array.Find(hats, h => !string.IsNullOrEmpty(h.model) && h.model == model);
     }
 }

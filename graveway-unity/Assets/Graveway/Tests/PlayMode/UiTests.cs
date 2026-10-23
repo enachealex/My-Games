@@ -95,6 +95,39 @@ namespace Graveway.Tests
         // The menu's survivor card: where you change who you run as.
         void OpenSurvivors() => Press(Find<Button>(ui, b => b.ClassListContains("m-card") && Says(b, "SURVIVOR"), "the survivor card"));
 
+        ScrollView CentreCard() => Find<ScrollView>(ui, s => s.ClassListContains("c-card") && !s.ClassListContains("side"), "the survivor's card");
+
+        // Swipes the survivor card: left (dx < 0) for the next, right for the one before.
+        IEnumerator SwipeCards(float dx, float dy = 0)
+        {
+            Drag(CentreCard(), dx, dy);
+            yield return Seconds(0.4f);
+        }
+
+        string Shown() => CentreCard().Q<Label>(className: "c-name-text").text;
+
+        [UnityTest]
+        public IEnumerator SwipingChangesSurvivor()
+        {
+            OpenSurvivors();
+            yield return null;
+            Assert.That(Shown(), Is.EqualTo("ROOK"));
+            yield return SwipeCards(-200);
+            Assert.That(Shown(), Is.EqualTo("BRAM"), "swiped left: the next");
+            yield return SwipeCards(200);
+            Assert.That(Shown(), Is.EqualTo("ROOK"), "swiped right: the one before");
+            yield return SwipeCards(200);
+            Assert.That(Shown(), Is.EqualTo("WREN"), "round from the first to the last");
+            yield return SwipeCards(-20);
+            Assert.That(Shown(), Is.EqualTo("WREN"), "a nudge isn't a swipe");
+            yield return SwipeCards(-15, -200);
+            Assert.That(Shown(), Is.EqualTo("WREN"), "up and down scrolls the card");
+            Press(ui.Query<Button>(className: "c-dot").AtIndex(2));
+            yield return null;
+            Assert.That(Shown(), Is.EqualTo("JUNO"), "a dot goes straight there");
+            Assert.That(ui.Query<Button>().ToList().Exists(b => Visible(b) && (Says(b, "‹") || Says(b, "›"))), Is.False, "no arrows");
+        }
+
         [UnityTest]
         public IEnumerator SurvivorsAreBought()
         {
@@ -103,8 +136,7 @@ namespace Graveway.Tests
             OpenSurvivors();
             yield return null;
             Assert.That(Showing("RUN AS ROOK"));
-            Click(ui, "‹");                             // round to the last: Wren
-            yield return null;
+            yield return SwipeCards(200);               // round to the last: Wren
             Assert.That(Visible(Find<Label>(ui, l => l.text == "WREN", "her name")));
             Assert.That(Showing("RUN AS WREN"), Is.False, "she isn't yours yet");
             Assert.That(Save.Data.character, Is.EqualTo("rook"), "looking at her doesn't make her the one you run as");
@@ -116,8 +148,7 @@ namespace Graveway.Tests
             Assert.That(Save.Data.character, Is.EqualTo("wren"));
             Assert.That(Showing("RUN AS WREN"));
 
-            Click(ui, "‹");                             // Juno: more than what's left
-            yield return null;
+            yield return SwipeCards(200);               // Juno: more than what's left
             Press(Unlock());
             yield return null;
             Assert.That(Save.HasSurvivor(Tunables.Character("juno")), Is.False);
@@ -342,8 +373,7 @@ namespace Graveway.Tests
             OpenSurvivors();
             yield return Seconds(0.5f);
             photo.Shot("5-select");
-            Click(ui, "›");
-            yield return Seconds(0.5f);
+            yield return SwipeCards(-200);
             photo.Shot("5b-select-locked");
             game.hud.Back();
             Click(ui, "Armory");

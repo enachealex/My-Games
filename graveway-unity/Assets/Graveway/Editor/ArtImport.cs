@@ -135,7 +135,7 @@ namespace Graveway.EditorTools
             cat.props = BuildProps();
             cat.guns = BuildGuns();
             cat.parts = BuildParts();
-            cat.hats = BuildHats();
+            cat.hats = BuildHats().Concat(BuildOwnHats()).ToArray();
             cat.zombieAtlas = AssetDatabase.LoadAssetAtPath<Texture2D>(Kit + "Zombie_Atlas.png");
             EditorUtility.SetDirty(cat);
             AssetDatabase.SaveAssets();
@@ -313,7 +313,7 @@ namespace Graveway.EditorTools
             ("straw", "UltimateModularMen/Farmer", new[] { "Beige", "Red" }, 1, false),
             ("mohawk", "UltimateModularMen/Punk", new[] { "Red" }, 1, true),
             ("hood", "UltimateModularWomen/Medieval", new[] { "DarkBrown" }, 1, false),
-            ("witch", "UltimateModularWomen/Witch", new[] { "Purple", "Gold" }, 0.8f, false),
+            ("witch", "UltimateModularWomen/Witch", new[] { "Purple", "Gold" }, 0.65f, false),
             ("crown", "UltimateModularMen/King", new[] { "Gold" }, 1, false),
         };
         const string HatsDir = "Assets/Graveway/Resources/Art/Hats";
@@ -414,6 +414,96 @@ namespace Graveway.EditorTools
 
                 var on = heads.Select(h => Placed(h.id, asset, null, h.toBone * Matrix4x4.TRS(h.top, Quaternion.identity, Vector3.one * (size * h.width / width)))).ToArray();
                 hats.Add(new ArtCatalog.Hat { id = id, mesh = asset, colors = colors.ToArray(), on = on });
+                Object.DestroyImmediate(inst);
+            }
+            return hats.ToArray();
+        }
+
+        // The survivors' own hats, part of their models: the triangles of
+        // the head in these cells of the kit's palette (32 x 32 of them, by
+        // where a triangle's UVs fall). Each comes out as a hat of its own,
+        // for its picture, and the model gets a mesh without it.
+        static readonly (string id, string model, (int u, int v)[] cells)[] OwnHats =
+        {
+            ("rookcap", "Characters_Shaun", new[] { (10, 30), (13, 30) }),
+            ("junobeanie", "Characters_Sam", new[] { (17, 31), (16, 31) }),
+        };
+        const string BareDir = "Assets/Graveway/Resources/Art/Bare";
+
+        static ArtCatalog.Hat[] BuildOwnHats()
+        {
+            Directory.CreateDirectory(BareDir);
+            var hats = new System.Collections.Generic.List<ArtCatalog.Hat>();
+            foreach (var (id, model, cells) in OwnHats)
+            {
+                var inst = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>($"{Kit}Characters/{model}.fbx"));
+                var smr = inst.GetComponentInChildren<SkinnedMeshRenderer>();
+                var src = smr.sharedMesh;
+                int hb = System.Array.FindIndex(smr.bones, b => b.name == "Head");
+                var toModel = smr.transform.localToWorldMatrix;
+                var v = src.vertices;
+                var n = src.normals;
+                var uv = src.uv;
+                var w = src.boneWeights;
+                bool Hat(int a, int b, int c)
+                {
+                    if (!(w[a].boneIndex0 == hb && w[a].weight0 >= 0.5f)) return false;
+                    var u = (uv[a] + uv[b] + uv[c]) / 3;
+                    return cells.Contains(((int)(u.x * 32), (int)(u.y * 32)));
+                }
+
+                // The model without it: every submesh, less the hat's triangles.
+                var bare = Object.Instantiate(src);
+                bare.name = model + " bare";
+                var hatTris = new System.Collections.Generic.List<int>();
+                for (int s = 0; s < src.subMeshCount; s++)
+                {
+                    var tris = src.GetTriangles(s);
+                    var keep = new System.Collections.Generic.List<int>();
+                    for (int k = 0; k < tris.Length; k += 3)
+                    {
+                        if (Hat(tris[k], tris[k + 1], tris[k + 2])) hatTris.AddRange(new[] { tris[k], tris[k + 1], tris[k + 2] });
+                        else keep.AddRange(new[] { tris[k], tris[k + 1], tris[k + 2] });
+                    }
+                    bare.SetTriangles(keep, s);
+                }
+                string barePath = $"{BareDir}/{model}.asset";
+                var bareAsset = AssetDatabase.LoadAssetAtPath<Mesh>(barePath);
+                if (bareAsset == null) { AssetDatabase.CreateAsset(bare, barePath); bareAsset = bare; }
+                else { EditorUtility.CopySerialized(bare, bareAsset); bareAsset.name = bare.name; }
+
+                // The hat alone, for its picture: on the origin, at the top of
+                // where it sat.
+                var map = new System.Collections.Generic.Dictionary<int, int>();
+                var verts = new System.Collections.Generic.List<Vector3>();
+                var norms = new System.Collections.Generic.List<Vector3>();
+                var uvs = new System.Collections.Generic.List<Vector2>();
+                var outTris = new System.Collections.Generic.List<int>();
+                var pts = hatTris.Select(i => toModel.MultiplyPoint3x4(v[i])).ToArray();
+                var top = new Vector3(pts.Average(p => p.x), pts.Max(p => p.y), pts.Average(p => p.z));
+                foreach (int i in hatTris)
+                {
+                    if (!map.TryGetValue(i, out int j))
+                    {
+                        map[i] = j = verts.Count;
+                        verts.Add(toModel.MultiplyPoint3x4(v[i]) - top);
+                        norms.Add(toModel.MultiplyVector(n[i]).normalized);
+                        uvs.Add(uv[i]);
+                    }
+                    outTris.Add(j);
+                }
+                var hat = new Mesh { name = "hat " + id };
+                hat.SetVertices(verts);
+                hat.SetNormals(norms);
+                hat.SetUVs(0, uvs);
+                hat.SetTriangles(outTris, 0);
+                hat.RecalculateBounds();
+                string path = $"{HatsDir}/{id}.asset";
+                var asset = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+                if (asset == null) { AssetDatabase.CreateAsset(hat, path); asset = hat; }
+                else { EditorUtility.CopySerialized(hat, asset); asset.name = hat.name; }
+                Debug.Log($"Graveway: {id}: {hatTris.Count / 3} triangles off {model}");
+                hats.Add(new ArtCatalog.Hat { id = id, mesh = asset, colors = new Color[0], model = model, bare = bareAsset });
                 Object.DestroyImmediate(inst);
             }
             return hats.ToArray();

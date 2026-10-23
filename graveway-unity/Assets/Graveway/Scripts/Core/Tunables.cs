@@ -136,6 +136,7 @@ namespace Graveway
     {
         public string id, name, stat, goal;
         public int target;
+        public string owner;                 // a survivor's own hat, part of their model: theirs alone
     }
 
     public sealed class PowerUpDef
@@ -501,7 +502,15 @@ namespace Graveway
             new HatDef { id = "crown", name = "Crown", stat = "bosses", target = 10, goal = "Beat 10 bosses" },
         };
 
-        public static HatDef Hat(string id) => System.Array.Find(Hats, h => h.id == id);
+        // The survivors' own hats: worn until they pick another (or none).
+        public static readonly HatDef[] OwnHats =
+        {
+            new HatDef { id = "rookcap", name = "Rook's cap", owner = "rook" },
+            new HatDef { id = "junobeanie", name = "Juno's beanie", owner = "juno" },
+        };
+
+        public static HatDef Hat(string id) => System.Array.Find(Hats, h => h.id == id) ?? System.Array.Find(OwnHats, h => h.id == id);
+        public static HatDef OwnHat(string survivor) => System.Array.Find(OwnHats, h => h.owner == survivor);
 
         // A power-up id, picked by weight; r is a random number in [0, 1).
         public static string PickPowerup(float r)

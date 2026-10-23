@@ -183,12 +183,15 @@ namespace Graveway
             nsText.value = any ? NotesText() : "No notes yet. While playing, pause and tap \"Leave a note\".";
             string state = unsent == 0 ? " · all sent" : unsent < notes.Count ? $" · {unsent} not sent yet" : "";
             nsCount.text = any ? Plural(notes.Count, "note") + state : "";
+            // In place of Settings, not on top of it: back to it after.
+            Shown(settingsModal, false);
             Shown(notesModal, true);
         }
 
         void CloseNotes()
         {
             Shown(notesModal, false);
+            Shown(settingsModal, true);
             DrawSettings();
         }
 

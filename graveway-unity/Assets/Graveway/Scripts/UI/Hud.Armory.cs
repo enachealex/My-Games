@@ -95,7 +95,7 @@ namespace Graveway
                 card.EnableInClassList("eq", on);
                 card.EnableInClassList("sel", w1.id == selWeapon);
                 card.Add(Icons.Gun(w1.id, owned ? Hex.C(0xc9d2cc) : Hex.C(0x5d6764)));
-                Lbl("wn", card, w1.name);
+                Lbl("wn" + (w1.name.Length > 13 ? " long" : ""), card, w1.name);
                 var tag = El("wt", card);
                 if (mine) Lbl("", tag, "Carried");
                 else if (!owned) Coins(tag, w1.price);

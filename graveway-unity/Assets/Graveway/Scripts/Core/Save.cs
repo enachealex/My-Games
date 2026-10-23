@@ -66,7 +66,7 @@ namespace Graveway
         public List<Score> scores = new List<Score>();   // the scoreboard on this device, best first
         public Dictionary<string, int> progress;   // towards hats (Tunables.Hats); null in a save from before them
         public List<string> hatsOwned = new List<string>();   // hats unlocked
-        public Dictionary<string, string> hats = new Dictionary<string, string>();   // by survivor: the hat they wear
+        public Dictionary<string, string> hats = new Dictionary<string, string>();   // by survivor: the hat they picked, "" for none; unpicked, their own
     }
 
     // A run on the scoreboard.
@@ -262,7 +262,12 @@ namespace Graveway
             data.hatsOwned = data.hatsOwned.Where(id => Tunables.Hat(id) != null).Distinct().ToList();
             Unlock();
             data.hats ??= new Dictionary<string, string>();
-            foreach (var k in data.hats.Keys.ToList()) if (Tunables.Hat(data.hats[k] ?? "") == null) data.hats.Remove(k);
+            foreach (var k in data.hats.Keys.ToList())
+            {
+                string h = data.hats[k] ?? "";
+                var def = Tunables.Hat(h);
+                if (h.Length > 0 && (def == null || def.owner != null && def.owner != k)) data.hats.Remove(k);
+            }
             data.backpack ??= new List<string>();
             data.backpack.RemoveAll(id => Tunables.Item(id) == null);
             if (data.backpack.Count > Tunables.BackpackSize) data.backpack.RemoveRange(Tunables.BackpackSize, data.backpack.Count - Tunables.BackpackSize);
@@ -319,15 +324,22 @@ namespace Graveway
             return won;
         }
 
-        public static bool HasHat(string id) => Data.hatsOwned.Contains(id) || Data.settings.allHats;
+        // One of the hats to unlock, and yours. (A survivor's own hat is only
+        // ever theirs.)
+        public static bool HasHat(string id) => Data.hatsOwned.Contains(id) || Data.settings.allHats && Tunables.Hat(id)?.owner == null;
 
-        // The hat a survivor wears; "" for none (or one no longer theirs).
-        public static string Hat(string survivor) => Data.hats.TryGetValue(survivor, out var h) && HasHat(h) ? h : "";
+        // The hat a survivor wears: the one they last picked ("" for none),
+        // or until they've picked, their own if they came with one.
+        public static string Hat(string survivor)
+        {
+            string own = Tunables.OwnHat(survivor)?.id ?? "";
+            if (!Data.hats.TryGetValue(survivor, out var h)) return own;
+            return h == "" || h == own || HasHat(h) ? h : own;
+        }
 
         public static void Wear(string survivor, string hat)
         {
-            if (string.IsNullOrEmpty(hat)) Data.hats.Remove(survivor);
-            else Data.hats[survivor] = hat;
+            Data.hats[survivor] = hat ?? "";
             Persist();
         }
 
