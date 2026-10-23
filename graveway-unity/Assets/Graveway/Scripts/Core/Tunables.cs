@@ -171,28 +171,30 @@ namespace Graveway
         static readonly string[] AllSlots = { "barrel", "muzzle", "mag", "sight", "stock", "trigger", "grip", "rail", "ammo" };
         static string[] Without(params string[] drop) => System.Array.FindAll(AllSlots, s => System.Array.IndexOf(drop, s) < 0);
 
+        // Prices are twice the web version's (playtest, 22 October 2026):
+        // better guns should take longer to earn.
         public static readonly WeaponDef[] Weapons =
         {
             new WeaponDef { id = "pistol", name = "Pistol", model = "pistol", blurb = "Steady and forgiving. Never empty for long.",
                 price = 0, damage = 22, fireRate = 3.2f, spread = 0.03f, ammoCapacity = 12, reloadTime = 1.0f,
                 range = 17, knockback = 1.2f, shake = 0.04f, recoil = new Recoil(0.008f, 0.03f, 0.4f), slots = Without("stock") },
             new WeaponDef { id = "smg", name = "SMG", model = "smg", blurb = "Sprays lead. Melts walkers, struggles with tanks.",
-                price = 350, damage = 13, fireRate = 11, spread = 0.08f, ammoCapacity = 32, reloadTime = 1.5f,
+                price = 700, damage = 13, fireRate = 11, spread = 0.08f, ammoCapacity = 32, reloadTime = 1.5f,
                 range = 15, knockback = 0.6f, shake = 0.03f, recoil = new Recoil(0.006f, 0.06f, 0.3f), slots = AllSlots },
             new WeaponDef { id = "shotgun", name = "Shotgun", model = "shotgun", blurb = "Seven pellets and a big shove. Short range.",
-                price = 750, damage = 16, fireRate = 1.3f, spread = 0.30f, ammoCapacity = 6, reloadTime = 2.0f,
+                price = 1500, damage = 16, fireRate = 1.3f, spread = 0.30f, ammoCapacity = 6, reloadTime = 2.0f,
                 range = 11, pellets = 7, knockback = 3.0f, shake = 0.16f, recoil = new Recoil(0.03f, 0.05f, 0.5f), slots = AllSlots },
             new WeaponDef { id = "rifle", name = "Assault Rifle", model = "rifle",
                 blurb = "Fast and far-reaching, and it punches through a second zombie. Kicks the longer you hold it.",
-                price = 1500, damage = 24, fireRate = 9, spread = 0.02f, ammoCapacity = 30, reloadTime = 1.7f,
+                price = 3000, damage = 24, fireRate = 9, spread = 0.02f, ammoCapacity = 30, reloadTime = 1.7f,
                 range = 21, pierce = 1, knockback = 1.2f, shake = 0.06f, recoil = new Recoil(0.014f, 0.16f, 0.35f), slots = AllSlots },
             new WeaponDef { id = "launcher", name = "Grenade Launcher", model = "launcher", grenade = true,
                 blurb = "Lobs grenades that blow apart crowds, barrels, barricades and walls.",
-                price = 2200, damage = 120, fireRate = 1.0f, spread = 0.02f, ammoCapacity = 4, reloadTime = 2.4f,
+                price = 4400, damage = 120, fireRate = 1.0f, spread = 0.02f, ammoCapacity = 4, reloadTime = 2.4f,
                 range = 19, minRange = 4, shake = 0.14f, blast = new Blast(3.4f, 10), recoil = new Recoil(0.01f, 0.02f, 0.3f),
                 slots = Without("muzzle") },
             new WeaponDef { id = "minigun", name = "Minigun", model = "minigun", blurb = "A wall of bullets. Long, loud reloads.",
-                price = 3200, damage = 17, fireRate = 20, spread = 0.10f, ammoCapacity = 160, reloadTime = 3.2f,
+                price = 6400, damage = 17, fireRate = 20, spread = 0.10f, ammoCapacity = 160, reloadTime = 3.2f,
                 range = 18, knockback = 0.8f, shake = 0.03f, recoil = new Recoil(0.002f, 0.05f, 0.2f), slots = Without("muzzle", "stock") },
         };
 
@@ -348,15 +350,15 @@ namespace Graveway
                 perk = new Perk { name = "Quick Hands", text = "Reloads 40% faster", reloadMult = 0.6f },
                 look = new Look { skin = Hex.C(0xc58c64), shirt = Hex.C(0x2f4a78), pants = Hex.C(0x23262e), hat = "cap", hatColor = Hex.C(0x1d2a44) } },
             new CharacterDef { id = "bram", name = "Bram", role = "Riot guard", blurb = "Slow, huge and very hard to put down.",
-                baseHealth = 140, moveSpeed = 5.4f, startingWeapon = "shotgun", price = 1000,
+                baseHealth = 140, moveSpeed = 5.4f, startingWeapon = "shotgun", price = 2000,
                 perk = new Perk { name = "Riot Gear", text = "Starts every run with 75 armor", startArmor = 75 },
                 look = new Look { skin = Hex.C(0x8d5a3c), shirt = Hex.C(0x3a3f46), pants = Hex.C(0x1f2226), hat = "helmet", hatColor = Hex.C(0x2a2e33), bulk = 1.12f } },
             new CharacterDef { id = "juno", name = "Juno", role = "Demolitions", blurb = "Brought her own launcher. Mostly unharmed by it.",
-                baseHealth = 90, moveSpeed = 6.0f, startingWeapon = "launcher", price = 2500,
+                baseHealth = 90, moveSpeed = 6.0f, startingWeapon = "launcher", price = 5000,
                 perk = new Perk { name = "Blast Proof", text = "Takes 80% less explosion damage", explosionResist = 0.8f },
                 look = new Look { skin = Hex.C(0xe2b48e), shirt = Hex.C(0xb8382e), pants = Hex.C(0x3b3328), hat = "goggles", hatColor = Hex.C(0xffb02e) } },
             new CharacterDef { id = "wren", name = "Wren", role = "Courier", blurb = "Fastest legs in the city, and a nose for loot.",
-                baseHealth = 80, moveSpeed = 7.2f, startingWeapon = "smg", price = 600,
+                baseHealth = 80, moveSpeed = 7.2f, startingWeapon = "smg", price = 1200,
                 perk = new Perk { name = "Scavenger", text = "Coin magnet +2 m, 25% more coins", magnetBonus = 2, coinMult = 1.25f },
                 look = new Look { skin = Hex.C(0xf0c9a4), shirt = Hex.C(0xe0b020), pants = Hex.C(0x2a3a52), hat = "hood", hatColor = Hex.C(0xe0b020) } },
         };

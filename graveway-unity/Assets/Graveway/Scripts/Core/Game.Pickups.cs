@@ -52,6 +52,16 @@ namespace Graveway
 
         public int CoinCount => coins.Count;
 
+        // For tests: a coin lying on the road, and how many lie within r of a spot.
+        public void PlaceCoin(float x, float z) => AddCoin(x, 0.35f, z, 0, 0, 0, placed: true);
+
+        public int CoinsNear(float x, float z, float r)
+        {
+            int n = 0;
+            foreach (var c in coins) if ((c.x - x) * (c.x - x) + (c.z - z) * (c.z - z) < r * r) n++;
+            return n;
+        }
+
         void AddCoin(float x, float y, float z, float vx, float vy, float vz, bool placed = false)
         {
             if (coins.Count >= MaxCoins) return;
@@ -100,7 +110,7 @@ namespace Graveway
                 if (playing)
                 {
                     float dx = p.x - c.x, dz = p.z - c.z, d = Mathf.Sqrt(dx * dx + dz * dz);
-                    if (!c.pull && d < mag && c.age > 0.35f) c.pull = true;
+                    if (!c.pull && c.age > 0.35f && (d < mag || vacuum && Vacuumed(c, p.z))) c.pull = true;
                     if (c.pull)
                     {
                         float s = vacuum ? 16 + d * 1.5f : 9 + (mag - Mathf.Min(d, mag)) * 4;
@@ -119,6 +129,15 @@ namespace Graveway
                 }
                 coins[i] = c;
             }
+        }
+
+        // The Coin Vacuum takes every coin, however far: any you've left
+        // behind, and any on the screen (playtest, 22 October 2026).
+        bool Vacuumed(in Coin c, float pz)
+        {
+            if (c.z > pz) return true;
+            var v = cam.WorldToViewportPoint(worldRoot.TransformPoint(c.x, c.y, c.z));
+            return v.z > 0 && v.x >= 0 && v.x <= 1 && v.y >= 0 && v.y <= 1;
         }
 
         void UpdateItems(float dt)

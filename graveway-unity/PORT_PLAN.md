@@ -385,12 +385,29 @@ complete. The web version stays frozen, so these land in Unity only.
    25 m ahead; walking up to it plays a cut scene of the survivor climbing
    aboard and being dropped off in the new environment.
 7. **Survivors are bought** (22 October 2026). You start as Rook; the
-   others are unlocked on survivor select: Wren 600, Bram 1,000, Juno
-   2,500, each more than the gun they bring. A save from before keeps the
+   others are unlocked on survivor select: Wren 1,200, Bram 2,000, Juno
+   5,000 (doubled with the guns, note 8), each more than the gun they
+   bring. A save from before keeps the
    survivor it last ran as. A survivor's own gun is the Armory's gun, with
    the parts fitted there, and never fills a loadout slot as well: each
    survivor has their own loadout (starting from the one everyone used to
    share), so no gun is carried twice. *(Done.)*
+
+From playtesting Unity 0.5 (build 5), 21–22 October 2026. All done:
+
+8. **Better guns should take longer to earn:** gun prices doubled for now
+   (SMG 700, shotgun 1,500, rifle 3,000, launcher 4,400, minigun 6,400),
+   and the survivors with them, so none is a cheap way into their gun.
+   Parts cost the same.
+9. **Bosses and tanks got stuck on what they were attacking.** Smashing
+   a car or tanker leaves a burnt-out wreck that can't be broken further,
+   and they kept beating on it. Now they stop when it's wrecked, when
+   you're within reach, or when it's no longer between them and you, and
+   only start on a prop that is.
+10. **The Coin Vacuum (the magnet power-up) takes every coin**, as its
+    "Every coin, to you" says: any you've left behind and any on the
+    screen, not just those within 32 m. The Coin magnet upgrade is
+    unchanged.
 
 ## How work gets checked
 

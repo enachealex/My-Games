@@ -254,7 +254,11 @@ namespace Graveway
                 }
                 else
                 {
-                    // Beating on a prop in the way.
+                    // Beating on a prop in the way, until it's gone. A vehicle
+                    // that goes up leaves a wreck that can't be broken any
+                    // further, which counts as gone (beating on it is how tanks
+                    // and bosses used to get stuck). Also done with it once the
+                    // survivor's within reach or it's no longer in the way.
                     var pr = z.smash;
                     z.attackT += dt;
                     faceYaw = Mathf.Atan2(pr.x - z.x, pr.z - z.z);
@@ -265,10 +269,16 @@ namespace Graveway
                         propSys.Damage(pr, z.damage * (z.t.smashes ? 3 : 1.5f), pr.x - z.x, pr.z - z.z, "smash");
                         Sfx.Thunk();
                     }
-                    if (z.attackT >= period)
+                    bool gone = pr.destroyed || pr.indestructible || pr.airborne || !pr.blocking;
+                    if (gone || z.attackT >= period)
                     {
                         z.attackT = 0; z.hitDone = false;
-                        if (pr.destroyed || !playing || dist < 2) { z.smash = null; z.state = playing ? Zombie.Mode.Chase : Zombie.Mode.Idle; }
+                        float reach = z.t.reach * (z.scale / z.t.scale) + p.stats.radius;
+                        if (gone || !playing || dist < Mathf.Max(2, reach) || !InTheWay(z, pr, dx, dz, dist))
+                        {
+                            z.smash = null;
+                            z.state = playing ? Zombie.Mode.Chase : Zombie.Mode.Idle;
+                        }
                     }
                 }
 
@@ -291,11 +301,16 @@ namespace Graveway
                 z.z += (vz + z.kz) * dt;
                 z.kx *= 1 - Damp(9, dt); z.kz *= 1 - Damp(9, dt);
                 var bumped = World.ResolveColliders(props, ref z.x, ref z.z, z.radius);
-                // Tanks beat down whatever they walk into; anyone with no way
-                // round does the same. The big ones shove wrecks aside.
+                // Tanks beat down whatever they walk into on the way to you;
+                // anyone with no way round does the same. The big ones shove
+                // wrecks aside.
                 if (bumped != null && z.state == Zombie.Mode.Chase && (z.t.smashes || z.stuck))
                 {
-                    if (!bumped.indestructible) { z.state = Zombie.Mode.Smash; z.smash = bumped; z.attackT = 0; z.hitDone = false; }
+                    if (!bumped.indestructible)
+                    {
+                        float ex = p.x - z.x, ez = p.z - z.z, ed = Mathf.Max(1e-4f, Mathf.Sqrt(ex * ex + ez * ez));
+                        if (InTheWay(z, bumped, ex, ez, ed)) { z.state = Zombie.Mode.Smash; z.smash = bumped; z.attackT = 0; z.hitDone = false; }
+                    }
                     else if (z.t.smashes && bumped.def.mass > 0)
                     {
                         float shove = (z.kind == "boss" ? 160 : 60) * dt / bumped.def.mass / (z.speed > 0 ? z.speed : 1);
@@ -344,6 +359,20 @@ namespace Graveway
                     if (near != null) Sfx.Groan(Pan(near.x), near.t.smashes);
                 }
             }
+        }
+
+        // Whether a prop still stands between a zombie and the survivor: the
+        // zombie up against it (by the box World.ResolveColliders uses), on
+        // the survivor's side.
+        static bool InTheWay(Zombie z, Prop pr, float dx, float dz, float dist)
+        {
+            float rx = z.x - pr.x, rz = z.z - pr.z;
+            float lx = Mathf.Clamp(rx * pr.cos - rz * pr.sin, -pr.hw, pr.hw);
+            float lz = Mathf.Clamp(rx * pr.sin + rz * pr.cos, -pr.hd, pr.hd);
+            float cx = pr.x + lx * pr.cos + lz * pr.sin - z.x, cz = pr.z - lx * pr.sin + lz * pr.cos - z.z;
+            float d = Mathf.Sqrt(cx * cx + cz * cz);
+            if (d > z.radius + 0.6f) return false;                 // pushed off it, or it moved
+            return d < 1e-3f || (cx * dx + cz * dz) / (d * dist) > 0.2f;
         }
 
         public void DamageZombie(Zombie z, float dmg, float dx, float dz, float knock, float launch = 0)

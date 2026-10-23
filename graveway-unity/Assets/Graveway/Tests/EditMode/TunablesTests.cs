@@ -36,6 +36,15 @@ namespace Graveway.Tests
             Assert.That(Tunables.StageScaling(40).speed, Is.EqualTo(1.45f).Within(1e-4));
         }
 
+        // Guns cost twice what they do in the web version (playtest, 22 October
+        // 2026); parts cost the same.
+        [Test]
+        public void GunsCostTwiceTheWebVersions()
+        {
+            var web = new (string id, int price)[] { ("pistol", 0), ("smg", 350), ("shotgun", 750), ("rifle", 1500), ("launcher", 2200), ("minigun", 3200) };
+            foreach (var (id, price) in web) Assert.That(Tunables.Weapon(id).price, Is.EqualTo(price * 2), id);
+        }
+
         // Every part's price on every gun, from the web version's partCost.
         const string WebPartCosts =
             "pistol|barrel|long|250 pistol|barrel|short|200 pistol|barrel|heavy|400 pistol|muzzle|comp|200 pistol|muzzle|brake|300 " +
