@@ -91,12 +91,29 @@ namespace Graveway
             return b;
         }
 
-        // A newer build to install, on the menu.
+        // A newer build, on the menu: where it's got to, and what a tap does.
         void DrawUpdate()
         {
             var n = updates.newer;
             Shown(mUpdate, n != null);
-            if (n != null) mUpdate.text = $"New version {n.version} · tap to get it";
+            if (n != null) mUpdate.text = UpdateLine(n);
+        }
+
+        string UpdateLine(Updates.Release n)
+        {
+            string mb = n.size > 0 ? $" ({n.size / 1048576f:0} MB)" : "";
+            switch (updates.stage)
+            {
+                case Updates.Stage.Downloading: return $"Downloading {n.version}… {Mathf.FloorToInt(updates.progress * 100)}%";
+                case Updates.Stage.Downloaded:
+                case Updates.Stage.Ready:
+                    return Updates.Automatic ? $"{n.version} installs when you leave the game · tap to do it now" : $"{n.version} is ready · tap to install";
+                case Updates.Stage.Allow: return $"{n.version} is ready · tap to let Graveway install it";
+                case Updates.Stage.Installing: return $"Installing {n.version}…";
+                case Updates.Stage.Failed: return $"Update didn't work ({updates.failure}) · tap to download it";
+                default:
+                    return Updates.CanSelfUpdate ? $"New version {n.version} · tap to download{mb}" : $"New version {n.version} · tap to get it";
+            }
         }
 
         // Asked for in Settings: says so when there's nothing newer.
@@ -319,6 +336,8 @@ namespace Graveway
                 if (updates.newer != null) updates.Install();
                 else if (!updates.busy) StartCoroutine(CheckNow());
             });
+            if (Updates.CanSelfUpdate)
+                Toggle(stack, "autoupdate", "Automatic updates", () => { s.autoUpdate = !s.autoUpdate; Saved(); });
             sUpdate = Lbl("fine", stack);
             Lbl("s-head", sc, "PLAYTEST TOOLS");
             var tools = El("stack", sc);
@@ -379,7 +398,12 @@ namespace Graveway
             sReset.EnableInClassList("armed", resetArmed);
             sVersion.text = $"Graveway · {BuildLabel}\n3D art by Quaternius (CC0). Bebas Neue font (OFL). Sounds are synthesised in code.";
             var n = updates.newer;
-            SetToggle("updates", n != null, updates.busy ? "Checking…" : n != null ? $"Get {n.version}" : "Check now");
+            SetToggle("updates", n != null, updates.busy ? "Checking…"
+                : n == null ? "Check now"
+                : updates.stage == Updates.Stage.Downloading ? $"{Mathf.FloorToInt(updates.progress * 100)}%"
+                : updates.stage == Updates.Stage.Installing ? "Installing…"
+                : updates.stage == Updates.Stage.Available ? $"Get {n.version}" : $"Install {n.version}");
+            if (Updates.CanSelfUpdate) SetToggle("autoupdate", s.autoUpdate, s.autoUpdate ? "On" : "Off");
             string build = Updates.Code > 0 ? $"This is version {Application.version} (build {Updates.Code})" : $"This is version {Application.version}, not a release build";
             sUpdate.text = build + (updates.busy || string.IsNullOrEmpty(updates.status) ? "." : $" · {updates.status}.");
         }

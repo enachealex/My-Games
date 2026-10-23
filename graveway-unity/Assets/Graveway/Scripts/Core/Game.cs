@@ -427,7 +427,8 @@ namespace Graveway
 
         // In the background, Android can close the app without another word:
         // write the run down first. Closed properly, it's banked.
-        void OnApplicationPause(bool paused) { if (paused) { Pause(); WriteDownRun(); } }
+        // Put away, the run saved first: then an update ready to go in can (Updates.cs).
+        void OnApplicationPause(bool paused) { if (paused) { Pause(); WriteDownRun(); hud.updates.OnBackground(); } }
         void OnApplicationFocus(bool focus) { if (!focus) { Pause(); WriteDownRun(); } }
         void OnApplicationQuit() { if (run != null && !run.banked && run.time > 0) { run.banked = true; Save.Bank(Record()); } }
 

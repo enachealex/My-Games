@@ -81,7 +81,15 @@ namespace Graveway
             RenderMenu();
             // A release build looks for a newer one as soon as it loads.
             updates.Changed += () => { DrawUpdate(); DrawSettings(); };
+            updates.runner = this;
             StartCoroutine(updates.Check(false));
+            // Opened for the first time since it updated itself.
+            int build = Updates.Code;
+            if (build > 0)
+            {
+                if (Save.Data.lastCode > 0 && build > Save.Data.lastCode) Toast($"Updated to {Application.version}");
+                if (build != Save.Data.lastCode) { Save.Data.lastCode = build; Save.Persist(); }
+            }
             // Runs that didn't get online last time (no connection) go now.
             SendScores();
             if (Save.Data.refunded > 0)
@@ -350,6 +358,8 @@ namespace Graveway
 
         void Update()
         {
+            // A downloaded update goes into an install session between runs.
+            if (updates.stage == Updates.Stage.Downloaded) updates.PrepareIfIdle(game.state != Game.State.Menu);
             if (portraitsWanted && Time.frameCount > 2)
             {
                 portraitsWanted = false;
@@ -430,6 +440,7 @@ namespace Graveway
         // every 15 minutes, as the web version does.
         void OnApplicationPause(bool paused)
         {
+            if (!paused) updates.OnForeground();
             if (!paused && Time.realtimeSinceStartup - updates.checkedAt > 15 * 60) StartCoroutine(updates.Check(false));
             if (!paused) SendScores();
         }

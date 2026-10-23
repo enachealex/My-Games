@@ -35,6 +35,7 @@ namespace Graveway
         public bool god, fps, powers;        // playtest tools: invincible, frame rate, lots of power-ups
         public bool allHats;                 // playtest tool: every hat to try on
         public bool online = true;           // runs sent to the boards online (Online.cs)
+        public bool autoUpdate = true;       // newer builds downloaded on Wi-Fi and put in when the game's away (Updates.cs)
         public int startAt;                  // playtest tool: start runs this many metres up
     }
 
@@ -64,6 +65,7 @@ namespace Graveway
         public RunRecord running;            // the run under way, in case the app closes mid-run; null between runs
         public List<string> backpack = new List<string>();   // Black Market items, by id, kept between runs
         public bool seenEvac;                // the evac's cut scene seen through once: a tap skips it now
+        public int lastCode;                 // the build last opened, to say when it's been updated
         public string playerName = "";       // the name the last score went under, and the next will
         public List<Score> scores = new List<Score>();   // the scoreboard on this device, best first
         public Dictionary<string, int> progress;   // towards hats (Tunables.Hats); null in a save from before them

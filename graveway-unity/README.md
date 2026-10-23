@@ -139,7 +139,13 @@ graveway-unity/build-android.ps1 -Version 0.2 -Code 2 -Release -Notes "What chan
 ```
 
 Commit and push first, and give each release a higher `-Code`. As it
-loads, the app looks for a newer release (`Scripts/Core/Updates.cs`) and
-offers "New version · tap to get it" on the menu (and under Settings →
-Updates). Tapping it downloads the APK in the phone's browser; Android
-still asks you to tap Install, and progress stays.
+loads, the app looks for a newer release (`Scripts/Core/Updates.cs`), and
+from 0.9 it updates itself (`Plugins/Android/Updater.java`): on Wi-Fi it
+downloads the APK in the background (on mobile data, when you tap the
+menu's button), checks it against GitHub's checksum, and puts it in when
+the game goes into the background. On Android 12 and up that needs no tap;
+the first time, it asks you to let Graveway install apps (the menu's button
+opens the page). Older Android shows its own "Update?" screen when you tap
+the button. Settings → Automatic updates turns it off; if it can't install
+itself, the button downloads the APK in the browser as before. Progress
+stays either way: same package, same signing key.

@@ -296,6 +296,18 @@ CSS). Portraits and gun pictures are rendered from the 3D models
       Android installs it over the old one. The web app's updater only
       reads `graveway-v…` tags, so it ignores these. 0.1 (code 1, 21 October
       2026) predates the check; 0.2 is the first build that has it.
+- [x] Updates without downloading by hand (23 October 2026, from 0.9): the
+      game downloads a newer build itself on Wi-Fi, checks it against
+      GitHub's SHA-256, writes it into an Android install session between
+      runs, and commits it when the game goes into the background
+      (`Plugins/Android/Updater.java`). Android 12 and up let an app update
+      itself without asking (`UPDATE_PACKAGES_WITHOUT_USER_ACTION`), once the
+      player has allowed "Install unknown apps" for it; older Android asks
+      "Update?" when the menu's button is tapped. Settings → Automatic
+      updates turns it off. Not tested on a phone yet: the first real test
+      is 0.9 updating itself to the release after it. (Google Play's
+      internal testing track would update silently on every phone, for a
+      Play Console account; not taken up, by choice.)
 
 ### Phase 8: check everything against the web version, then switch
 
