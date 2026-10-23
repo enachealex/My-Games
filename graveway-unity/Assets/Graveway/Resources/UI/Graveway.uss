@@ -374,3 +374,28 @@
 .sc-name.none { color: rgb(154, 166, 160); -unity-font-style: italic; }
 .sc-sub { font-size: 12px; color: rgb(154, 166, 160); margin-top: 2px; }
 .sc-dist { font-size: 28px; -unity-font-definition: url("Fonts/BebasNeue-Regular.ttf"); -unity-font-style: normal; }
+
+/* ── Hats ─────────────────────────────────────────────────────────────── */
+.hat-pic { width: 52px; height: 52px; margin-right: 12px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.05);
+    -unity-background-scale-mode: scale-to-fit; }
+.hat-face { align-items: center; margin-bottom: 4px; }
+.hgrid { flex-direction: row; flex-wrap: wrap; justify-content: space-between; margin-top: 8px; }
+.hcard { width: 48.5%; margin: 0 0 10px 0; padding: 10px 8px 12px 8px; border-radius: 16px; border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.1); background-color: rgba(255, 255, 255, 0.04); align-items: center; }
+.hcard:hover { background-color: rgba(255, 255, 255, 0.07); }
+.hcard.on { border-color: rgb(155, 225, 93); background-color: rgba(155, 225, 93, 0.12); }
+.hcard-pic { width: 104px; height: 104px; border-radius: 14px; -unity-background-scale-mode: scale-to-fit; align-items: center; justify-content: center; }
+.hcard.locked .hcard-pic { -unity-background-image-tint-color: rgb(120, 126, 123); opacity: 0.7; }
+.hcard-none { font-size: 40px; color: rgb(154, 166, 160); }
+.hcard-name { font-size: 15px; -unity-font-style: bold; margin-top: 4px; }
+.hcard-sub { font-size: 12px; color: rgb(154, 166, 160); -unity-text-align: middle-center; white-space: normal; margin-top: 2px; }
+.hcard.on .hcard-sub { color: rgb(155, 225, 93); -unity-font-style: bold; }
+.hbar { width: 80%; height: 6px; border-radius: 99px; background-color: rgba(0, 0, 0, 0.45); margin-top: 8px; overflow: hidden; }
+.hbar-fill { height: 100%; background-color: rgb(155, 225, 93); }
+.hcard-n { font-size: 11px; color: rgb(154, 166, 160); margin-top: 3px; }
+.r-hat { flex-direction: row; align-items: center; margin-top: 12px; padding: 10px 12px; border-radius: 14px;
+    background-color: rgba(255, 201, 40, 0.12); border-width: 1px; border-color: rgba(255, 201, 40, 0.5); }
+.r-hat-pic { width: 52px; height: 52px; margin-right: 10px; -unity-background-scale-mode: scale-to-fit; }
+.r-hat-t { font-size: 11px; letter-spacing: 1.5px; color: rgb(255, 201, 40); -unity-font-style: bold; }
+.r-hat-n { font-size: 17px; -unity-font-style: bold; }
+.r-hat-g { font-size: 12px; color: rgb(154, 166, 160); }

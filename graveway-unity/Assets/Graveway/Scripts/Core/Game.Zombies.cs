@@ -426,6 +426,7 @@ namespace Graveway
             }
             if (z.kind == "boss")
             {
+                if (run != null) run.bosses++;
                 shake = 0.8f;
                 hud.Banner("Boss down!", $"+{z.t.coins} coins on the ground");
                 Sfx.Slam();

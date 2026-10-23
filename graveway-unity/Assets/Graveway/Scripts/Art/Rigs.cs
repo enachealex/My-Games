@@ -18,6 +18,8 @@ namespace Graveway
         public Transform model;              // the character, at its size
         public Animator animator;
         public Transform gunMount;           // survivors: grip at the origin, barrel along +z, in metres
+        public string hat = "";              // survivors: the hat they're wearing, by id; "" for none
+        public GameObject hatObject;
         public readonly Dictionary<string, GunModel> guns = new Dictionary<string, GunModel>();
         readonly HashSet<int> states = new HashSet<int>();
         readonly List<Renderer> renderers = new List<Renderer>();
@@ -78,7 +80,7 @@ namespace Graveway
         public const float Person = 1.75f;   // how tall a survivor or a walker stands, in metres
 
         // Who plays whom.
-        static readonly Dictionary<string, string> SurvivorModel = new Dictionary<string, string>
+        public static readonly IReadOnlyDictionary<string, string> SurvivorModel = new Dictionary<string, string>
         {
             { "rook", "Characters_Shaun" }, { "bram", "Characters_Matt" }, { "juno", "Characters_Sam" }, { "wren", "Characters_Lis" },
         };
@@ -120,6 +122,42 @@ namespace Graveway
             Art.BlobShadow(rig.root.transform, 1.1f);
             rig.Snap("Idle_Gun");
             return rig;
+        }
+
+        // A hat on a survivor's head, going where the head goes; none for ""
+        // (or for a hat the catalog hasn't got).
+        public static void WearHat(Rig rig, string hat)
+        {
+            hat ??= "";
+            if (rig.hat == hat) return;
+            if (rig.hatObject) Object.Destroy(rig.hatObject);
+            rig.hat = hat;
+            rig.hatObject = null;
+            var h = hat.Length > 0 ? ArtCatalog.Get.FindHat(hat) : null;
+            var place = h == null ? null : System.Array.Find(h.on, p => p.id == rig.model.name);
+            var head = place == null ? null : Find(rig.model, "Head");
+            if (!head) return;
+            var go = HatModel(h);
+            var t = go.transform;
+            t.SetParent(head, false);
+            t.localPosition = place.position;
+            t.localRotation = place.rotation;
+            t.localScale = place.scale;
+            rig.hatObject = go;
+        }
+
+        // A hat on its own, as it sat on the top of the head it came off.
+        public static GameObject HatModel(ArtCatalog.Hat h)
+        {
+            var go = new GameObject("hat " + h.id);
+            go.AddComponent<MeshFilter>().sharedMesh = h.mesh;
+            var r = go.AddComponent<MeshRenderer>();
+            var mats = new Material[h.mesh.subMeshCount];
+            for (int i = 0; i < mats.Length; i++) mats[i] = Art.Lit(h.colors[Mathf.Min(i, h.colors.Length - 1)]);
+            r.sharedMaterials = mats;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            return go;
         }
 
         public static Rig Zombie(string kind)

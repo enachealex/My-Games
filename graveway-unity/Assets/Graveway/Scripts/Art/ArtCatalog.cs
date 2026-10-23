@@ -8,6 +8,8 @@
 //   - parts: gun accessories, each set to attach at its own origin
 //   - props: static models (vehicles, barriers, lamps, litter), with their
 //     outline and where their light is
+//   - hats: lifted off the Ultimate Modular characters' heads, with where
+//     each sits on each survivor
 // and the textures they share.
 
 using System;
@@ -60,10 +62,24 @@ namespace Graveway
             public Vector3 light;
         }
 
+        // A hat: its mesh (sitting on the origin, the top of the head it came
+        // off, in that head's metres), a colour per submesh, and where it
+        // goes on each survivor model, in their Head bone's space (id: the
+        // model's).
+        [Serializable]
+        public sealed class Hat
+        {
+            public string id;
+            public Mesh mesh;
+            public Color[] colors;
+            public Placed[] on = Array.Empty<Placed>();
+        }
+
         public Entry[] models = Array.Empty<Entry>();
         public Prop[] props = Array.Empty<Prop>();
         public Gun[] guns = Array.Empty<Gun>();
         public Placed[] parts = Array.Empty<Placed>();
+        public Hat[] hats = Array.Empty<Hat>();
         public Texture2D zombieAtlas;        // the Zombie Apocalypse Kit's colour palette
 
         static ArtCatalog loaded;
@@ -73,5 +89,6 @@ namespace Graveway
         public Gun FindGun(string id) => Array.Find(guns, g => g.body.id == id);
         public Prop FindProp(string id) => Array.Find(props, p => p.id == id);
         public Placed FindPart(string id) => Array.Find(parts, p => p.id == id);
+        public Hat FindHat(string id) => Array.Find(hats, h => h.id == id);
     }
 }

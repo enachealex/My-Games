@@ -409,6 +409,39 @@ From playtesting Unity 0.5 (build 5), 21–22 October 2026. All done:
     screen, not just those within 32 m. The Coin magnet upgrade is
     unchanged.
 
+Ideas, 23 October 2026:
+
+11. **Pick your survivor on the home screen.** The survivor card opens
+    survivor select; PLAY goes straight into a run. *(Done.)*
+12. **A scoreboard.** Every run goes on the device's scoreboard under a
+    name typed (or picked) on the results, so a friend playing on your
+    phone gets their own line; the best 50 kept, opened from the menu's
+    best run. Runs with playtest tools on stay off it. *(Done, on the
+    device.)*
+
+    **Online, worldwide and by region: to decide.** It needs a small
+    server. The suggestion: a Cloudflare Worker with a D1 database (the
+    free tier is plenty), because Cloudflare tells the server which
+    country each request comes from, so boards by region need no
+    location permission on the phone. Each score already carries its own
+    id for sending. To decide first: the service; whether names on a
+    public board need a filter; and how far to go against faked scores
+    (the server can check a run's distance against its time and kills,
+    but anything the app can send, someone determined can fake).
+13. **Hats, the first cosmetics** (after Super Battle Golf's unlockables).
+    Six, lifted off the Ultimate Modular characters' heads by
+    `Editor/ArtImport.cs` and fitted to each survivor's head bone: hard
+    hat, straw hat, mohawk, hood, witch hat, crown. Each is unlocked by
+    something done over runs with no playtest tools on (`Tunables.Hats`:
+    100 m, 500 zombies, a boss, 5 km in all, 500 m, 10 bosses); a save
+    from before counts what it had done already. Once unlocked, any
+    survivor can wear any of them, each their own, picked from the
+    survivor's card; locked ones show their goal and how close you are,
+    and a run that unlocks one says so. The space and riot helmets in
+    the same packs are whole heads that swallow a survivor's, so they
+    aren't used. Playtest tool: "Every hat". *(Done.)* More cosmetics
+    next.
+
 ## How work gets checked
 
 - Unity runs without a window on the dev PC (`-batchmode`), so builds,

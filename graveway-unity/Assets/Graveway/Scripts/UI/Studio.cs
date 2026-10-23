@@ -18,10 +18,12 @@ namespace Graveway
     {
         static readonly Vector3 Origin = new Vector3(0, -2000, 0);
         static readonly Dictionary<string, Texture2D> guns = new Dictionary<string, Texture2D>();
+        static readonly Dictionary<string, Texture2D> hats = new Dictionary<string, Texture2D>();
 
         public static bool Available => SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null;
 
-        // Each survivor holding their own gun with its parts, three-quarters on.
+        // Each survivor in their hat, holding their own gun with its parts,
+        // three-quarters on.
         public static Dictionary<string, Texture2D> Portraits(int size = 256)
         {
             var output = new Dictionary<string, Texture2D>();
@@ -37,6 +39,7 @@ namespace Graveway
                 foreach (var c in Tunables.Characters)
                 {
                     var m = Rigs.Survivor(c, ring: false);
+                    Rigs.WearHat(m, Save.Hat(c.id));
                     var w = Tunables.Weapon(c.startingWeapon);
                     var gun = Models.Gun(w.model, Save.FittedParts(w.id));
                     gun.group.transform.SetParent(m.gunMount, false);
@@ -88,6 +91,34 @@ namespace Graveway
                 Art.DestroyAll(gun.own);
             });
             guns[key] = tex;
+            return tex;
+        }
+
+        // A hat on its own, three-quarters on from a little above. Cached.
+        public static Texture2D HatPicture(string id)
+        {
+            var h = Available ? ArtCatalog.Get.FindHat(id) : null;
+            if (h == null) return null;
+            if (hats.TryGetValue(id, out var tex) && tex) return tex;
+            const int S = 192;
+            Shoot(S, S, (set, cam) =>
+            {
+                Key(set, Hex.C(0xfff2e0), 3.2f, new Vector3(-2, 4, 3));
+                Key(set, Hex.C(0x9be15d), 1.6f, new Vector3(3, 1, -3));
+                Ambient(Hex.C(0xd8e4ff), Hex.C(0x30281e), 2.4f);
+                var go = Rigs.HatModel(h);
+                go.transform.SetParent(set, false);
+                go.transform.localRotation = M.Yaw(-0.6f);
+                var b = Bounds(go);
+                float r = b.extents.magnitude;
+                cam.fieldOfView = 30;
+                cam.transform.position = b.center + new Vector3(0, 0.45f, 1).normalized * (r / Mathf.Sin(15 * Mathf.Deg2Rad));
+                cam.transform.LookAt(b.center);
+                tex = Capture(cam, S, S, "hat " + id);
+                go.SetActive(false);
+                Object.Destroy(go);
+            });
+            hats[id] = tex;
             return tex;
         }
 

@@ -225,6 +225,15 @@ namespace Graveway
                 Lbl("small-caps", lt, "ALSO CARRYING");
                 Lbl("perk-name", lt, more.Count > 0 ? string.Join(", ", more) : "Nothing else");
                 Btn("Loadout", "small", load, () => OpenArmory("select"));
+                // Any hat unlocked, on anyone.
+                string hat = Save.Hat(c.id);
+                var hl = El("perk gunline hatline", cCard);
+                var pic = El("hat-pic", hl);
+                if (hat.Length > 0) pic.style.backgroundImage = Studio.HatPicture(hat);
+                var ht = El("grow", hl);
+                Lbl("small-caps", ht, "HAT");
+                Lbl("perk-name", ht, hat.Length > 0 ? Tunables.Hat(hat).name : "None");
+                Btn("Hats", "small", hl, () => OpenHats(c));
             }
 
             cDots.Clear();
@@ -313,6 +322,7 @@ namespace Graveway
             rStats = El("", rc);
             rWallet = El("r-wallet", rc);
             rBoard = El("r-board", rc);
+            rHats = El("r-hats", rc);
             rTip = Lbl("r-tip", rc);
             var rs = El("stack", rc);
             Btn("RUN AGAIN", "primary big", rs, Play);
@@ -372,6 +382,7 @@ namespace Graveway
             Coins(rWallet, r.wallet);
             Lbl("", rWallet, $"· Best: {N(r.bestEver)} m").style.marginLeft = 4;
             DrawBoard(r);
+            DrawNewHats(r);
             rTip.text = Tip();
             Shown(result, true);
             current = "result";
@@ -478,6 +489,7 @@ namespace Graveway
             Toggle(tools, "god", "Invincible", () => { s.god = !s.god; Saved(); });
             Toggle(tools, "fps", "Show frame rate", () => { s.fps = !s.fps; Saved(); });
             Toggle(tools, "powers", "Lots of power-ups", () => { s.powers = !s.powers; Saved(); });
+            Toggle(tools, "hats", "Every hat", () => { s.allHats = !s.allHats; Saved(); RefreshPortraits(); game.Dress(); });
             var end = El("stack", sc);
             sReset = Btn("Reset progress", "danger", end, () =>
             {
@@ -516,6 +528,7 @@ namespace Graveway
             SetToggle("god", s.god, s.god ? "On" : "Off");
             SetToggle("fps", s.fps, s.fps ? "On" : "Off");
             SetToggle("powers", s.powers, s.powers ? "On" : "Off");
+            SetToggle("hats", s.allHats, s.allHats ? "On" : "Off");
             sNotesN.text = Save.Notes.Count.ToString(CultureInfo.InvariantCulture);
             sReset.text = resetArmed ? "Tap again to erase everything" : "Reset progress";
             sReset.EnableInClassList("armed", resetArmed);

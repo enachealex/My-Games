@@ -129,6 +129,15 @@ namespace Graveway
         public float delay;
     }
 
+    // A hat, and what unlocks it: `target` of a stat counted over runs with
+    // no playtest tools on (Save.Stat): best (metres in one run), metres (in
+    // all), kills, bosses, runs. Once unlocked, any survivor can wear it.
+    public sealed class HatDef
+    {
+        public string id, name, stat, goal;
+        public int target;
+    }
+
     public sealed class PowerUpDef
     {
         public string id, name, tag;
@@ -479,6 +488,20 @@ namespace Graveway
         public static CharacterDef Character(string id) => System.Array.Find(Characters, c => c.id == id) ?? Characters[0];
         public static PowerUpDef PowerUp(string id) => System.Array.Find(PowerUps, p => p.id == id) ?? PowerUps[0];
         public static ItemDef Item(string id) => System.Array.Find(Items, i => i.id == id);
+
+        // ── Hats ─────────────────────────────────────────────────────────
+        // The first cosmetics, in the order they tend to come.
+        public static readonly HatDef[] Hats =
+        {
+            new HatDef { id = "hardhat", name = "Hard hat", stat = "best", target = 100, goal = "Get 100 m up the road" },
+            new HatDef { id = "straw", name = "Straw hat", stat = "kills", target = 500, goal = "Down 500 zombies" },
+            new HatDef { id = "mohawk", name = "Mohawk", stat = "bosses", target = 1, goal = "Beat a boss" },
+            new HatDef { id = "hood", name = "Hood", stat = "metres", target = 5000, goal = "Cover 5 km in all" },
+            new HatDef { id = "witch", name = "Witch hat", stat = "best", target = 500, goal = "Get 500 m up the road" },
+            new HatDef { id = "crown", name = "Crown", stat = "bosses", target = 10, goal = "Beat 10 bosses" },
+        };
+
+        public static HatDef Hat(string id) => System.Array.Find(Hats, h => h.id == id);
 
         // A power-up id, picked by weight; r is a random number in [0, 1).
         public static string PickPowerup(float r)

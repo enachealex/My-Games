@@ -87,6 +87,8 @@ touching the game logic.
 | `Scripts/UI/Hud.Screens.cs` | Menu, survivor select (and unlocking survivors), pause, results, settings | `src/ui.js` |
 | `Scripts/UI/Hud.Armory.cs` | The Armory: guns, each survivor's loadout, parts and survivor upgrades | `src/ui.js` |
 | `Scripts/UI/Hud.BlackMarket.cs` | The Black Market, and the backpack on the HUD | |
+| `Scripts/UI/Hud.Scores.cs` | The scoreboard, and naming a run on the results | |
+| `Scripts/UI/Hud.Hats.cs` | Hats: picking one for a survivor, and the ones a run unlocks | |
 | `Scripts/UI/Hud.Notes.cs` | Playtest notes and Send to Claude | `src/ui.js` |
 | `Scripts/UI/Studio.cs`, `Icons.cs` | Portraits and gun pictures rendered from the models; vector icons | `src/preview.js` |
 | `Resources/UI/Graveway.uss` | The UI's look | `index.html` CSS |
@@ -95,7 +97,7 @@ touching the game logic.
 | `Editor/AndroidManifestFlags.cs` | Android backup on, and the offer to keep the save when uninstalling | |
 | `Settings/` | The URP pipeline (mobile renderer, no shadow maps) and its post-processing: ACES and +0.94 EV, the web version's look | `game.js` renderer |
 | `Editor/ProjectSetup.cs` | App and Android settings, base materials, panel settings, the scene (menu: Graveway → Set up project) | `android.json` |
-| `Editor/ArtImport.cs` | How third-party models import, the art catalog with an Animator controller per character, and a report of every model's clips, bones and size | |
+| `Editor/ArtImport.cs` | How third-party models import, the art catalog with an Animator controller per character, hats lifted off the modular heads (`Resources/Art/Hats`), and a report of every model's clips, bones and size | |
 | `Editor/BuildScript.cs` + `build-android.ps1` | The APK build with no window, and installing it over USB | `tools/android/build-apk.mjs` |
 | `Tests/` | EditMode tests against the web version's numbers; PlayMode tests of the game and its menus | |
 

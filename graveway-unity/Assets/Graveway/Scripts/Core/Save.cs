@@ -33,6 +33,7 @@ namespace Graveway
         public bool sound = true, haptics = true;
         public string quality = "high";      // or "low": Battery saver
         public bool god, fps, powers;        // playtest tools: invincible, frame rate, lots of power-ups
+        public bool allHats;                 // playtest tool: every hat to try on
         public int startAt;                  // playtest tool: start runs this many metres up
     }
 
@@ -63,6 +64,9 @@ namespace Graveway
         public List<string> backpack = new List<string>();   // Black Market items, by id, kept between runs
         public string playerName = "";       // the name the last score went under, and the next will
         public List<Score> scores = new List<Score>();   // the scoreboard on this device, best first
+        public Dictionary<string, int> progress;   // towards hats (Tunables.Hats); null in a save from before them
+        public List<string> hatsOwned = new List<string>();   // hats unlocked
+        public Dictionary<string, string> hats = new Dictionary<string, string>();   // by survivor: the hat they wear
     }
 
     // A run on the scoreboard.
@@ -86,6 +90,7 @@ namespace Graveway
         public bool board = true;            // false with any playtest tool on: not on the scoreboard
         public string character;             // survivor id
         public int time;                     // seconds
+        public int bosses;                   // bosses beaten
     }
 
     [Preserve, Serializable]
@@ -251,6 +256,13 @@ namespace Graveway
             data.playerName = CleanName(data.playerName);
             data.scores ??= new List<Score>();
             data.scores.RemoveAll(s => s == null);
+            // Hats came in October 2026: what was done before counts towards them.
+            data.progress ??= new Dictionary<string, int> { { "best", data.best }, { "kills", data.kills }, { "runs", data.runs } };
+            data.hatsOwned ??= new List<string>();
+            data.hatsOwned = data.hatsOwned.Where(id => Tunables.Hat(id) != null).Distinct().ToList();
+            Unlock();
+            data.hats ??= new Dictionary<string, string>();
+            foreach (var k in data.hats.Keys.ToList()) if (Tunables.Hat(data.hats[k] ?? "") == null) data.hats.Remove(k);
             data.backpack ??= new List<string>();
             data.backpack.RemoveAll(id => Tunables.Item(id) == null);
             if (data.backpack.Count > Tunables.BackpackSize) data.backpack.RemoveRange(Tunables.BackpackSize, data.backpack.Count - Tunables.BackpackSize);
@@ -276,8 +288,47 @@ namespace Graveway
             if (best) d.best = r.distance;
             d.running = null;
             LastScore = r.board && r.distance > 0 ? AddScore(r) : null;
+            NewHats = r.board ? Count(r) : new List<string>();
             Persist();
             return best;
+        }
+
+        // ── Hats ─────────────────────────────────────────────────────────
+        // Hats the last run banked unlocked.
+        public static List<string> NewHats { get; private set; } = new List<string>();
+
+        public static int Stat(string k) => Data.progress.TryGetValue(k, out var v) ? v : 0;
+
+        // A run's part towards the hats, and the ones it unlocks.
+        static List<string> Count(RunRecord r)
+        {
+            var p = Data.progress;
+            p["best"] = Math.Max(Stat("best"), r.distance);
+            p["metres"] = Stat("metres") + r.distance;
+            p["kills"] = Stat("kills") + r.kills;
+            p["bosses"] = Stat("bosses") + r.bosses;
+            p["runs"] = Stat("runs") + 1;
+            return Unlock();
+        }
+
+        static List<string> Unlock()
+        {
+            var won = new List<string>();
+            foreach (var h in Tunables.Hats)
+                if (!data.hatsOwned.Contains(h.id) && Stat(h.stat) >= h.target) { data.hatsOwned.Add(h.id); won.Add(h.id); }
+            return won;
+        }
+
+        public static bool HasHat(string id) => Data.hatsOwned.Contains(id) || Data.settings.allHats;
+
+        // The hat a survivor wears; "" for none (or one no longer theirs).
+        public static string Hat(string survivor) => Data.hats.TryGetValue(survivor, out var h) && HasHat(h) ? h : "";
+
+        public static void Wear(string survivor, string hat)
+        {
+            if (string.IsNullOrEmpty(hat)) Data.hats.Remove(survivor);
+            else Data.hats[survivor] = hat;
+            Persist();
         }
 
         // ── The scoreboard ───────────────────────────────────────────────

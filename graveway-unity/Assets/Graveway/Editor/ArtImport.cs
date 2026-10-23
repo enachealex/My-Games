@@ -135,6 +135,7 @@ namespace Graveway.EditorTools
             cat.props = BuildProps();
             cat.guns = BuildGuns();
             cat.parts = BuildParts();
+            cat.hats = BuildHats();
             cat.zombieAtlas = AssetDatabase.LoadAssetAtPath<Texture2D>(Kit + "Zombie_Atlas.png");
             EditorUtility.SetDirty(cat);
             AssetDatabase.SaveAssets();
@@ -299,6 +300,123 @@ namespace Graveway.EditorTools
                 Object.DestroyImmediate(inst);
             }
             return parts.ToArray();
+        }
+
+        // Hats, lifted off the Ultimate Modular characters' heads: the parts
+        // of a head in these materials (only those above the brow, for one
+        // whose colour turns up lower down too), at this size. Their space
+        // and riot helmets are whole heads that swallow a survivor's: not
+        // used.
+        static readonly (string id, string file, string[] mats, float size, bool aboveBrow)[] HatSources =
+        {
+            ("hardhat", "UltimateModularMen/Worker", new[] { "Worker_Yellow" }, 1, false),
+            ("straw", "UltimateModularMen/Farmer", new[] { "Beige", "Red" }, 1, false),
+            ("mohawk", "UltimateModularMen/Punk", new[] { "Red" }, 1, true),
+            ("hood", "UltimateModularWomen/Medieval", new[] { "DarkBrown" }, 1, false),
+            ("witch", "UltimateModularWomen/Witch", new[] { "Purple", "Gold" }, 0.8f, false),
+            ("crown", "UltimateModularMen/King", new[] { "Gold" }, 1, false),
+        };
+        const string HatsDir = "Assets/Graveway/Resources/Art/Hats";
+
+        // Every head in a pack is the same bald one underneath (where a hat
+        // covers it, the skin's cut away, so it can't be measured off the
+        // hat's own head): its top, and how wide it is.
+        static readonly (Vector3 top, float width) MensHead = (new Vector3(0, 1.826f, 0.0565f), 0.214f);
+        static readonly (Vector3 top, float width) WomensHead = (new Vector3(0, 1.789f, 0.0655f), 0.22f);
+
+        // Each hat as it sat on its own head, moved to the top of that head;
+        // then onto each survivor: the top of their head (the part of the
+        // mesh their Head bone moves, hair and caps and all), as much bigger
+        // as that head is wider, and into the Head bone's space by its bind
+        // pose, so the hat goes where the head goes.
+        static ArtCatalog.Hat[] BuildHats()
+        {
+            Directory.CreateDirectory(HatsDir);
+            var heads = new System.Collections.Generic.List<(string id, Matrix4x4 toBone, Vector3 top, float width)>();
+            foreach (var id in Rigs.SurvivorModel.Values)
+            {
+                var inst = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>($"{Kit}Characters/{id}.fbx"));
+                var smr = inst.GetComponentInChildren<SkinnedMeshRenderer>();
+                var mesh = smr.sharedMesh;
+                int hb = System.Array.FindIndex(smr.bones, b => b.name == "Head");
+                var toModel = smr.transform.localToWorldMatrix;
+                var v = mesh.vertices;
+                var w = mesh.boneWeights;
+                var head = Enumerable.Range(0, v.Length).Where(i => w[i].boneIndex0 == hb && w[i].weight0 >= 0.5f)
+                    .Select(i => toModel.MultiplyPoint3x4(v[i])).ToArray();
+                var b = new Bounds(head[0], Vector3.zero);
+                foreach (var p in head) b.Encapsulate(p);
+                // The top of the skull (or the cap on it): the highest slice of
+                // the head that's most of its width, so a crest of hair
+                // doesn't hold a hat up.
+                float slice = b.size.x * 0.04f, top = b.max.y;
+                for (float y = b.max.y; y > b.center.y; y -= slice)
+                {
+                    var cut = head.Where(p => p.y <= y && p.y > y - slice).ToArray();
+                    if (cut.Length > 0 && cut.Max(p => p.x) - cut.Min(p => p.x) >= b.size.x * 0.6f) { top = y; break; }
+                }
+                heads.Add((id, mesh.bindposes[hb] * toModel.inverse, new Vector3(b.center.x, top, b.center.z), b.size.x));
+                Debug.Log($"Graveway: hat fit {id}: top {top:0.000} of {b.max.y:0.000}, width {b.size.x:0.000}");
+                Object.DestroyImmediate(inst);
+            }
+
+            var hats = new System.Collections.Generic.List<ArtCatalog.Hat>();
+            foreach (var (id, file, keep, size, aboveBrow) in HatSources)
+            {
+                var inst = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/ThirdParty/Quaternius/{file}.fbx"));
+                var smr = inst.GetComponentsInChildren<SkinnedMeshRenderer>().First(r => r.name.EndsWith("_Head"));
+                var src = smr.sharedMesh;
+                var toModel = smr.transform.localToWorldMatrix;
+                var v = src.vertices;
+                var n = src.normals;
+                var mats = smr.sharedMaterials;
+                string Mat(int s) => s < mats.Length && mats[s] ? mats[s].name : "";
+                var (top, width) = file.Contains("Women") ? WomensHead : MensHead;
+
+                var verts = new System.Collections.Generic.List<Vector3>();
+                var norms = new System.Collections.Generic.List<Vector3>();
+                var subs = new System.Collections.Generic.List<int[]>();
+                var colors = new System.Collections.Generic.List<Color>();
+                for (int s = 0; s < src.subMeshCount; s++)
+                {
+                    if (keep != null && !keep.Contains(Mat(s))) continue;
+                    var map = new System.Collections.Generic.Dictionary<int, int>();
+                    var idx = src.GetIndices(s);
+                    var tris = new System.Collections.Generic.List<int>();
+                    for (int k = 0; k < idx.Length; k += 3)
+                    {
+                        var tri = new[] { idx[k], idx[k + 1], idx[k + 2] };
+                        if (aboveBrow && tri.Average(i => toModel.MultiplyPoint3x4(v[i]).y) < top.y - 0.05f) continue;
+                        foreach (int i in tri)
+                        {
+                            if (!map.TryGetValue(i, out int j))
+                            {
+                                map[i] = j = verts.Count;
+                                verts.Add(toModel.MultiplyPoint3x4(v[i]) - top);
+                                norms.Add(toModel.MultiplyVector(n[i]).normalized);
+                            }
+                            tris.Add(j);
+                        }
+                    }
+                    subs.Add(tris.ToArray());
+                    colors.Add(mats[s] && mats[s].HasProperty("_BaseColor") ? mats[s].GetColor("_BaseColor") : Color.gray);
+                }
+                var hat = new Mesh { name = "hat " + id };
+                hat.SetVertices(verts);
+                hat.SetNormals(norms);
+                hat.subMeshCount = subs.Count;
+                for (int s = 0; s < subs.Count; s++) hat.SetTriangles(subs[s], s);
+                hat.RecalculateBounds();
+                string path = $"{HatsDir}/{id}.asset";
+                var asset = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+                if (asset == null) { AssetDatabase.CreateAsset(hat, path); asset = hat; }
+                else { EditorUtility.CopySerialized(hat, asset); asset.name = hat.name; }
+
+                var on = heads.Select(h => Placed(h.id, asset, null, h.toBone * Matrix4x4.TRS(h.top, Quaternion.identity, Vector3.one * (size * h.width / width)))).ToArray();
+                hats.Add(new ArtCatalog.Hat { id = id, mesh = asset, colors = colors.ToArray(), on = on });
+                Object.DestroyImmediate(inst);
+            }
+            return hats.ToArray();
         }
 
         static ArtCatalog.Placed Placed(string id, Mesh mesh, Color[] colors, Matrix4x4 m) => new ArtCatalog.Placed

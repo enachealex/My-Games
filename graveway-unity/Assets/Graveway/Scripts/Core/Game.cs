@@ -53,6 +53,7 @@ namespace Graveway
         public Zombie boss;
         public bool banked;                  // its takings are in the save
         public bool fair;                    // started with no playtest tools on
+        public int bosses;                   // beaten
         public float noteT = 10;             // until it's next written down
     }
 
@@ -236,7 +237,14 @@ namespace Graveway
             surv = m;
             surv.root.SetActive(true);
             character = c;
+            Rigs.WearHat(surv, Save.Hat(c.id));
             StandUp();
+        }
+
+        // The survivor's hat, after it's changed.
+        public void Dress()
+        {
+            if (surv != null && character != null) Rigs.WearHat(surv, Save.Hat(character.id));
         }
 
         void StandUp()
@@ -397,6 +405,7 @@ namespace Graveway
             board = run.fair && !Save.Data.settings.god && !Save.Data.settings.powers && !invincible,
             character = character.id,
             time = Mathf.FloorToInt(run.time),
+            bosses = run.bosses,
         };
 
         // ── Frame ────────────────────────────────────────────────────────
@@ -743,6 +752,7 @@ namespace Graveway
             r.banked = true;
             result.best = Save.Bank(kept);
             result.score = Save.LastScore;
+            result.hats = Save.NewHats;
             result.board = kept.board;
             result.wallet = Save.Data.coins;
             result.bestEver = Save.Data.best;

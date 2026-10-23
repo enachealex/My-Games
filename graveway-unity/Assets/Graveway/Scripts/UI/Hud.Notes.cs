@@ -115,7 +115,7 @@ namespace Graveway
                 return $"{g.Character.name} · {Mathf.FloorToInt(g.Distance)} m (stage {g.Stage + 1}) · {g.Weapon.Name} · {Mathf.RoundToInt(g.run.time)}s in · " +
                     $"{Mathf.CeilToInt(p.hp)}/{Mathf.RoundToInt(p.maxHp)} HP{armor} · {g.run.kills} kills · {g.AliveCount()} zombies up · {fps}";
             }
-            string where = current == "armory" ? "Armory" : current == "blackmarket" ? "Black Market" : current == "scores" ? "Scoreboard" : current == "select" ? "Survivor select" : "Menu";
+            string where = current == "armory" ? "Armory" : current == "blackmarket" ? "Black Market" : current == "scores" ? "Scoreboard" : current == "hats" ? "Hats" : current == "select" ? "Survivor select" : "Menu";
             return $"{where} · {LoadoutText()} · {fps}";
         }
 

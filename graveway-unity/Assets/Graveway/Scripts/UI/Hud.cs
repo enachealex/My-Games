@@ -28,6 +28,7 @@ namespace Graveway
             public float time;
             public bool best;
             public Score score;              // where it went on the scoreboard; null if it didn't
+            public List<string> hats;        // hats it unlocked
             public bool board;               // false with playtest tools on
         }
 
@@ -69,6 +70,7 @@ namespace Graveway
             BuildArmory();
             BuildBlackMarket();
             BuildScores();
+            BuildHats();
             BuildOverlays();
             BuildModals();
             foreach (var l in root.Query<Label>(className: "card-title").ToList()) Fit(l.parent, l);
@@ -214,6 +216,7 @@ namespace Graveway
             Shown(armory, name == "armory");
             Shown(blackMarket, name == "blackmarket");
             Shown(scores, name == "scores");
+            Shown(hatsScreen, name == "hats");
             Shown(hud, name == "hud" || name == "pause");
             Shown(pause, name == "pause");
         }
@@ -242,6 +245,7 @@ namespace Graveway
             if (IsShown(result)) { ToMenu(); return; }
             if (current == "armory") { CloseArmory(); return; }
             if (current == "blackmarket" || current == "scores") { ShowMenu(); return; }
+            if (current == "hats") { CloseHats(); return; }
             if (current == "select") { ToMenu(); return; }
             if (game.state == Game.State.Playing) { game.Pause(); return; }
             if (game.state == Game.State.Paused) { game.Resume(); return; }
@@ -371,7 +375,7 @@ namespace Graveway
             // As shares of the screen, so it holds when the UI draws into a
             // texture of another size (the tests' pictures).
             float w = Mathf.Max(1, Screen.width), h = Mathf.Max(1, Screen.height);
-            foreach (var screen in new[] { hud, menu, select, armory, blackMarket, scores })
+            foreach (var screen in new[] { hud, menu, select, armory, blackMarket, scores, hatsScreen })
             {
                 screen.style.top = (h - s.yMax) / h * size.y;
                 screen.style.bottom = s.yMin / h * size.y;
