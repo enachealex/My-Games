@@ -61,6 +61,19 @@ namespace Graveway
         public Settings settings = new Settings();
         public RunRecord running;            // the run under way, in case the app closes mid-run; null between runs
         public List<string> backpack = new List<string>();   // Black Market items, by id, kept between runs
+        public string playerName = "";       // the name the last score went under, and the next will
+        public List<Score> scores = new List<Score>();   // the scoreboard on this device, best first
+    }
+
+    // A run on the scoreboard.
+    [Preserve, Serializable]
+    public sealed class Score
+    {
+        public string id;                    // its own, for sending it online one day
+        public string name = "";             // whoever played it; "" if they didn't say
+        public string character;             // survivor id
+        public int distance, kills, coins, time;   // metres, zombies, coins, seconds
+        public string at;                    // ISO time, UTC
     }
 
     // What a run has earned so far.
@@ -70,6 +83,9 @@ namespace Graveway
         public int coins;                    // picked up, plus stage bonuses
         public int kills, distance;
         public bool records = true;          // false for a run started further up the road (playtest tool)
+        public bool board = true;            // false with any playtest tool on: not on the scoreboard
+        public string character;             // survivor id
+        public int time;                     // seconds
     }
 
     [Preserve, Serializable]
@@ -232,6 +248,9 @@ namespace Graveway
             if (!HasSurvivor(Tunables.Character(data.character)) || Tunables.Character(data.character).id != data.character)
                 data.character = Tunables.Characters[0].id;
             data.loadouts ??= new Dictionary<string, List<string>>();
+            data.playerName = CleanName(data.playerName);
+            data.scores ??= new List<Score>();
+            data.scores.RemoveAll(s => s == null);
             data.backpack ??= new List<string>();
             data.backpack.RemoveAll(id => Tunables.Item(id) == null);
             if (data.backpack.Count > Tunables.BackpackSize) data.backpack.RemoveRange(Tunables.BackpackSize, data.backpack.Count - Tunables.BackpackSize);
@@ -256,9 +275,64 @@ namespace Graveway
             bool best = r.records && r.distance > d.best;
             if (best) d.best = r.distance;
             d.running = null;
+            LastScore = r.board && r.distance > 0 ? AddScore(r) : null;
             Persist();
             return best;
         }
+
+        // ── The scoreboard ───────────────────────────────────────────────
+        public const int KeepScores = 50, NameLength = 16;
+
+        // Where the last run banked went on the scoreboard; null if it didn't.
+        public static Score LastScore { get; private set; }
+
+        // A run onto the scoreboard under the last name used. Best first:
+        // furthest, then most kills, then whoever got there first. Only the
+        // best KeepScores stay.
+        static Score AddScore(RunRecord r)
+        {
+            var s = new Score
+            {
+                id = Guid.NewGuid().ToString("N"), name = Data.playerName, character = r.character ?? Tunables.Characters[0].id,
+                distance = r.distance, kills = r.kills, coins = r.coins, time = r.time, at = DateTime.UtcNow.ToString("o"),
+            };
+            var list = Data.scores;
+            int i = 0;
+            while (i < list.Count && (list[i].distance > s.distance || list[i].distance == s.distance && list[i].kills >= s.kills)) i++;
+            if (i >= KeepScores) return null;
+            list.Insert(i, s);
+            if (list.Count > KeepScores) list.RemoveRange(KeepScores, list.Count - KeepScores);
+            return s;
+        }
+
+        public static int Rank(Score s) => Data.scores.IndexOf(s) + 1;
+
+        // The name a score is under, and the one the next will go under.
+        public static void NameScore(Score s, string name)
+        {
+            name = CleanName(name);
+            Data.playerName = name;
+            if (s != null) s.name = name;
+            Persist();
+        }
+
+        // One line, single spaces, no more than NameLength letters.
+        public static string CleanName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return "";
+            var sb = new StringBuilder();
+            foreach (char c in name.Trim())
+            {
+                if (char.IsWhiteSpace(c)) { if (sb.Length > 0 && sb[sb.Length - 1] != ' ') sb.Append(' '); }
+                else if (!char.IsControl(c)) sb.Append(c);
+            }
+            var s = sb.ToString().Trim();
+            return s.Length > NameLength ? s.Substring(0, NameLength).TrimEnd() : s;
+        }
+
+        // Names on the scoreboard, most recently used first.
+        public static List<string> RecentNames() =>
+            Data.scores.Where(s => s.name.Length > 0).OrderByDescending(s => s.at, StringComparer.Ordinal).Select(s => s.name).Distinct().ToList();
 
         // Writes down the run under way, in case the app closes.
         public static void Running(RunRecord r)

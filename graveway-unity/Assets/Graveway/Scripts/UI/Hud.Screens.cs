@@ -38,13 +38,15 @@ namespace Graveway
             var bottom = El("menu-bottom", menu);
             mUpdate = Btn("", "update", bottom, () => updates.Install());
             Shown(mUpdate, false);
+            // Tap your survivor to change them, your best run for the scoreboard.
             var stats = El("menu-stats", bottom);
-            mChar = El("m-card", stats);
-            var best = El("m-card m-best", stats);
+            mChar = Card(stats, "", OpenSelect);
+            var best = Card(stats, "m-best", () => OpenScores());
             Lbl("small-caps", best, "BEST RUN");
             mBest = Lbl("m-big", best, "—");
             mRuns = Lbl("m-small", best, "No runs yet");
-            Btn("PLAY", "primary big", bottom, OpenSelect);
+            Lbl("m-chev", best, "›");
+            Btn("PLAY", "primary big", bottom, Play);
             // Two shops: guns and parts, and things to call in during a run.
             var shops = El("row-btns", bottom);
             Btn("Armory", "", shops, () => OpenArmory("menu"));
@@ -77,6 +79,16 @@ namespace Graveway
             who.style.marginLeft = 10;
             Lbl("small-caps", who, "SURVIVOR");
             Lbl("m-big", who, c.name.ToUpperInvariant());
+            Lbl("m-chev", mChar, "›");
+        }
+
+        static Button Card(VisualElement parent, string cls, Action onClick)
+        {
+            var b = new Button(() => { Sfx.Click(); onClick(); });
+            b.AddToClassList("m-card");
+            foreach (var c in cls.Split(' ')) if (c.Length > 0) b.AddToClassList(c);
+            parent.Add(b);
+            return b;
         }
 
         // A newer build to install, on the menu.
@@ -300,6 +312,7 @@ namespace Graveway
             rSub = Lbl("card-sub", rc);
             rStats = El("", rc);
             rWallet = El("r-wallet", rc);
+            rBoard = El("r-board", rc);
             rTip = Lbl("r-tip", rc);
             var rs = El("stack", rc);
             Btn("RUN AGAIN", "primary big", rs, Play);
@@ -358,6 +371,7 @@ namespace Graveway
             Lbl("", rWallet, "Wallet: ");
             Coins(rWallet, r.wallet);
             Lbl("", rWallet, $"· Best: {N(r.bestEver)} m").style.marginLeft = 4;
+            DrawBoard(r);
             rTip.text = Tip();
             Shown(result, true);
             current = "result";

@@ -27,6 +27,8 @@ namespace Graveway
             public int distance, stage, kills, coins, bonus, wallet, bestEver, startAt;
             public float time;
             public bool best;
+            public Score score;              // where it went on the scoreboard; null if it didn't
+            public bool board;               // false with playtest tools on
         }
 
         Game game;
@@ -66,6 +68,7 @@ namespace Graveway
             BuildSelect();
             BuildArmory();
             BuildBlackMarket();
+            BuildScores();
             BuildOverlays();
             BuildModals();
             foreach (var l in root.Query<Label>(className: "card-title").ToList()) Fit(l.parent, l);
@@ -210,6 +213,7 @@ namespace Graveway
             Shown(select, name == "select");
             Shown(armory, name == "armory");
             Shown(blackMarket, name == "blackmarket");
+            Shown(scores, name == "scores");
             Shown(hud, name == "hud" || name == "pause");
             Shown(pause, name == "pause");
         }
@@ -237,7 +241,7 @@ namespace Graveway
             if (IsShown(settingsModal)) { CloseSettings(); return; }
             if (IsShown(result)) { ToMenu(); return; }
             if (current == "armory") { CloseArmory(); return; }
-            if (current == "blackmarket") { ShowMenu(); return; }
+            if (current == "blackmarket" || current == "scores") { ShowMenu(); return; }
             if (current == "select") { ToMenu(); return; }
             if (game.state == Game.State.Playing) { game.Pause(); return; }
             if (game.state == Game.State.Paused) { game.Resume(); return; }
@@ -347,7 +351,7 @@ namespace Graveway
                 if (GameKeys.Down(Key.RightArrow) || GameKeys.Down(Key.D)) Cycle(1);
                 if (GameKeys.Down(Key.Enter)) Play();
             }
-            else if (current == "menu" && !AnyModal() && GameKeys.Down(Key.Enter)) OpenSelect();
+            else if (current == "menu" && !AnyModal() && GameKeys.Down(Key.Enter)) Play();
         }
 
         bool AnyModal() => IsShown(note) || IsShown(notesModal) || IsShown(settingsModal) || IsShown(result);
@@ -367,7 +371,7 @@ namespace Graveway
             // As shares of the screen, so it holds when the UI draws into a
             // texture of another size (the tests' pictures).
             float w = Mathf.Max(1, Screen.width), h = Mathf.Max(1, Screen.height);
-            foreach (var screen in new[] { hud, menu, select, armory, blackMarket })
+            foreach (var screen in new[] { hud, menu, select, armory, blackMarket, scores })
             {
                 screen.style.top = (h - s.yMax) / h * size.y;
                 screen.style.bottom = s.yMin / h * size.y;

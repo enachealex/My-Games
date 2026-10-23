@@ -52,6 +52,7 @@ namespace Graveway
         public float coins, time, startZ;
         public Zombie boss;
         public bool banked;                  // its takings are in the save
+        public bool fair;                    // started with no playtest tools on
         public float noteT = 10;             // until it's next written down
     }
 
@@ -354,7 +355,7 @@ namespace Graveway
             world.onCoins = spots => { foreach (var s in spots) AddCoin(s.x, 0.55f, s.y, 0, 0, 0, true); };
             player = MakePlayer();
             player.z = player.furthest = startZ;
-            run = new RunStats { startAt = startAt, startZ = startZ };
+            run = new RunStats { startAt = startAt, startZ = startZ, fair = startAt == 0 && !settings.god && !settings.powers };
             director.Reset(startAt);
             nav.Reset(startZ);
             world.Update(startZ, time);
@@ -392,6 +393,10 @@ namespace Graveway
             kills = run.kills,
             distance = Mathf.FloorToInt(Distance),
             records = run.startAt == 0,                 // a run started further up the road doesn't set records
+            // Nor does one with a playtest tool on go on the scoreboard.
+            board = run.fair && !Save.Data.settings.god && !Save.Data.settings.powers && !invincible,
+            character = character.id,
+            time = Mathf.FloorToInt(run.time),
         };
 
         // ── Frame ────────────────────────────────────────────────────────
@@ -737,6 +742,8 @@ namespace Graveway
             };
             r.banked = true;
             result.best = Save.Bank(kept);
+            result.score = Save.LastScore;
+            result.board = kept.board;
             result.wallet = Save.Data.coins;
             result.bestEver = Save.Data.best;
             hud.ShowResult(result);

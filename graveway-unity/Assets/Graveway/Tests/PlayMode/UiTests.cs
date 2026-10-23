@@ -92,12 +92,15 @@ namespace Graveway.Tests
 
         bool Showing(string text) => ui.Query<Button>().ToList().Exists(b => Visible(b) && Says(b, text));
 
+        // The menu's survivor card: where you change who you run as.
+        void OpenSurvivors() => Press(Find<Button>(ui, b => b.ClassListContains("m-card") && Says(b, "SURVIVOR"), "the survivor card"));
+
         [UnityTest]
         public IEnumerator SurvivorsAreBought()
         {
             var wren = Tunables.Character("wren");
             Save.Data.coins = wren.price;
-            Click(ui, "PLAY");
+            OpenSurvivors();
             yield return null;
             Assert.That(Showing("RUN AS ROOK"));
             Click(ui, "‹");                             // round to the last: Wren
@@ -160,6 +163,54 @@ namespace Graveway.Tests
             Assert.That(guns[0].def.id, Is.EqualTo("smg"));
             Assert.That(guns[0].fitted[slot], Is.EqualTo(part.id), "with the part fitted in the Armory");
             Assert.That(guns.ConvertAll(g => g.def.id), Is.Unique);
+        }
+
+        // A run goes on the scoreboard; the name it's under is typed (or
+        // picked) on the results, and the scoreboard opens from there and
+        // from the menu's best run.
+        [UnityTest]
+        public IEnumerator RunsGoOnTheScoreboardUnderAName()
+        {
+            var tools = Save.Data.settings;
+            tools.god = tools.powers = false;
+            tools.startAt = 0;
+            Save.Data.scores.Add(new Score { id = "alex", name = "Alex", character = "bram", distance = 900, kills = 300, at = "2026-10-20T12:00:00.0000000Z" });
+            Click(ui, "PLAY");
+            yield return Seconds(1);
+            Assert.That(game.state, Is.EqualTo(Game.State.Playing), "PLAY goes straight into a run");
+            var p = game.player;
+            p.z -= 40;                                  // 40 m up the road
+            yield return Seconds(0.5f);
+            game.HurtPlayer(p.hp + p.armor + 1, p.x, p.z - 1);
+            yield return Seconds(3);
+
+            var mine = Save.LastScore;
+            Assert.That(mine, Is.Not.Null, "on the scoreboard");
+            Assert.That(Save.Rank(mine), Is.EqualTo(2));
+            Assert.That(Visible(Find<Label>(ui, l => l.text == "#2 on this phone", "where it went")));
+            var field = Find<TextField>(ui, f => f.ClassListContains("name-field"), "the name box");
+            Assert.That(Showing("Alex"), "a name already on the scoreboard, a tap away");
+            field.value = "  Sam  ";
+            yield return null;
+            Assert.That(mine.name, Is.EqualTo("Sam"));
+            Assert.That(Save.Data.playerName, Is.EqualTo("Sam"), "and the next run goes under it too");
+
+            using (var photo = SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null ? new Photo(game) : null)
+            {
+                if (photo != null) { yield return Seconds(0.5f); photo.Shot("14b-result-name"); }
+                Click(ui, "Scoreboard");
+                yield return Seconds(0.5f);
+                var rows = ui.Query<VisualElement>(className: "sc-row").ToList().FindAll(Visible);
+                Assert.That(rows.Count, Is.EqualTo(2));
+                Assert.That(Says(rows[0], "Alex") && Says(rows[1], "Sam"));
+                Assert.That(rows[1].ClassListContains("mine"), "this run picked out");
+                if (photo != null) photo.Shot("17-scoreboard");
+            }
+            game.hud.Back();
+            yield return null;
+            Press(Find<Button>(ui, b => b.ClassListContains("m-best"), "the best run card"));
+            yield return null;
+            Assert.That(Visible(Find<Label>(ui, l => l.text == "SCOREBOARD", "the scoreboard's title")));
         }
 
         [UnityTest]
@@ -263,14 +314,13 @@ namespace Graveway.Tests
         public IEnumerator BackUnwindsScreens()
         {
             string run = $"RUN AS {Tunables.Character(Save.Data.character).name.ToUpperInvariant()}";
-            Click(ui, "PLAY");
+            OpenSurvivors();
             yield return null;
             Assert.That(Visible(Button(ui, run)));
             game.hud.Back();
             yield return null;
             Assert.That(Visible(Button(ui, "PLAY")));
-            Click(ui, "PLAY");
-            Click(ui, run);
+            Click(ui, "PLAY");                          // straight into a run
             yield return Seconds(1);
             Assert.That(game.state, Is.EqualTo(Game.State.Playing));
             game.hud.Back();
@@ -289,7 +339,7 @@ namespace Graveway.Tests
             using var photo = new Photo(game);
             yield return Seconds(3);                    // portraits are drawn a couple of frames in
             photo.Shot("4-menu");
-            Click(ui, "PLAY");
+            OpenSurvivors();
             yield return Seconds(0.5f);
             photo.Shot("5-select");
             Click(ui, "›");
