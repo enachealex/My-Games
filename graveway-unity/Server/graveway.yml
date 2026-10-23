@@ -1,0 +1,10 @@
+# Graveway (the game's online scoreboard): public access to its two Supabase functions ONLY.
+# Everything else on Kong stays private and gets a 404 here. Keep the function list in step
+# with Server/scoreboard.sql in the Graveway repo (enachealex/My-Games, graveway-unity).
+tunnel: 29fda081-eb28-4e71-bad7-1f776559666c
+credentials-file: /home/huckleberry/.cloudflared/29fda081-eb28-4e71-bad7-1f776559666c.json
+ingress:
+  - hostname: graveway-api.thejumpvault.com
+    path: ^/rest/v1/rpc/(graveway_submit_score|graveway_scores)$
+    service: http://127.0.0.1:8000
+  - service: http_status:404

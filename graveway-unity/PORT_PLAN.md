@@ -473,15 +473,17 @@ Ideas, 23 October 2026:
     best run. Runs with playtest tools on stay off it. *(Done, on the
     device.)*
 
-    **Online, worldwide and by region: to decide.** It needs a small
-    server. The suggestion: a Cloudflare Worker with a D1 database (the
-    free tier is plenty), because Cloudflare tells the server which
-    country each request comes from, so boards by region need no
-    location permission on the phone. Each score already carries its own
-    id for sending. To decide first: the service; whether names on a
-    public board need a filter; and how far to go against faked scores
-    (the server can check a run's distance against its time and kills,
-    but anything the app can send, someone determined can fake).
+    **Online, worldwide and by country** (23 October 2026): on the home
+    server, in Supabase behind its own Cloudflare tunnel,
+    `https://graveway-api.thejumpvault.com` (all of it in `Server/`, with
+    a README). The country is Cloudflare's, never the phone's. Runs wait
+    in the save until they go, so a run played offline goes later;
+    renaming a run on the results renames it online. The scoreboard has
+    three tabs (this phone, the world, your country), and the results say
+    where a run placed. Impossible runs are refused, and an address can
+    send 60 an hour. Settings can turn it off. The editor and the tests
+    only ever send dry runs. Not done: a filter for names on the public
+    boards. *(Done.)*
 13. **Hats, the first cosmetics** (after Super Battle Golf's unlockables).
     Six, lifted off the Ultimate Modular characters' heads by
     `Editor/ArtImport.cs` and fitted to each survivor's head bone: hard

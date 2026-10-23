@@ -38,6 +38,7 @@ namespace Graveway.EditorTools
             EditorUserBuildSettings.buildAppBundle = false;
 
             bool signed = Sign();
+            bool online = OnlineSettings.Copy();
             try
             {
                 var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
@@ -51,7 +52,7 @@ namespace Graveway.EditorTools
                 // The file's own size: the report's total counts more than the APK.
                 float mb = File.Exists(output) ? new FileInfo(output).Length / 1048576f : 0;
                 Debug.Log($"Graveway: build {s.result}: {output} ({mb:0.0} MB, {s.totalTime.TotalSeconds:0} s, " +
-                          $"{(signed ? "release key" : "debug key")})");
+                          $"{(signed ? "release key" : "debug key")}, {(online ? "online scoreboard" : "offline")})");
                 if (s.result != BuildResult.Succeeded) EditorApplication.Exit(1);
             }
             finally

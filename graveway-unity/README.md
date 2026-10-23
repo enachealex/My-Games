@@ -89,12 +89,13 @@ touching the game logic.
 | `Scripts/UI/Hud.Select.cs` | Survivor select: swiped cards, and unlocking survivors | `src/ui.js` |
 | `Scripts/UI/Hud.Armory.cs` | The Armory: guns, each survivor's loadout, parts and survivor upgrades | `src/ui.js` |
 | `Scripts/UI/Hud.BlackMarket.cs` | The Black Market, and the backpack on the HUD | |
-| `Scripts/UI/Hud.Scores.cs` | The scoreboard, and naming a run on the results | |
+| `Scripts/UI/Hud.Scores.cs` | The scoreboard (this phone, the world, your country), and naming a run on the results | |
 | `Scripts/UI/Hud.Hats.cs` | Hats: picking one for a survivor, and the ones a run unlocks | |
 | `Scripts/UI/Hud.Notes.cs` | Playtest notes and Send to Claude | `src/ui.js` |
 | `Scripts/UI/Studio.cs`, `Icons.cs` | Portraits and gun pictures rendered from the models; vector icons | `src/preview.js` |
 | `Resources/UI/Graveway.uss` | The UI's look | `index.html` CSS |
 | `Scripts/Core/Art.cs` | Materials (copies of `Resources/Materials`) | `src/models.js` |
+| `Scripts/Core/Online.cs` | The online scoreboard: runs sent, boards read (the server side is in `Server/`) | |
 | `Scripts/Core/Save.cs` | Progress and notes, as crash-safe files on the device, and runs banked however they end | `src/save.js` |
 | `Editor/AndroidManifestFlags.cs` | Android backup on, and the offer to keep the save when uninstalling | |
 | `Settings/` | The URP pipeline (mobile renderer, no shadow maps) and its post-processing: ACES and +0.94 EV, the web version's look | `game.js` renderer |

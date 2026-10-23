@@ -82,6 +82,8 @@ namespace Graveway
             // A release build looks for a newer one as soon as it loads.
             updates.Changed += () => { DrawUpdate(); DrawSettings(); };
             StartCoroutine(updates.Check(false));
+            // Runs that didn't get online last time (no connection) go now.
+            SendScores();
             if (Save.Data.refunded > 0)
             {
                 // Once: the old per-stat gun upgrades were paid back when parts came in.
@@ -429,6 +431,7 @@ namespace Graveway
         void OnApplicationPause(bool paused)
         {
             if (!paused && Time.realtimeSinceStartup - updates.checkedAt > 15 * 60) StartCoroutine(updates.Check(false));
+            if (!paused) SendScores();
         }
 
         // The joystick appears under your thumb.

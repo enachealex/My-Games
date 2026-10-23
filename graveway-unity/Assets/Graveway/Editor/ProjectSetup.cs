@@ -37,6 +37,7 @@ namespace Graveway.EditorTools
             Materials();
             Panel();
             ArtImport.BuildCatalog();
+            OnlineSettings.Copy();
             Scene();
             AssetDatabase.SaveAssets();
             Debug.Log("Graveway: project set up.");

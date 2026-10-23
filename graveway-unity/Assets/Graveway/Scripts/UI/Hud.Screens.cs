@@ -312,6 +312,8 @@ namespace Graveway
             Toggle(stack, "quality", "Graphics", () => { s.quality = s.quality == "high" ? "low" : "high"; game.SetQuality(s.quality); Saved(); });
             var notesBtn = Toggle(stack, "notes", "Playtest notes", OpenNotes);
             sNotesN = (Label)notesBtn[1];
+            if (Online.Configured)
+                Toggle(stack, "online", "Online scoreboard", () => { s.online = !s.online; Saved(); if (s.online) SendScores(); });
             Toggle(stack, "updates", "Updates", () =>
             {
                 if (updates.newer != null) updates.Install();
@@ -371,6 +373,7 @@ namespace Graveway
             SetToggle("fps", s.fps, s.fps ? "On" : "Off");
             SetToggle("powers", s.powers, s.powers ? "On" : "Off");
             SetToggle("hats", s.allHats, s.allHats ? "On" : "Off");
+            if (Online.Configured) SetToggle("online", s.online, s.online ? "On" : "Off");
             sNotesN.text = Save.Notes.Count.ToString(CultureInfo.InvariantCulture);
             sReset.text = resetArmed ? "Tap again to erase everything" : "Reset progress";
             sReset.EnableInClassList("armed", resetArmed);

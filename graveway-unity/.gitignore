@@ -26,6 +26,9 @@ crashlytics-build.properties
 *.keystore
 *.jks
 signing.properties
+# The online scoreboard's key, copied in from outside the repo (Editor/OnlineSettings.cs).
+/Assets/Graveway/Resources/Online.json
+/Assets/Graveway/Resources/Online.json.meta
 
 # Unity telemetry scratch
 .utmp/

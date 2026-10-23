@@ -34,6 +34,7 @@ namespace Graveway
         public string quality = "high";      // or "low": Battery saver
         public bool god, fps, powers;        // playtest tools: invincible, frame rate, lots of power-ups
         public bool allHats;                 // playtest tool: every hat to try on
+        public bool online = true;           // runs sent to the boards online (Online.cs)
         public int startAt;                  // playtest tool: start runs this many metres up
     }
 
@@ -74,12 +75,16 @@ namespace Graveway
     [Preserve, Serializable]
     public sealed class Score
     {
-        public string id;                    // its own, for sending it online one day
+        public string id;                    // its own: the run's id online too
         public string name = "";             // whoever played it; "" if they didn't say
         public string character;             // survivor id
         public int distance, kills, coins, time;   // metres, zombies, coins, seconds
         public int place;                    // the furthest place reached (0 downtown, 1 the docks...)
         public string at;                    // ISO time, UTC
+        public bool sent;                    // on the boards online, under this name (Online.cs)
+        public bool refused;                 // the boards turned it away: not tried again
+        public int world, region;            // where it placed online when sent (region 0: no country)
+        public string country = "";          // where it was sent from, by the server
     }
 
     // What a run has earned so far.
@@ -379,7 +384,11 @@ namespace Graveway
         {
             name = CleanName(name);
             Data.playerName = name;
-            if (s != null) s.name = name;
+            if (s != null && s.name != name)
+            {
+                s.name = name;
+                if (!s.refused) s.sent = false;           // the new name goes online too
+            }
             Persist();
         }
 
