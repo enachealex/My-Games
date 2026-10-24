@@ -93,13 +93,15 @@ namespace Graveway
             var w = p.Weapon;
             var s = w.stats;
             bool rapid = BuffOn("rapid");
-            float damage = s.damage * (BuffOn("double") ? Tunables.PowerUp("double").damageMult : 1);
-            bool emptied = w.Consume(rapid ? Tunables.PowerUp("rapid").fireRateMult : 1, rapid);
+            // Power-ups, and what the run's challenges have paid.
+            float damage = s.damage * (BuffOn("double") ? Tunables.PowerUp("double").damageMult : 1) * Bonus(Tunables.Challenges.Damage);
+            bool emptied = w.Consume((rapid ? Tunables.PowerUp("rapid").fireRateMult : 1) * Bonus(Tunables.Challenges.Rate), rapid);
+            float spread = w.Spread * SpreadBonus, reach = s.range * Bonus(Tunables.Challenges.Range);
             var mz = Muzzle();
             string ammo = w.fitted.TryGetValue("ammo", out var a) ? a : w.Explosive ? "he" : "fmj";
             if (w.Explosive)
             {
-                float tx = target.x + (rng.Next() - 0.5f) * 2 * w.Spread * 4, tz = target.z + (rng.Next() - 0.5f) * 2 * w.Spread * 4;
+                float tx = target.x + (rng.Next() - 0.5f) * 2 * spread * 4, tz = target.z + (rng.Next() - 0.5f) * 2 * spread * 4;
                 Lob(mz, tx, tz, damage, s.blast, fx: s.fx, color: Hex.C(ShellColor.TryGetValue(ammo, out var sc) ? sc : ShellColor["he"]));
             }
             else
@@ -111,9 +113,9 @@ namespace Graveway
                 var offset = new Vector3(mz.x - p.x, mz.y - 1.4f, mz.z - p.z);
                 for (int i = 0; i < s.pellets && bullets.Count < MaxBullets; i++)
                 {
-                    float ang = p.yaw + (rng.Next() * 2 - 1) * w.Spread, speed = 62 + rng.Next() * 8;
+                    float ang = p.yaw + (rng.Next() * 2 - 1) * spread, speed = 62 + rng.Next() * 8;
                     var b = spareBullets.Count > 0 ? spareBullets.Pop() : new Bullet();
-                    b.x = p.x; b.z = p.z; b.dx = Mathf.Sin(ang); b.dz = Mathf.Cos(ang); b.speed = speed; b.life = s.range / speed + 0.05f;
+                    b.x = p.x; b.z = p.z; b.dx = Mathf.Sin(ang); b.dz = Mathf.Cos(ang); b.speed = speed; b.life = reach / speed + 0.05f;
                     b.damage = damage; b.pierce = s.pierce; b.knock = s.knockback; b.hits?.Clear(); b.fx = s.fx ?? NoFx; b.color = color;
                     b.offset = offset; b.travelled = 0;
                     bullets.Add(b);

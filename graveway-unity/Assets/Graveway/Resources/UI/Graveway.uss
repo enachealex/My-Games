@@ -413,3 +413,16 @@
     -unity-font-definition: url("Fonts/BebasNeue-Regular.ttf"); -unity-font-style: normal; }
 .curtain-line { font-size: 15px; color: rgb(207, 216, 210); margin-top: 4px; }
 .curtain-skip { position: absolute; bottom: 48px; font-size: 13px; color: rgba(238, 242, 236, 0.55); }
+
+
+/* ── Challenges in a run ──────────────────────────────────────────────── */
+.h-challenges { position: absolute; left: 12px; top: 120px; width: 176px; padding: 7px 9px 8px 9px; border-radius: 12px;
+    background-color: rgba(10, 14, 16, 0.62); border-width: 1px; border-color: rgba(255, 255, 255, 0.08); }
+.hc-head { font-size: 9px; letter-spacing: 1px; -unity-font-style: bold; color: rgb(155, 225, 93); white-space: normal; margin-bottom: 2px; }
+.hc-row { margin-top: 5px; }
+.hc-top { flex-direction: row; justify-content: space-between; }
+.hc-text { font-size: 11px; -unity-font-style: bold; color: rgb(232, 236, 230); flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hc-n { font-size: 10px; color: rgb(154, 166, 160); margin-left: 6px; }
+.hc-bar { height: 4px; margin-top: 2px; border-radius: 99px; background-color: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.hc-fill { height: 100%; background-color: rgb(155, 225, 93); }
+.hc-pay { font-size: 9px; color: rgb(155, 225, 93); margin-top: 1px; }

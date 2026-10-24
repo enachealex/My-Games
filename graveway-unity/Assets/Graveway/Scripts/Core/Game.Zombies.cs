@@ -22,6 +22,7 @@ namespace Graveway
         public bool hitDone, dead, calm, emerging, los, stuck, seen = true;
         public float losT, seeT, hidT, burnT, burnDps, burnTick;
         public Prop smash;
+        public bool blastKill;               // the last hit was a blast: for the challenges
         public GameObject[] plateObjects;    // the armored boss's plates still on (null where one's come off)
         public int plates;
         public float armor, armorMax;
@@ -389,6 +390,7 @@ namespace Graveway
             if (z.dead) return;
             if (z.plates > 0) dmg = HitArmor(z, dmg, blast);
             z.hp -= dmg;
+            z.blastKill = blast;
             if (z.state == Zombie.Mode.Idle) z.state = Zombie.Mode.Chase;
             float k = knock / (z.scale * z.scale);
             z.kx += dx * k * 2.2f; z.kz += dz * k * 2.2f;
@@ -428,7 +430,7 @@ namespace Graveway
             z.flash = 0;
             Burst(z.x, 1.1f * z.scale, z.z, (int)(10 + z.scale * 6), Hex.C(0x5a0909), speed: 3.5f * z.scale, size: 0.11f * z.scale);
             Sfx.Die(Pan(z.x));
-            if (run != null) run.kills++;
+            if (run != null) { run.kills++; ChallengeKill(z, z.blastKill); }
             int n = z.t.coins + (rng.Next() < 0.3f ? 1 : 0);
             for (int i = 0; i < n; i++)
             {

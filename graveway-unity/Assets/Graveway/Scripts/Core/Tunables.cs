@@ -151,6 +151,14 @@ namespace Graveway
         public int lamp = 0xff9a3a;          // the pools of light under its lamps
     }
 
+    // A kind of challenge in a run (Game.Challenges.cs): what counts, and how
+    // much of it the first time.
+    public sealed class ChallengeDef
+    {
+        public string id;
+        public int target;
+    }
+
     public sealed class PowerUpDef
     {
         public string id, name, tag;
@@ -507,6 +515,60 @@ namespace Graveway
         public static CharacterDef Character(string id) => System.Array.Find(Characters, c => c.id == id) ?? Characters[0];
         public static PowerUpDef PowerUp(string id) => System.Array.Find(PowerUps, p => p.id == id) ?? PowerUps[0];
         public static ItemDef Item(string id) => System.Array.Find(Items, i => i.id == id);
+
+        // ── Challenges in a run (Game.Challenges.cs) ─────────────────────
+        public static class Challenges
+        {
+            public const int Active = 3;             // on at a time
+            public const float Step = 0.05f;         // what each pays: +5% to its stat
+            public const float Grow = 1.5f;          // a kind done again in a run asks this much more
+            public const float StreakSeconds = 3;
+            public const int Damage = 0, Accuracy = 1, Range = 2, Rate = 3;
+            public static readonly string[] Stats = { "damage", "accuracy", "range", "rate" };
+            public static readonly string[] Names = { "damage", "accuracy", "range", "fire rate" };
+
+            public static readonly ChallengeDef[] Kinds =
+            {
+                new ChallengeDef { id = "kills", target = 30 },
+                new ChallengeDef { id = "runners", target = 6 },
+                new ChallengeDef { id = "tanks", target = 1 },
+                new ChallengeDef { id = "blasts", target = 8 },
+                new ChallengeDef { id = "streak", target = 5 },
+                new ChallengeDef { id = "coins", target = 40 },
+                new ChallengeDef { id = "wrecks", target = 3 },
+                new ChallengeDef { id = "untouched", target = 150 },
+                new ChallengeDef { id = "powerups", target = 2 },
+                new ChallengeDef { id = "distance", target = 200 },
+            };
+
+            // Its target after it's been done `done` times this run (rounded
+            // to something tidy: fives over 20, tens over 100).
+            public static int Target(ChallengeDef d, int done)
+            {
+                float t = d.target * Mathf.Pow(Grow, done);
+                int unit = t >= 100 ? 10 : t >= 20 ? 5 : 1;
+                return Mathf.Max(1, Mathf.FloorToInt(t / unit + 0.5f) * unit);   // halves up
+            }
+
+            public static string Describe(string id, int n)
+            {
+                string Many(string one, string many) => n == 1 ? one : many;
+                switch (id)
+                {
+                    case "kills": return $"Down {n} zombies";
+                    case "runners": return Many("Down a runner", $"Down {n} runners");
+                    case "tanks": return Many("Down a tank", $"Down {n} tanks");
+                    case "blasts": return Many("Blow up a zombie", $"Blow up {n} zombies");
+                    case "streak": return $"Down {n} in {StreakSeconds:0} seconds";
+                    case "coins": return $"Pick up {n} coins";
+                    case "wrecks": return Many("Wreck something", $"Wreck {n} things");
+                    case "untouched": return $"Go {n} m without a scratch";
+                    case "powerups": return Many("Grab a power-up", $"Grab {n} power-ups");
+                    case "distance": return $"Cover {n} m";
+                    default: return id;
+                }
+            }
+        }
 
         // ── The armored boss (Game.Armor.cs) ─────────────────────────────
         public static class BossArmor

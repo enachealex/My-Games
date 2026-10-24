@@ -70,6 +70,8 @@ touching the game logic.
 | `Scripts/Core/Game.Combat.cs` | Firing, bullets, ammo effects, grenades, explosions | `src/game.js` |
 | `Scripts/Core/Game.Pickups.cs` | Coins, health, armor and power-ups | `src/game.js` |
 | `Scripts/Core/Game.Support.cs` | The Black Market's items in a run: airstrikes, the helicopter, backup survivors, skipping a boss | |
+| `Scripts/Core/Game.Armor.cs` | The armored boss: its plates taking hits, coming off, and the power-ups they leave | |
+| `Scripts/Core/Game.Challenges.cs`, `Scripts/UI/Hud.Challenges.cs` | Challenges in a run, the bonuses they pay, and their panel on the HUD | |
 | `Scripts/Core/Game.Evac.cs` | The evac after every second boss: the helicopter, its cut scene, and on to the next place | |
 | `Scripts/Combat/Weapon.cs` | A gun's stats from its parts, ammo, reloads, recoil | `src/weapons.js` |
 | `Scripts/Combat/Director.cs` | Who spawns, where and when, from the distance | `src/director.js` |

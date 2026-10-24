@@ -29,6 +29,8 @@ namespace Graveway
             public bool best;
             public Score score;              // where it went on the scoreboard; null if it didn't
             public List<string> hats;        // hats it unlocked
+            public int challenges;           // done
+            public int[] boosts;             // what they paid, by Tunables.Challenges.Stats
             public bool board;               // false with playtest tools on
         }
 
@@ -503,6 +505,7 @@ namespace Graveway
             pauseBtn.Add(Icons.Pause());
             hKills = Lbl("h-kills", hud);
             hDebug = Lbl("h-debug", hud);
+            hChallenges = El("h-challenges", hud);
             hBoss = El("h-boss", hud);
             Lbl("h-boss-label", hBoss, "BOSS");
             hBossPips = El("h-boss-pips", hBoss);              // the armored boss's plates
@@ -548,6 +551,7 @@ namespace Graveway
             int coins = Save.Data.coins + Mathf.FloorToInt(r.coins) + r.bonus;
             if (Changed("coins", coins)) SetCoins(hCoins, coins);
             if (Changed("kills", r.kills)) hKills.text = $"{r.kills} kill{(r.kills == 1 ? "" : "s")}";
+            DrawChallenges(r);
             if (Changed("face", Array.IndexOf(Tunables.Characters, game.Character) * 10 + (portraits.Count > 0 ? 1 : 0)))
             {
                 hFace.Clear();

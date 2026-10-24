@@ -233,6 +233,7 @@ namespace Graveway
                 v(El("r-row-v", row));
             }
             Row("Zombies down", v => Lbl("", v, N(r.kills)));
+            if (r.challenges > 0) Row("Challenges done", v => Lbl("", v, $"{r.challenges} · {BonusText(r.boosts)}"));
             Row("Coins picked up", v => Coins(v, r.coins));
             Row($"Stage bonuses ({r.stage})", v => Coins(v, r.bonus));
             Row("Total", v => Coins(v, r.coins + r.bonus), true);

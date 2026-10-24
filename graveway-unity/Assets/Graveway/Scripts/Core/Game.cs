@@ -57,6 +57,15 @@ namespace Graveway
         public int place;                    // which place the road's in: the nth of the run (Tunables.PlaceAt)
         public int bossesPassed;             // beaten, skipped or outrun: every second brings the evac
         public int bossesSpawned;            // turned up (or skipped): every second is armored
+        // Challenges (Game.Challenges.cs): the ones on, the bonuses they've paid
+        // (by Tunables.Challenges.Stats), and what's needed to count the rest.
+        public readonly List<Challenge> challenges = new List<Challenge>();
+        public readonly int[] boosts = new int[4];
+        public int challengesDone, statTurn;
+        public readonly Dictionary<string, int> repeats = new Dictionary<string, int>();
+        public readonly List<Vector2> killLog = new List<Vector2>();
+        public float untouchedFrom;
+        public Rng challengeRng;             // their own, so offering one never changes how the run plays
         public float noteT = 10;             // until it's next written down
     }
 
@@ -406,6 +415,7 @@ namespace Graveway
             player = MakePlayer();
             player.z = player.furthest = startZ;
             run = new RunStats { startAt = startAt, startZ = startZ, fair = startAt == 0 && !settings.god && !settings.powers };
+            StartChallenges();
             director.Reset(startAt);
             nav.Reset(startZ);
             world.Update(startZ, time);
@@ -475,6 +485,7 @@ namespace Graveway
                 director.Update(dt, Distance);
                 UpdateSupport(dt);
                 UpdateEvac(dt);
+                UpdateChallenges();
             }
             else if (state == State.Evac) UpdateEvac(dt);
             else if (state == State.Dying)
@@ -596,7 +607,7 @@ namespace Graveway
         Target ChooseTarget(Weapon w)
         {
             var p = player;
-            float range = w.stats.range, minRange = w.stats.minRange;
+            float range = w.stats.range * Bonus(Tunables.Challenges.Range), minRange = w.stats.minRange;
             var props = world.props;
             Target best = default;
             float bestScore = float.PositiveInfinity;
@@ -686,6 +697,7 @@ namespace Graveway
         {
             var p = player;
             if (state != State.Playing) return;
+            ChallengeHurt();
             if (Invincible) dmg = 0;     // playtest tool: still flinch, never hurt
             if (blast) dmg *= 1 - p.stats.explosionResist;
             if (p.armor > 0)
@@ -809,6 +821,8 @@ namespace Graveway
             result.best = Save.Bank(kept);
             result.score = Save.LastScore;
             result.hats = Save.NewHats;
+            result.challenges = r.challengesDone;
+            result.boosts = (int[])r.boosts.Clone();
             result.board = kept.board;
             result.wallet = Save.Data.coins;
             result.bestEver = Save.Data.best;

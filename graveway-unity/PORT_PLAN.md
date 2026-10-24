@@ -574,6 +574,25 @@ From a player's feedback, 23 October 2026:
     - **How tough:** the armor scales with the stage like the boss does,
       so it takes about half as long again as a plain boss.
     - Skip the boss (Black Market) skips this one too.
+19. **Challenges in a run, with bonuses.** *"Add bonuses per round as
+    challenges are completed during each round: +5% extra damage,
+    accuracy, range and rate of fire, stacking for that round."* A round is
+    the whole run (asked, 23 October 2026), and each challenge pays +5% to
+    one of the four, named up front. *(Built, 23 October 2026:
+    `Game.Challenges.cs`, `Hud.Challenges.cs`, numbers in
+    `Tunables.Challenges`.)*
+    - Three on at a time, in a small panel at the top left with each
+      one's progress and reward; done, it pays (with a message), and a
+      different one takes its place. Rewards take turns through damage,
+      accuracy, range and rate of fire, so all four come up.
+    - Ten kinds: down 30 zombies, down 6 runners, down a tank, blow up 8
+      zombies, down 5 in 3 seconds, pick up 40 coins, wreck 3 things, go
+      150 m without a scratch, grab 2 power-ups, cover 200 m. A kind done
+      again in the same run asks half as much more.
+    - Damage and rate of fire multiply the gun's (with Double Damage and
+      Rapid Fire on top); accuracy tightens its spread; range reaches
+      further both for aiming and for the bullets. The results show how
+      many were done and what they paid. Every run starts at normal.
 
 ## How work gets checked
 

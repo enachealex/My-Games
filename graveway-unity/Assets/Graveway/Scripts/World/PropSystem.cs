@@ -115,6 +115,7 @@ namespace Graveway
         void Destroy(Prop p, float dx, float dz, string cause)
         {
             var g = game;
+            g.ChallengeWreck(cause);
             p.hp = 0;
             p.model.SetFlash(false);
             p.flash = 0;

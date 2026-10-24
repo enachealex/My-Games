@@ -123,6 +123,7 @@ namespace Graveway
                     {
                         coins.RemoveAt(i);
                         run.coins += p.stats.coinMult;
+                        Count("coins");
                         Sfx.Coin();
                         continue;
                     }
@@ -168,6 +169,7 @@ namespace Graveway
                 if (it.kind == "power")
                 {
                     PowerUp(it.power);
+                    Count("powerups");
                     Burst(it.x, 1, it.z, 16, Tunables.PowerUp(it.power).color, speed: 3, up: 5, gravity: 4, life: 0.9f);
                     continue;
                 }
