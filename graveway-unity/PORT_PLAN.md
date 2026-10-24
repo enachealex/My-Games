@@ -540,6 +540,35 @@ From the 0.6 playtest, 23 October 2026:
     survivor from four sides (`HatTests.CloseUps`, into
     `Logs/shots/hats/`). *(Done.)*
 
+From a player's feedback, 23 October 2026:
+
+18. **An armored boss.** *"Add a boss with armor on; the more damage you do
+    to it, it drops a piece of armor to expose it, and a power-up with the
+    fallen armor."*
+
+    Proposed design (to confirm before building):
+    - **Which boss:** every second one (1,000 m, 2,000 m...), the one that
+      brings the evac, so each place ends with the hardest fight. The
+      others stay as they are. (Or: every boss armored.)
+    - **The armor:** four metal plates bolted onto the boss model: a
+      helmet, a chest plate and two shoulder pads, on its bones so they
+      move with it. Dark metal with rivets, built in code like the other
+      props, catching sparks when hit.
+    - **How it works:** while any plate is on, a hit does only a third of
+      its damage to the boss; the rest goes into the armor. Every quarter
+      of the armor's toughness dealt, a plate comes off: a clang, sparks,
+      and the plate falls and tumbles to the ground. Blasts break armor
+      twice as fast, so the grenade launcher and barrels pay off here.
+    - **The reward:** each plate that falls leaves a power-up where it
+      landed (four a fight), on top of the boss's usual drops.
+    - **Exposed:** with the last plate gone it takes full damage, and gets
+      angrier: a little faster.
+    - **The HUD:** four armor pips over the boss bar, going out as plates
+      fall, and its own banner: "Armored boss · Break its armor off".
+    - **How tough:** the armor scales with the stage like the boss does,
+      so it takes about half as long again as a plain boss.
+    - Skip the boss (Black Market) skips this one too.
+
 ## How work gets checked
 
 - Unity runs without a window on the dev PC (`-batchmode`), so builds,
