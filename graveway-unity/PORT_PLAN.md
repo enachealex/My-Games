@@ -593,6 +593,21 @@ From a player's feedback, 23 October 2026:
       Rapid Fire on top); accuracy tightens its spread; range reaches
       further both for aiming and for the bullets. The results show how
       many were done and what they paid. Every run starts at normal.
+20. **Hats that do something.** *"Add some benefits to the hats since
+    these hats also require completing challenges to unlock. Just
+    boosters."* *(Built, 23 October 2026: `boost` and `amount` on each
+    `HatDef` in `Tunables.Hats`.)*
+    - Each earned hat gives one small booster while it's worn, bigger the
+      harder it is to get: hard hat +10 max health, straw hat +10% coins,
+      mohawk +5% damage, hood +5% move speed, witch hat +5% fire rate,
+      docker beanie 10% faster reloads, traffic cone +5% range, crown +5%
+      damage, accuracy, range and fire rate.
+    - A survivor's own hat (Rook's cap, Juno's beanie) gives nothing: it's
+      theirs from the start.
+    - The damage, accuracy, range and fire rate ones add to a run's
+      challenge bonuses (`Game.Bonus`); the rest change the survivor as the
+      run starts. The hats screen shows each hat's booster under its name,
+      and the survivor card shows the one being worn.
 
 ## How work gets checked
 

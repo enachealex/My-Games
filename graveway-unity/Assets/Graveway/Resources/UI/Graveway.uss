@@ -127,6 +127,7 @@
 }
 .perk-name { font-size: 15px; -unity-font-style: bold; }
 .perk-text { font-size: 13px; color: rgb(207, 216, 210); white-space: normal; }
+.perk-boost { font-size: 12px; -unity-font-style: bold; color: rgb(155, 225, 93); white-space: normal; }
 .perk.gunline { flex-direction: row; align-items: center; background-color: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.1); }
 .gun-icon { width: 64px; height: 24px; margin-right: 12px; }
 .perk.hatline { margin-top: 6px; }
@@ -395,6 +396,7 @@
 .hcard.locked .hcard-pic { -unity-background-image-tint-color: rgb(120, 126, 123); opacity: 0.7; }
 .hcard-none { font-size: 40px; color: rgb(154, 166, 160); }
 .hcard-name { font-size: 15px; -unity-font-style: bold; margin-top: 4px; }
+.hcard-boost { font-size: 12px; -unity-font-style: bold; color: rgb(155, 225, 93); -unity-text-align: middle-center; white-space: normal; margin-top: 2px; }
 .hcard-sub { font-size: 12px; color: rgb(154, 166, 160); -unity-text-align: middle-center; white-space: normal; margin-top: 2px; }
 .hcard.on .hcard-sub { color: rgb(155, 225, 93); -unity-font-style: bold; }
 .hbar { width: 80%; height: 6px; border-radius: 99px; background-color: rgba(0, 0, 0, 0.45); margin-top: 8px; overflow: hidden; }

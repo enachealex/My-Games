@@ -74,6 +74,8 @@ namespace Graveway
                 if (h != null) pic.style.backgroundImage = Studio.HatPicture(id);
                 else Lbl("hcard-none", pic, "—");
                 Lbl("hcard-name", b, h?.name ?? "No hat");
+                string boost = Tunables.Booster(h);
+                if (boost.Length > 0) Lbl("hcard-boost", b, boost);
                 Lbl("hcard-sub", b, on ? "Wearing" : h?.owner != null ? "Their own: tap to wear" : mine ? "Tap to wear" : h.goal);
                 if (!mine)
                 {

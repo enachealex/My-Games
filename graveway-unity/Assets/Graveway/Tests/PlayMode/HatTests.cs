@@ -134,6 +134,45 @@ namespace Graveway.Tests
             Assert.That(Save.Hat("rook"), Is.EqualTo("rookcap"));
         }
 
+        // A hat's booster, in a run, while it's worn.
+        [UnityTest]
+        public IEnumerator WornTheyBoost()
+        {
+            Save.Data.settings.allHats = true;
+            float Run(string hat, System.Func<float> what)
+            {
+                Save.Wear("rook", hat);
+                game.nextSeed = 7;
+                game.StartRun();
+                return what();
+            }
+            const int Dmg = Tunables.Challenges.Damage;
+            Assert.That(Run("", () => game.Bonus(Dmg)), Is.EqualTo(1), "no hat, no booster");
+            Assert.That(Run("rookcap", () => game.Bonus(Dmg)), Is.EqualTo(1), "nor his own cap");
+            Assert.That(Run("mohawk", () => game.Bonus(Dmg)), Is.EqualTo(1.05f).Within(1e-4f));
+            for (int s = 0; s < 4; s++) Assert.That(Run("crown", () => game.Bonus(s)), Is.EqualTo(1.05f).Within(1e-4f), "the crown");
+            float hp = Run("", () => game.player.maxHp);
+            Assert.That(Run("hardhat", () => game.player.maxHp), Is.EqualTo(hp + 10));
+            float speed = Run("", () => game.player.stats.speed);
+            Assert.That(Run("hood", () => game.player.stats.speed), Is.EqualTo(speed * 1.05f).Within(1e-4f));
+            float coins = Run("", () => game.player.stats.coinMult);
+            Assert.That(Run("straw", () => game.player.stats.coinMult), Is.EqualTo(coins * 1.1f).Within(1e-4f));
+            float reload = Run("", () => game.player.weapons[0].stats.reloadTime);
+            Assert.That(Run("beanie", () => game.player.weapons[0].stats.reloadTime), Is.EqualTo(reload * 0.9f).Within(1e-4f));
+            Save.Wear("rook", "");
+            game.ShowMenu();
+            game.hud.ShowMenu();
+            yield return null;
+
+            // And it says so, on its card.
+            Press(Find<Button>(ui, b => b.ClassListContains("m-card") && Says(b, "SURVIVOR"), "the survivor card"));
+            yield return null;
+            Click(ui, "Hats");
+            yield return null;
+            Assert.That(Says(HatCard("Mohawk"), "+5% damage"));
+            Assert.That(Says(HatCard("Crown"), "+5% damage, accuracy, range and fire rate"));
+        }
+
         // A run that gets far enough unlocks a hat, and the results say so.
         [UnityTest]
         public IEnumerator ARunUnlocksAHat()

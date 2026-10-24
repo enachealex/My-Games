@@ -63,6 +63,26 @@ namespace Graveway.Tests
             }
         }
 
+        // Every hat that's earned does something while it's worn; a survivor's
+        // own hat (theirs from the start) doesn't.
+        [Test]
+        public void EarnedHatsAreBoosters()
+        {
+            foreach (var h in Tunables.Hats)
+            {
+                Assert.That(h.boost, Is.Not.Null, h.id);
+                Assert.That(h.amount, Is.GreaterThan(0), h.id);
+                Assert.That(Tunables.Booster(h), Does.StartWith("+").Or.Contains("faster"), h.id);
+            }
+            foreach (var h in Tunables.OwnHats) Assert.That(Tunables.Booster(h), Is.Empty, h.id);
+            var crown = Tunables.Hat("crown");
+            for (int s = 0; s < Tunables.Challenges.Stats.Length; s++) Assert.That(Tunables.HatBoost(crown, s), Is.EqualTo(0.05f), "the crown: all four");
+            var mohawk = Tunables.Hat("mohawk");
+            Assert.That(Tunables.HatBoost(mohawk, Tunables.Challenges.Damage), Is.EqualTo(0.05f));
+            Assert.That(Tunables.HatBoost(mohawk, Tunables.Challenges.Range), Is.Zero);
+            Assert.That(Tunables.Booster(Tunables.Hat("hardhat")), Is.EqualTo("+10 max health"));
+        }
+
         [Test]
         public void RunsUnlockThem()
         {

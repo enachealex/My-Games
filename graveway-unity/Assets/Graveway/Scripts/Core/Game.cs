@@ -66,6 +66,7 @@ namespace Graveway
         public readonly List<Vector2> killLog = new List<Vector2>();
         public float untouchedFrom;
         public Rng challengeRng;             // their own, so offering one never changes how the run plays
+        public HatDef hat;                   // worn for it: its booster counts (Tunables.Hats)
         public float noteT = 10;             // until it's next written down
     }
 
@@ -346,6 +347,12 @@ namespace Graveway
         {
             var c = character;
             var stats = Tunables.StatsFor(c, Save.Data.pup);
+            // The hat's booster, if it's one about the survivor (the combat
+            // ones are in Bonus).
+            var hat = Tunables.Hat(Save.Hat(c.id));
+            if (hat?.boost == "health") stats.maxHp += hat.amount;
+            if (hat?.boost == "speed") stats.speed *= 1 + hat.amount;
+            if (hat?.boost == "coins") stats.coinMult *= 1 + hat.amount;
             // Your survivor's own gun first, then the ones equipped in the
             // Armory, each with its parts, and the models in their hands to match.
             var p = new Player
@@ -356,6 +363,7 @@ namespace Graveway
             foreach (var id in Save.RunWeapons(c))
             {
                 var w = new Weapon(id, Save.FittedParts(id), c.perk);
+                if (hat?.boost == "reload") w.stats.reloadTime *= 1 - hat.amount;
                 FitGun(w);
                 p.weapons.Add(w);
             }
@@ -415,6 +423,7 @@ namespace Graveway
             player = MakePlayer();
             player.z = player.furthest = startZ;
             run = new RunStats { startAt = startAt, startZ = startZ, fair = startAt == 0 && !settings.god && !settings.powers };
+            run.hat = Tunables.Hat(Save.Hat(character.id));
             StartChallenges();
             director.Reset(startAt);
             nav.Reset(startZ);

@@ -92,7 +92,7 @@ touching the game logic.
 | `Scripts/UI/Hud.Armory.cs` | The Armory: guns, each survivor's loadout, parts and survivor upgrades | `src/ui.js` |
 | `Scripts/UI/Hud.BlackMarket.cs` | The Black Market, and the backpack on the HUD | |
 | `Scripts/UI/Hud.Scores.cs` | The scoreboard (this phone, the world, your country), and naming a run on the results | |
-| `Scripts/UI/Hud.Hats.cs` | Hats: picking one for a survivor, and the ones a run unlocks | |
+| `Scripts/UI/Hud.Hats.cs` | Hats: picking one for a survivor (with what each one boosts), and the ones a run unlocks | |
 | `Scripts/UI/Hud.Notes.cs` | Playtest notes and Send to Claude | `src/ui.js` |
 | `Scripts/UI/Studio.cs`, `Icons.cs` | Portraits and gun pictures rendered from the models; vector icons | `src/preview.js` |
 | `Resources/UI/Graveway.uss` | The UI's look | `index.html` CSS |

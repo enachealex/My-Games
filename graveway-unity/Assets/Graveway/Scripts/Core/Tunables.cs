@@ -138,6 +138,11 @@ namespace Graveway
         public string id, name, stat, goal;
         public int target;
         public string owner;                 // a survivor's own hat, part of their model: theirs alone
+        // What it does while it's worn: "damage", "accuracy", "range", "rate"
+        // (shares, as a run's challenges pay), "all" (those four), "health"
+        // (points), "speed", "coins" or "reload" (shares); null for nothing.
+        public string boost;
+        public float amount;
     }
 
     // A place the road runs through (playtest note 6), reached by helicopter
@@ -607,14 +612,15 @@ namespace Graveway
         // The first cosmetics, in the order they tend to come.
         public static readonly HatDef[] Hats =
         {
-            new HatDef { id = "hardhat", name = "Hard hat", stat = "best", target = 100, goal = "Get 100 m up the road" },
-            new HatDef { id = "straw", name = "Straw hat", stat = "kills", target = 500, goal = "Down 500 zombies" },
-            new HatDef { id = "mohawk", name = "Mohawk", stat = "bosses", target = 1, goal = "Beat a boss" },
-            new HatDef { id = "hood", name = "Hood", stat = "metres", target = 5000, goal = "Cover 5 km in all" },
-            new HatDef { id = "witch", name = "Witch hat", stat = "best", target = 500, goal = "Get 500 m up the road" },
-            new HatDef { id = "beanie", name = "Docker beanie", stat = "place", target = 1, goal = "Make it to the docks" },
-            new HatDef { id = "cone", name = "Traffic cone", stat = "place", target = 2, goal = "Make it to the highway" },
-            new HatDef { id = "crown", name = "Crown", stat = "bosses", target = 10, goal = "Beat 10 bosses" },
+            // Each with a small booster while it's worn, bigger the harder it is to get.
+            new HatDef { id = "hardhat", name = "Hard hat", stat = "best", target = 100, goal = "Get 100 m up the road", boost = "health", amount = 10 },
+            new HatDef { id = "straw", name = "Straw hat", stat = "kills", target = 500, goal = "Down 500 zombies", boost = "coins", amount = 0.1f },
+            new HatDef { id = "mohawk", name = "Mohawk", stat = "bosses", target = 1, goal = "Beat a boss", boost = "damage", amount = 0.05f },
+            new HatDef { id = "hood", name = "Hood", stat = "metres", target = 5000, goal = "Cover 5 km in all", boost = "speed", amount = 0.05f },
+            new HatDef { id = "witch", name = "Witch hat", stat = "best", target = 500, goal = "Get 500 m up the road", boost = "rate", amount = 0.05f },
+            new HatDef { id = "beanie", name = "Docker beanie", stat = "place", target = 1, goal = "Make it to the docks", boost = "reload", amount = 0.1f },
+            new HatDef { id = "cone", name = "Traffic cone", stat = "place", target = 2, goal = "Make it to the highway", boost = "range", amount = 0.05f },
+            new HatDef { id = "crown", name = "Crown", stat = "bosses", target = 10, goal = "Beat 10 bosses", boost = "all", amount = 0.05f },
         };
 
         // The survivors' own hats: worn until they pick another (or none).
@@ -626,6 +632,28 @@ namespace Graveway
 
         public static HatDef Hat(string id) => System.Array.Find(Hats, h => h.id == id) ?? System.Array.Find(OwnHats, h => h.id == id);
         public static HatDef OwnHat(string survivor) => System.Array.Find(OwnHats, h => h.owner == survivor);
+
+        // A hat's booster, in words: "+5% damage", "+10 max health"; "" for none.
+        public static string Booster(HatDef h)
+        {
+            if (h == null || h.boost == null) return "";
+            int pct = Mathf.RoundToInt(h.amount * 100);
+            switch (h.boost)
+            {
+                case "health": return $"+{h.amount:0} max health";
+                case "reload": return $"{pct}% faster reloads";
+                case "speed": return $"+{pct}% move speed";
+                case "coins": return $"+{pct}% coins";
+                case "rate": return $"+{pct}% fire rate";
+                case "all": return $"+{pct}% damage, accuracy, range and fire rate";
+                default: return $"+{pct}% {h.boost}";
+            }
+        }
+
+        // What a hat adds to one of the run's four combat stats
+        // (Challenges.Stats), as a share.
+        public static float HatBoost(HatDef h, int stat) =>
+            h == null || h.boost == null ? 0 : h.boost == "all" || h.boost == Challenges.Stats[stat] ? h.amount : 0;
 
         // A power-up id, picked by weight; r is a random number in [0, 1).
         public static string PickPowerup(float r)

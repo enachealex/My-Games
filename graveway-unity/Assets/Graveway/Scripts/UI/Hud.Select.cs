@@ -265,6 +265,8 @@ namespace Graveway
                 var ht = El("grow", hl);
                 Lbl("small-caps", ht, "HAT");
                 Lbl("perk-name", ht, hat.Length > 0 ? Tunables.Hat(hat).name : "None");
+                string boost = Tunables.Booster(Tunables.Hat(hat));
+                if (boost.Length > 0) Lbl("perk-boost", ht, boost);
                 Btn("Hats", "small", hl, () => OpenHats(c));
             }
             if (!here) card.Query<Button>().ForEach(b => b.SetEnabled(false));

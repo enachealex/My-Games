@@ -23,11 +23,12 @@ namespace Graveway
 
     public sealed partial class Game
     {
-        // The bonus to one of C.Stats from challenges done this run (1 = none).
-        public float Bonus(int stat) => run == null ? 1 : 1 + C.Step * run.boosts[stat];
+        // The bonus to one of C.Stats from challenges done this run, and the
+        // hat being worn (1 = none).
+        public float Bonus(int stat) => run == null ? 1 : 1 + C.Step * run.boosts[stat] + Tunables.HatBoost(run.hat, stat);
 
         // The accuracy bonus as a spread: tighter by the same share.
-        float SpreadBonus => run == null ? 1 : Mathf.Max(0.4f, 1 - C.Step * run.boosts[C.Accuracy]);
+        float SpreadBonus => run == null ? 1 : Mathf.Max(0.4f, 2 - Bonus(C.Accuracy));
 
         public IReadOnlyList<Challenge> Challenges => run?.challenges;
 
