@@ -508,6 +508,16 @@ namespace Graveway
         public static PowerUpDef PowerUp(string id) => System.Array.Find(PowerUps, p => p.id == id) ?? PowerUps[0];
         public static ItemDef Item(string id) => System.Array.Find(Items, i => i.id == id);
 
+        // ── The armored boss (Game.Armor.cs) ─────────────────────────────
+        public static class BossArmor
+        {
+            public const int Every = 2;              // every second boss: the one before the evac
+            public const float Share = 0.5f;         // the armor's toughness, as a share of the boss's health
+            public const float Through = 1f / 3;     // of a hit, what gets through to the boss while it's armored
+            public const float BlastMult = 2;        // blasts against the armor
+            public const float Enraged = 1.15f;      // its speed once it's exposed
+        }
+
         // ── Places ───────────────────────────────────────────────────────
         // In order, round and round: a helicopter takes you on to the next
         // after every BossesPerEvac bosses.

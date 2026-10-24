@@ -264,7 +264,7 @@ namespace Graveway
                 float dx = z.x - p.x, dz = z.z - p.z, d = Mathf.Sqrt(dx * dx + dz * dz);
                 if (d > def.radius + z.radius) continue;
                 float u = d > 0 ? d : 1, f = Mathf.Max(0.35f, 1 - d / def.radius);
-                DamageZombie(z, def.damage * f, dx / u, dz / u, def.impulse * f, 5 * f / z.scale);
+                DamageZombie(z, def.damage * f, dx / u, dz / u, def.impulse * f, 5 * f / z.scale, blast: true);
             }
             propSys.Impulse(p.x, p.z, def.radius, def.impulse * 0.6f);
             world.navDirty = true;

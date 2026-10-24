@@ -96,6 +96,9 @@ namespace Graveway
         public Placed[] parts = Array.Empty<Placed>();
         public Hat[] hats = Array.Empty<Hat>();
         public HatHead[] hatHeads = Array.Empty<HatHead>();
+        // The armored boss's plates: a unit box each, placed in its bone's space
+        // (id: the bone), in the order they come off.
+        public Placed[] bossArmor = Array.Empty<Placed>();
         public Texture2D zombieAtlas;        // the Zombie Apocalypse Kit's colour palette
 
         static ArtCatalog loaded;

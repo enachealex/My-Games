@@ -162,6 +162,46 @@ namespace Graveway
             rig.hatObject = go;
         }
 
+        // The armored boss's plates, each on its bone (ArtCatalog.bossArmor), in
+        // the order they come off. Dark riveted steel: a unit box with a
+        // lighter rim, as the kit's chunky props are.
+        static Mesh plateMesh;
+
+        public static GameObject[] Armor(Rig rig)
+        {
+            var plates = ArtCatalog.Get.bossArmor;
+            var made = new List<GameObject>();
+            plateMesh ??= new GeoBuilder().Box(1, 1, 1).Build("armor plate");
+            var steel = Art.Lit(Hex.C(0x4c5258), 0);
+            var rim = Art.Lit(Hex.C(0x8a8f94), 0);
+            foreach (var p in plates)
+            {
+                var bone = Find(rig.model, p.id);
+                if (!bone) continue;
+                var go = new GameObject("armor " + p.id);
+                var t = go.transform;
+                t.SetParent(bone, false);
+                t.localPosition = p.position;
+                t.localRotation = p.rotation;
+                t.localScale = p.scale;
+                var r = go.AddComponent<MeshFilter>();
+                r.sharedMesh = plateMesh;
+                var mr = go.AddComponent<MeshRenderer>();
+                mr.sharedMaterial = steel;
+                mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                // A band round its middle, a shade lighter, so it reads as plate.
+                var band = new GameObject("rim");
+                band.transform.SetParent(t, false);
+                band.transform.localScale = new Vector3(1.03f, 0.18f, 1.03f);
+                band.AddComponent<MeshFilter>().sharedMesh = plateMesh;
+                var br = band.AddComponent<MeshRenderer>();
+                br.sharedMaterial = rim;
+                br.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                made.Add(go);
+            }
+            return made.ToArray();
+        }
+
         // A hat on its own, as it sat on the top of the head it came off.
         public static GameObject HatModel(ArtCatalog.Hat h)
         {

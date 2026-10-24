@@ -22,6 +22,9 @@ namespace Graveway
         public bool hitDone, dead, calm, emerging, los, stuck, seen = true;
         public float losT, seeT, hidT, burnT, burnDps, burnTick;
         public Prop smash;
+        public GameObject[] plateObjects;    // the armored boss's plates still on (null where one's come off)
+        public int plates;
+        public float armor, armorMax;
         public bool flying;
         public float flyY, flyVy, flySx, flySz;
     }
@@ -72,6 +75,7 @@ namespace Graveway
 
         void Recycle(Zombie z)
         {
+            StripArmor(z);
             z.model.root.SetActive(false);
             zombiePool[z.kind].Push(z.model);
         }
@@ -98,6 +102,7 @@ namespace Graveway
 
         public void SpawnBoss()
         {
+            if (run != null) run.bossesSpawned++;
             // The Black Market's "Skip the boss": this one never turns up.
             if (run != null && run.skipBoss)
             {
@@ -109,7 +114,9 @@ namespace Graveway
             float x = 0, z = player.z - 38;
             World.ResolveColliders(world.props, ref x, ref z, 1.3f);
             run.boss = SpawnZombie("boss", x, z, Stage, chase: true);
-            hud.Banner("Something big is coming", "Put it down for a fat reward");
+            if (run.bossesSpawned % Tunables.BossArmor.Every == 0) ArmorUp(run.boss);
+            if (run.boss.plates > 0) hud.Banner("Armored boss", "Break its armor off: every plate leaves a power-up");
+            else hud.Banner("Something big is coming", "Put it down for a fat reward");
             Sfx.Groan(0, true);
         }
 
@@ -376,9 +383,11 @@ namespace Graveway
             return d < 1e-3f || (cx * dx + cz * dz) / (d * dist) > 0.2f;
         }
 
-        public void DamageZombie(Zombie z, float dmg, float dx, float dz, float knock, float launch = 0)
+        // blast: from an explosion or a shockwave (against armor, it counts double).
+        public void DamageZombie(Zombie z, float dmg, float dx, float dz, float knock, float launch = 0, bool blast = false)
         {
             if (z.dead) return;
+            if (z.plates > 0) dmg = HitArmor(z, dmg, blast);
             z.hp -= dmg;
             if (z.state == Zombie.Mode.Idle) z.state = Zombie.Mode.Chase;
             float k = knock / (z.scale * z.scale);
@@ -405,6 +414,7 @@ namespace Graveway
         void KillZombie(Zombie z, float dx, float dz, float launch = 0)
         {
             z.dead = true;
+            ArmorOff(z);
             z.deadT = 0;
             if (launch > 0.5f)
             {

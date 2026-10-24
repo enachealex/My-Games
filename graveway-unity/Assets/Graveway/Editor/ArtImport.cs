@@ -25,11 +25,14 @@ namespace Graveway.EditorTools
 
         const string HeadBone = "CharacterArmature/Root/Body/Hips/Abdomen/Torso/Neck/Head";
         static readonly string[] EyeBones = { HeadBone, HeadBone + "/Eyelid.L", HeadBone + "/Eyelid.R" };
+        // The boss's armor hangs off these too (BuildBossArmor).
+        const string TorsoBone = "CharacterArmature/Root/Body/Hips/Abdomen/Torso";
+        static readonly string[] BossBones = EyeBones.Concat(new[] { TorsoBone, TorsoBone + "/Shoulder.L/UpperArm.L", TorsoBone + "/Shoulder.R/UpperArm.R" }).ToArray();
 
         static bool Ours(string path) => path.StartsWith(Root) && path.EndsWith(".fbx", System.StringComparison.OrdinalIgnoreCase);
 
         // Bumped when the settings below change, so Unity imports again.
-        public override uint GetVersion() => 3;
+        public override uint GetVersion() => 4;
 
         void OnPreprocessModel()
         {
@@ -45,12 +48,14 @@ namespace Graveway.EditorTools
             mi.optimizeGameObjects = assetPath.Contains("/Characters/Zombie_");
             // All but the bones the glowing eyes hang from (Rigs.cs): the
             // eyelids where there are some, else the head; the runner's a
-            // skeleton with no head at all.
+            // skeleton with no head at all. The boss also keeps the bones its
+            // armor hangs from.
             // Readable, so Rigs.cs can find where their faces are on a phone.
             if (mi.optimizeGameObjects) mi.isReadable = true;
             if (mi.optimizeGameObjects)
                 mi.extraExposedTransformPaths = assetPath.Contains("Zombie_Ribcage") ? new string[0]
-                    : assetPath.Contains("Zombie_Chubby") ? new[] { HeadBone } : EyeBones;
+                    : assetPath.Contains("Zombie_Chubby") ? new[] { HeadBone }
+                    : assetPath.Contains("Zombie_Arm") ? BossBones : EyeBones;
             mi.importCameras = false;
             mi.importLights = false;
             mi.importBlendShapes = false;
@@ -137,6 +142,7 @@ namespace Graveway.EditorTools
             cat.parts = BuildParts();
             cat.hats = BuildHats().Concat(BuildMadeHats()).Concat(BuildOwnHats()).ToArray();
             cat.hatHeads = BuildHatHeads();
+            cat.bossArmor = BuildBossArmor();
             cat.zombieAtlas = AssetDatabase.LoadAssetAtPath<Texture2D>(Kit + "Zombie_Atlas.png");
             EditorUtility.SetDirty(cat);
             AssetDatabase.SaveAssets();
@@ -521,6 +527,71 @@ namespace Graveway.EditorTools
             Object.DestroyImmediate(inst);
             hats.Add(Fit("cone", cone, new Color[0], true));
             return hats.ToArray();
+        }
+
+        // The armored boss's plates (Game.Zombies.cs), in the order they come
+        // off: a pad on each upper arm, a chest plate, then the helmet. Each is a
+        // box round the part of the boss's mesh its bone moves, a little bigger
+        // than it (the helmet only from the eyes up, so they still glow
+        // through; the pads only the half of the arm by the shoulder), kept in
+        // the bone's space so it goes where the bone goes.
+        static ArtCatalog.Placed[] BuildBossArmor()
+        {
+            const string model = "Zombie_Arm";
+            var inst = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>($"{Kit}Characters/{model}.fbx"));
+            // Zombies import without their skeleton (optimizeGameObjects): this
+            // copy gets it back, to measure by.
+            AnimatorUtility.DeoptimizeTransformHierarchy(inst);
+            var smr = inst.GetComponentInChildren<SkinnedMeshRenderer>();
+            var mesh = smr.sharedMesh;
+            var toModel = smr.transform.localToWorldMatrix;
+            var v = mesh.vertices.Select(x => toModel.MultiplyPoint3x4(x)).ToArray();
+            var w = mesh.boneWeights;
+            int Bone(string name) => System.Array.FindIndex(smr.bones, b => b.name == name);
+            Vector3[] Of(params string[] names)
+            {
+                var bs = names.Select(Bone).ToArray();
+                return Enumerable.Range(0, v.Length).Where(i => bs.Contains(w[i].boneIndex0) && w[i].weight0 >= 0.5f).Select(i => v[i]).ToArray();
+            }
+            Bounds Box(System.Collections.Generic.IEnumerable<Vector3> pts)
+            {
+                var a = pts.ToArray();
+                var bb = new Bounds(a[0], Vector3.zero);
+                foreach (var p in a) bb.Encapsulate(p);
+                return bb;
+            }
+            float eyes = smr.bones[Bone("Eyelid.L")].position.y;
+            var head = Box(Of("Head"));
+            var helmet = Box(Of("Head").Where(p => p.y > eyes + head.size.y * 0.12f));
+            // The upper body, between the shoulders: on this hunched model it
+            // rides the abdomen, neck and shoulder bones more than the torso's.
+            var belly = Box(Of("Abdomen"));
+            var chest = Box(Of("Abdomen", "Torso", "Neck", "Shoulder.L", "Shoulder.R")
+                .Where(p => Mathf.Abs(p.x - belly.center.x) <= belly.extents.x * 1.1f && p.y < eyes));
+            var plates = new System.Collections.Generic.List<ArtCatalog.Placed>();
+            foreach (var side in new[] { "L", "R" })
+            {
+                var arm = Of("UpperArm." + side);
+                var shoulder = smr.bones[Bone("UpperArm." + side)].position;
+                float reach = arm.Max(p => (p - shoulder).magnitude);
+                plates.Add(Plate("UpperArm." + side, Box(arm.Where(p => (p - shoulder).magnitude < reach * 0.55f)), 1.18f));
+            }
+            plates.Add(Plate("Torso", chest, 1.1f));
+            plates.Add(Plate("Head", helmet, 1.14f, keepBottom: true));
+            // A little bigger than what it covers; the helmet only up and out,
+            // so its rim stays above the eyes.
+            ArtCatalog.Placed Plate(string bone, Bounds b, float grow, bool keepBottom = false)
+            {
+                int i = Bone(bone);
+                var size = b.size * grow + Vector3.one * 0.02f;
+                var centre = b.center;
+                if (keepBottom) { size.y = b.size.y * (1 + (grow - 1) / 2) + 0.01f; centre.y = b.min.y + size.y / 2; }
+                var m = mesh.bindposes[i] * toModel.inverse * Matrix4x4.TRS(centre, Quaternion.identity, size);
+                Debug.Log($"Graveway: boss armor on {bone}: {b.size.x:0.00} x {b.size.y:0.00} x {b.size.z:0.00} at {b.center}");
+                return Placed(bone, null, null, m);
+            }
+            Object.DestroyImmediate(inst);
+            return plates.ToArray();
         }
 
         // Each survivor's hair and eyes, as cells of the kit's palette.

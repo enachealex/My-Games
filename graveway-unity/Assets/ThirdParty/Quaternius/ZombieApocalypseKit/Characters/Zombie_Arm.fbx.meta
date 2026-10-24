@@ -32,6 +32,9 @@ ModelImporter:
     - CharacterArmature/Root/Body/Hips/Abdomen/Torso/Neck/Head
     - CharacterArmature/Root/Body/Hips/Abdomen/Torso/Neck/Head/Eyelid.L
     - CharacterArmature/Root/Body/Hips/Abdomen/Torso/Neck/Head/Eyelid.R
+    - CharacterArmature/Root/Body/Hips/Abdomen/Torso
+    - CharacterArmature/Root/Body/Hips/Abdomen/Torso/Shoulder.L/UpperArm.L
+    - CharacterArmature/Root/Body/Hips/Abdomen/Torso/Shoulder.R/UpperArm.R
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16

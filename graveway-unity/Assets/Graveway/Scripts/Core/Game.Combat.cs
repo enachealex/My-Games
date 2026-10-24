@@ -315,7 +315,7 @@ namespace Graveway
                 if (d > radius + zb.radius) continue;
                 float u = d > 0 ? d : 1, f = Falloff(d, radius + zb.radius);
                 // Anything the blast kills is thrown, harder the closer it stood.
-                DamageZombie(zb, damage * f, dx / u, dz / u, impulse * 0.5f, (4 + impulse * 0.35f) * f / zb.scale);
+                DamageZombie(zb, damage * f, dx / u, dz / u, impulse * 0.5f, (4 + impulse * 0.35f) * f / zb.scale, blast: true);
                 if (o.fireDps > 0) Ignite(zb, damage * f * o.fireDps, o.fireTime);
             }
             var p = player;

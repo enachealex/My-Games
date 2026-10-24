@@ -478,7 +478,7 @@ namespace Graveway
 
         // ── The in-run HUD ───────────────────────────────────────────────
         Label hDist, hStage, hKills, hDebug, hHpN, hArmorN, hWname, hAmmo, hMag;
-        VisualElement hProg, hCoins, hBoss, hBossFill, hBuffs, hFace, hArmorRow, hHp, hArmor, hWbar, hWeapon, hReload;
+        VisualElement hProg, hCoins, hBoss, hBossFill, hBossPips, hBuffs, hFace, hArmorRow, hHp, hArmor, hWbar, hWeapon, hReload;
         readonly Dictionary<string, int> hudCache = new Dictionary<string, int>();
 
         bool Changed(string key, int val)
@@ -505,6 +505,7 @@ namespace Graveway
             hDebug = Lbl("h-debug", hud);
             hBoss = El("h-boss", hud);
             Lbl("h-boss-label", hBoss, "BOSS");
+            hBossPips = El("h-boss-pips", hBoss);              // the armored boss's plates
             hBossFill = El("h-boss-fill", El("h-boss-bar", hBoss));
             Shown(hBoss, false);
 
@@ -598,6 +599,13 @@ namespace Graveway
             {
                 Shown(hBoss, boss);
                 if (boss) Fill(hBossFill, r.boss.hp / r.boss.maxHp);
+            }
+            int total = boss && r.boss.plateObjects != null ? r.boss.plateObjects.Length : 0;
+            if (Changed("plates", total * 10 + (boss ? r.boss.plates : 0)))
+            {
+                hBossPips.Clear();
+                Shown(hBossPips, total > 0);
+                for (int i = 0; i < total; i++) El("h-boss-pip" + (i < r.boss.plates ? " on" : ""), hBossPips);
             }
 
             // Timed power-ups: a chip each, counting down.

@@ -56,6 +56,7 @@ namespace Graveway
         public int bosses;                   // beaten
         public int place;                    // which place the road's in: the nth of the run (Tunables.PlaceAt)
         public int bossesPassed;             // beaten, skipped or outrun: every second brings the evac
+        public int bossesSpawned;            // turned up (or skipped): every second is armored
         public float noteT = 10;             // until it's next written down
     }
 
@@ -263,6 +264,7 @@ namespace Graveway
             }
             ClearSupport();
             EndEvac();
+            ClearPlates();
             world?.Dispose();
             world = null;
             foreach (var z in zombies) Recycle(z);
@@ -298,6 +300,7 @@ namespace Graveway
             run.place = n;
             float z = player.z;
             SupportAlong();
+            ClearPlates();
             world?.Dispose();
             foreach (var zb in zombies) Recycle(zb);
             zombies.Clear();
@@ -487,6 +490,7 @@ namespace Graveway
                 UpdatePending(dt);
                 UpdateThrows(dt);
                 UpdateZombies(dt);
+                UpdatePlates(dt);
                 UpdateBullets(dt);
                 UpdateGrenades(dt);
                 propSys.Update(dt);

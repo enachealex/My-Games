@@ -567,4 +567,29 @@ MonoBehaviour:
     hatted: {fileID: 4300000, guid: eff700b45e377074bae5253a98d0b034, type: 2}
   - model: Characters_Lis
     hatted: {fileID: 4300000, guid: 2e23b2a07f075f64890b5fab5d012de0, type: 2}
+  bossArmor:
+  - id: UpperArm.L
+    mesh: {fileID: 0}
+    colors: []
+    position: {x: -0.00033239182, y: 0.0013397417, z: -0.0002515314}
+    scale: {x: 0.0024055508, y: 0.0025320025, z: 0.0027303146}
+    rotation: {x: 0.5229058, y: -0.50767064, z: -0.46687183, w: 0.50087}
+  - id: UpperArm.R
+    mesh: {fileID: 0}
+    colors: []
+    position: {x: 0.00017429431, y: 0.0015434813, z: -0.00004260741}
+    scale: {x: 0.003261809, y: 0.003980679, z: 0.004912986}
+    rotation: {x: 0.53212214, y: 0.48452717, z: 0.45305857, w: 0.52613443}
+  - id: Torso
+    mesh: {fileID: 0}
+    colors: []
+    position: {x: -0.00010434389, y: 0.0004534364, z: -0.00018944328}
+    scale: {x: 0.005600317, y: 0.0044170055, z: 0.006413701}
+    rotation: {x: -0.07667696, y: -0.00000046193597, z: 0, w: 0.997056}
+  - id: Head
+    mesh: {fileID: 0}
+    colors: []
+    position: {x: -0.000002791048, y: 0.0028535228, z: -0.0010461254}
+    scale: {x: 0.0043448135, y: 0.0028309692, z: 0.006310455}
+    rotation: {x: -0.096775405, y: -0.00027383858, z: -0.000026538963, w: 0.9953062}
   zombieAtlas: {fileID: 2800000, guid: cc5120ad36d94ad46a315ba3181fca55, type: 3}

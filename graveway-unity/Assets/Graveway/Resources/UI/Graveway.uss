@@ -236,6 +236,10 @@
     text-shadow: 0 1px 4px rgb(0, 0, 0); }
 .h-boss { position: absolute; left: 15%; right: 15%; top: 62px; align-items: center; }
 .h-boss-label { font-size: 15px; -unity-font-style: bold; letter-spacing: 2px; color: rgb(255, 154, 138); text-shadow: 0 2px 6px rgb(0, 0, 0); }
+.h-boss-pips { flex-direction: row; margin-top: 4px; }
+.h-boss-pip { width: 22px; height: 7px; margin: 0 3px; border-radius: 2px; border-width: 1px; border-color: rgba(200, 206, 212, 0.6);
+    background-color: rgba(0, 0, 0, 0.4); }
+.h-boss-pip.on { background-color: rgb(170, 178, 186); }
 .h-boss-bar { width: 100%; height: 10px; margin-top: 4px; border-radius: 99px; background-color: rgba(0, 0, 0, 0.5);
     border-width: 1px; border-color: rgba(255, 80, 80, 0.4); overflow: hidden; }
 .h-boss-fill { height: 100%; width: 100%; background-color: rgb(255, 77, 77); transform-origin: left; }

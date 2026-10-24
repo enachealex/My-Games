@@ -546,7 +546,13 @@ From a player's feedback, 23 October 2026:
     to it, it drops a piece of armor to expose it, and a power-up with the
     fallen armor."*
 
-    Proposed design (to confirm before building):
+    *(Built, 23 October 2026, as designed: `Game.Armor.cs`, the plates
+    measured off the boss's own mesh by `Editor/ArtImport.cs`, tested in
+    `Tests/PlayMode/ArmorTests.cs`. The helmet hides the boss's eyes from
+    the front; from the game's camera, above, it doesn't matter, and the
+    eyes glow again once it's off.)*
+
+    The design, as confirmed:
     - **Which boss:** every second one (1,000 m, 2,000 m...), the one that
       brings the evac, so each place ends with the hardest fight. The
       others stay as they are. (Or: every boss armored.)
