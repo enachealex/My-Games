@@ -131,8 +131,9 @@ namespace Graveway
 
     // A hat, and what unlocks it: `target` of a stat counted over runs with
     // no playtest tools on (Save.Stat): best (metres in one run), metres (in
-    // all), kills, bosses, runs, place (the furthest reached: 1 the docks, 2
-    // the highway). Once unlocked, any survivor can wear it.
+    // all), kills (in all), runKills (the most in one run), bosses, runs, place
+    // (the furthest reached: 1 the docks, 2 the highway). Once unlocked, any
+    // survivor can wear it.
     public sealed class HatDef
     {
         public string id, name, stat, goal;
@@ -614,7 +615,7 @@ namespace Graveway
         {
             // Each with a small booster while it's worn, bigger the harder it is to get.
             new HatDef { id = "hardhat", name = "Hard hat", stat = "best", target = 100, goal = "Get 100 m up the road", boost = "health", amount = 10 },
-            new HatDef { id = "straw", name = "Straw hat", stat = "kills", target = 500, goal = "Down 500 zombies", boost = "coins", amount = 0.1f },
+            new HatDef { id = "straw", name = "Straw hat", stat = "runKills", target = 1500, goal = "Down 1,500 in one run", boost = "coins", amount = 0.1f },
             new HatDef { id = "mohawk", name = "Mohawk", stat = "bosses", target = 1, goal = "Beat a boss", boost = "damage", amount = 0.05f },
             new HatDef { id = "hood", name = "Hood", stat = "metres", target = 5000, goal = "Cover 5 km in all", boost = "speed", amount = 0.05f },
             new HatDef { id = "witch", name = "Witch hat", stat = "best", target = 500, goal = "Get 500 m up the road", boost = "rate", amount = 0.05f },

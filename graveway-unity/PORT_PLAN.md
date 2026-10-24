@@ -604,6 +604,11 @@ From a player's feedback, 23 October 2026:
       damage, accuracy, range and fire rate.
     - A survivor's own hat (Rook's cap, Juno's beanie) gives nothing: it's
       theirs from the start.
+    - **Harder straw hat** (24 October 2026): *"triple the amount of kills
+      needed … kills within a single run."* It was 500 kills over all runs;
+      it's 1,500 in one run now (about 1,700 m, going by the runs on the
+      world board). A save from before takes its most from this phone's
+      scoreboard, and a straw hat already won stays won.
     - The damage, accuracy, range and fire rate ones add to a run's
       challenge bonuses (`Game.Bonus`); the rest change the survivor as the
       run starts. The hats screen shows each hat's booster under its name,

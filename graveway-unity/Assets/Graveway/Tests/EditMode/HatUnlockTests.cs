@@ -49,7 +49,7 @@ namespace Graveway.Tests
                 foreach (var model in Rigs.SurvivorModel.Values)
                     Assert.That(System.Array.Exists(art.on, p => p.id == model), $"{h.id} on {model}");
                 Assert.That(h.target, Is.GreaterThan(0));
-                Assert.That(new[] { "best", "metres", "kills", "bosses", "runs", "place" }, Does.Contain(h.stat), h.id);
+                Assert.That(new[] { "best", "metres", "kills", "runKills", "bosses", "runs", "place" }, Does.Contain(h.stat), h.id);
             }
             // And every survivor has a head to wear them on: hair kept in
             // under the hat, and no higher than their head as it comes.
@@ -90,12 +90,15 @@ namespace Graveway.Tests
             Save.Bank(Run(120));
             Assert.That(Save.NewHats, Is.EqualTo(new[] { "hardhat" }));
             Assert.That(Save.HasHat("hardhat"));
-            Save.Bank(Run(30, kills: 300));
-            Save.Bank(Run(30, kills: 200, bosses: 1));
-            Assert.That(Save.NewHats, Is.EquivalentTo(new[] { "straw", "mohawk" }));
-            Assert.That(Save.Stat("kills"), Is.EqualTo(500));
+            Save.Bank(Run(30, kills: 1000));
+            Save.Bank(Run(30, kills: 600, bosses: 1));
+            Assert.That(Save.NewHats, Is.EqualTo(new[] { "mohawk" }), "1,600 kills, but not in one run");
+            Assert.That(Save.Stat("kills"), Is.EqualTo(1600));
+            Assert.That(Save.Stat("runKills"), Is.EqualTo(1000));
             Assert.That(Save.Stat("metres"), Is.EqualTo(180));
             Assert.That(Save.Stat("runs"), Is.EqualTo(3));
+            Save.Bank(Run(40, kills: 1500));
+            Assert.That(Save.NewHats, Is.EqualTo(new[] { "straw" }));
             Save.Bank(Run(40));
             Assert.That(Save.NewHats, Is.Empty);
         }
@@ -127,8 +130,26 @@ namespace Graveway.Tests
         {
             File.WriteAllText(Save.FileOf(Key), "{\"best\": 600, \"kills\": 700, \"runs\": 12}");
             Save.Reload();
-            Assert.That(Save.HasHat("hardhat") && Save.HasHat("witch") && Save.HasHat("straw"));
+            Assert.That(Save.HasHat("hardhat") && Save.HasHat("witch"));
+            Assert.That(Save.HasHat("straw"), Is.False, "700 kills, but not in one run");
             Assert.That(Save.HasHat("crown"), Is.False);
+        }
+
+        // Kills in one run counted from 24 October 2026: this phone's
+        // scoreboard has the most so far, and a straw hat won before stays.
+        [Test]
+        public void TheMostKillsInARunComeFromTheScoreboard()
+        {
+            File.WriteAllText(Save.FileOf(Key), "{\"progress\": {\"best\": 1700, \"kills\": 2000, \"runs\": 3}, \"scores\": ["
+                + "{\"id\": \"a\", \"character\": \"rook\", \"distance\": 1700, \"kills\": 1600, \"at\": \"2026-10-20T10:00:00Z\"},"
+                + "{\"id\": \"b\", \"character\": \"rook\", \"distance\": 200, \"kills\": 150, \"at\": \"2026-10-21T10:00:00Z\"}]}");
+            Save.Reload();
+            Assert.That(Save.Stat("runKills"), Is.EqualTo(1600));
+            Assert.That(Save.HasHat("straw"));
+            File.WriteAllText(Save.FileOf(Key), "{\"progress\": {\"best\": 300, \"kills\": 900, \"runs\": 3}, \"hatsOwned\": [\"straw\"]}");
+            Save.Reload();
+            Assert.That(Save.Stat("runKills"), Is.Zero);
+            Assert.That(Save.HasHat("straw"), "won before, kept");
         }
 
         [Test]

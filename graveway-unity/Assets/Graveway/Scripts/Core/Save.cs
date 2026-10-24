@@ -268,6 +268,9 @@ namespace Graveway
             data.scores.RemoveAll(s => s == null);
             // Hats came in October 2026: what was done before counts towards them.
             data.progress ??= new Dictionary<string, int> { { "best", data.best }, { "kills", data.kills }, { "runs", data.runs } };
+            // Kills in one run counted from 24 October 2026: this phone's
+            // scoreboard has the most so far. (A hat won before stays won.)
+            if (!data.progress.ContainsKey("runKills")) data.progress["runKills"] = data.scores.Count > 0 ? data.scores.Max(s => s.kills) : 0;
             data.hatsOwned ??= new List<string>();
             data.hatsOwned = data.hatsOwned.Where(id => Tunables.Hat(id) != null).Distinct().ToList();
             Unlock();
@@ -321,6 +324,7 @@ namespace Graveway
             p["best"] = Math.Max(Stat("best"), r.distance);
             p["metres"] = Stat("metres") + r.distance;
             p["kills"] = Stat("kills") + r.kills;
+            p["runKills"] = Math.Max(Stat("runKills"), r.kills);
             p["bosses"] = Stat("bosses") + r.bosses;
             p["runs"] = Stat("runs") + 1;
             p["place"] = Math.Max(Stat("place"), r.place);
