@@ -1,5 +1,6 @@
 // Movement input, ported from graveway/src/input.js. On a phone you press
-// anywhere on the play area and drag: a joystick appears under your thumb.
+// anywhere on the play area and drag: a joystick appears under your thumb,
+// and stays where it went down (a playtest note: it shouldn't wander).
 // Any number of fingers can be down. The first one on the play area steers;
 // if it lifts while another is still down, that one takes over the stick
 // where it is. Touches that start on a button don't steer.
@@ -105,22 +106,22 @@ namespace Graveway
 
         void Steer(Vector2 pos)
         {
+            // Past the rim, the knob waits at the rim.
             var d = pos - Origin;
             float r = Radius, len = d.magnitude;
-            // Past the rim the base follows the thumb, so changing direction
-            // never means dragging all the way back across the circle.
-            if (len > r * 1.35f)
-            {
-                Origin += d * ((len - r * 1.35f) / len);
-                d = pos - Origin;
-                len = d.magnitude;
-            }
             var n = len > 0 ? d / len : Vector2.zero;
             float clamped = Mathf.Min(len, r);
             Knob = n * clamped;
             float mag = clamped / r;
             float m = mag < Deadzone ? 0 : (mag - Deadzone) / (1 - Deadzone);
             stick = n * m;
+        }
+
+        // For tests: finger `id` going down at, or moving to, `pos`; null lifts it.
+        public void Finger(int id, Vector2? pos)
+        {
+            if (pos == null) Handle(id, TouchPhase.Ended, Vector2.zero);
+            else Handle(id, fingers.ContainsKey(id) ? TouchPhase.Moved : TouchPhase.Began, pos.Value);
         }
 
         public void Release()

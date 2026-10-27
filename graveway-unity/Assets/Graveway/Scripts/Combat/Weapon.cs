@@ -1,5 +1,6 @@
 // A Weapon is one gun in the survivor's hands for one run: a WeaponDef
-// (Tunables.cs) with its fitted parts and the survivor's perk applied, plus
+// (Tunables.cs) with its fitted parts and the survivor's perk applied (and
+// their specialty, if it's their own gun), plus
 // live state: rounds left, reload progress, and recoil bloom from sustained
 // fire. Ported from graveway/src/weapons.js and weaponStats in config.js.
 
@@ -17,7 +18,7 @@ namespace Graveway
         public Blast blast;
         public PartFx fx = new PartFx();
 
-        public static WeaponStats Of(WeaponDef d, IDictionary<string, string> fitted, Perk perk)
+        public static WeaponStats Of(WeaponDef d, IDictionary<string, string> fitted, Perk perk, Specialty own = null)
         {
             var s = new WeaponStats
             {
@@ -39,6 +40,13 @@ namespace Graveway
                 if (m.pellets > 0) s.pellets = m.pellets;
                 if (s.blast != null) { s.blast.radius *= m.blast; s.blast.impulse *= m.impulse; }
                 if (part.fx != null) Merge(s.fx, part.fx);
+            }
+            // Their own gun, in their hands.
+            if (own != null)
+            {
+                s.damage *= 1 + own.damage; s.fireRate *= 1 + own.fireRate; ammo *= 1 + own.ammo;
+                s.reloadTime *= 1 - own.reload;
+                if (s.blast != null) s.blast.radius *= 1 + own.blast;
             }
             if (s.fx.noPierce) s.pierce = 0;
             s.ammoCapacity = Mathf.Max(1, Mathf.RoundToInt(ammo));
@@ -63,11 +71,12 @@ namespace Graveway
         public int ammo;
         float reloadT, cooldown, bloom;
 
-        public Weapon(string id, IDictionary<string, string> fitted, Perk perk)
+        // `who` carries it: their perk counts, and their specialty if it's theirs.
+        public Weapon(string id, IDictionary<string, string> fitted, CharacterDef who)
         {
             def = Tunables.Weapon(id);
             this.fitted = fitted ?? new Dictionary<string, string>();
-            stats = WeaponStats.Of(def, this.fitted, perk);
+            stats = WeaponStats.Of(def, this.fitted, who?.perk, who != null && who.startingWeapon == def.id ? who.specialty : null);
             ammo = stats.ammoCapacity;
         }
 

@@ -100,6 +100,8 @@ namespace Graveway
         StickInput input;
         public StickInput Stick => input;
         public Camera Camera => cam;
+        // A point in the simulation's coordinates, in Unity's world.
+        public Vector3 WorldPoint(float x, float y, float z) => worldRoot.TransformPoint(new Vector3(x, y, z));
         public CharacterDef Character => character;
 
         Camera cam;
@@ -362,7 +364,7 @@ namespace Graveway
             };
             foreach (var id in Save.RunWeapons(c))
             {
-                var w = new Weapon(id, Save.FittedParts(id), c.perk);
+                var w = new Weapon(id, Save.FittedParts(id), c);
                 if (hat?.boost == "reload") w.stats.reloadTime *= 1 - hat.amount;
                 FitGun(w);
                 p.weapons.Add(w);

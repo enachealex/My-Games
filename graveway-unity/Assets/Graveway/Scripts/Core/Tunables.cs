@@ -59,6 +59,15 @@ namespace Graveway
         public float reloadMult = 1, startArmor, explosionResist, magnetBonus, coinMult = 1;
     }
 
+    // What a survivor gets for carrying their own gun (a playtest note,
+    // 26 October 2026): the dearer the survivor, the more bonuses and the
+    // bigger each. Shares, but health in points (theirs, not the gun's).
+    public sealed class Specialty
+    {
+        public int tier;                     // 1 for Rook, up to 4 for Juno
+        public float damage, fireRate, ammo, reload, blast, health;
+    }
+
     public sealed class Look
     {
         public Color skin, shirt, pants, hatColor;
@@ -72,6 +81,7 @@ namespace Graveway
         public int price;                    // coins to unlock them; 0 for the one you start with
         public float baseHealth, moveSpeed;
         public Perk perk;
+        public Specialty specialty;
         public Look look;
     }
 
@@ -163,6 +173,7 @@ namespace Graveway
     {
         public string id;
         public int target;
+        public int max;                      // the most it ever asks; 0 for no limit
     }
 
     public sealed class PowerUpDef
@@ -378,24 +389,29 @@ namespace Graveway
 
         // ── Survivors ────────────────────────────────────────────────────
         // Rook to start with; the others are bought on survivor select, each
-        // for more than the gun they bring.
+        // for more than the gun they bring (twice what they were, from 26
+        // October 2026, when their specialties came in).
         public static readonly CharacterDef[] Characters =
         {
             new CharacterDef { id = "rook", name = "Rook", role = "Ex-cop", blurb = "Keeps his head when the street fills up.",
                 baseHealth = 100, moveSpeed = 6.2f, startingWeapon = "pistol",
                 perk = new Perk { name = "Quick Hands", text = "Reloads 40% faster", reloadMult = 0.6f },
+                specialty = new Specialty { tier = 1, damage = 0.1f, fireRate = 0.1f },
                 look = new Look { skin = Hex.C(0xc58c64), shirt = Hex.C(0x2f4a78), pants = Hex.C(0x23262e), hat = "cap", hatColor = Hex.C(0x1d2a44) } },
             new CharacterDef { id = "bram", name = "Bram", role = "Riot guard", blurb = "Slow, huge and very hard to put down.",
-                baseHealth = 140, moveSpeed = 5.4f, startingWeapon = "shotgun", price = 2000,
+                baseHealth = 140, moveSpeed = 5.4f, startingWeapon = "shotgun", price = 4000,
                 perk = new Perk { name = "Riot Gear", text = "Starts every run with 75 armor", startArmor = 75 },
+                specialty = new Specialty { tier = 3, damage = 0.2f, fireRate = 0.2f, reload = 0.2f, health = 20 },
                 look = new Look { skin = Hex.C(0x8d5a3c), shirt = Hex.C(0x3a3f46), pants = Hex.C(0x1f2226), hat = "helmet", hatColor = Hex.C(0x2a2e33), bulk = 1.12f } },
             new CharacterDef { id = "juno", name = "Juno", role = "Demolitions", blurb = "Brought her own launcher. Mostly unharmed by it.",
-                baseHealth = 90, moveSpeed = 6.0f, startingWeapon = "launcher", price = 5000,
+                baseHealth = 90, moveSpeed = 6.0f, startingWeapon = "launcher", price = 10000,
                 perk = new Perk { name = "Blast Proof", text = "Takes 80% less explosion damage", explosionResist = 0.8f },
+                specialty = new Specialty { tier = 4, damage = 0.25f, fireRate = 0.25f, reload = 0.25f, blast = 0.25f, health = 25 },
                 look = new Look { skin = Hex.C(0xe2b48e), shirt = Hex.C(0xb8382e), pants = Hex.C(0x3b3328), hat = "goggles", hatColor = Hex.C(0xffb02e) } },
             new CharacterDef { id = "wren", name = "Wren", role = "Courier", blurb = "Fastest legs in the city, and a nose for loot.",
-                baseHealth = 80, moveSpeed = 7.2f, startingWeapon = "smg", price = 1200,
+                baseHealth = 80, moveSpeed = 7.2f, startingWeapon = "smg", price = 2400,
                 perk = new Perk { name = "Scavenger", text = "Coin magnet +2 m, 25% more coins", magnetBonus = 2, coinMult = 1.25f },
+                specialty = new Specialty { tier = 2, damage = 0.15f, fireRate = 0.15f, ammo = 0.15f },
                 look = new Look { skin = Hex.C(0xf0c9a4), shirt = Hex.C(0xe0b020), pants = Hex.C(0x2a3a52), hat = "hood", hatColor = Hex.C(0xe0b020) } },
         };
 
@@ -526,12 +542,17 @@ namespace Graveway
         public static class Challenges
         {
             public const int Active = 3;             // on at a time
-            public const float Step = 0.05f;         // what each pays: +5% to its stat
-            public const float Grow = 1.5f;          // a kind done again in a run asks this much more
+            public const float Grow = 2;             // a kind done again in a run asks twice as much (a playtest note)
             public const float StreakSeconds = 3;
             public const int Damage = 0, Accuracy = 1, Range = 2, Rate = 3;
             public static readonly string[] Stats = { "damage", "accuracy", "range", "rate" };
             public static readonly string[] Names = { "damage", "accuracy", "range", "fire rate" };
+            // What each pays, by stat: +1% damage (5% was too easy, said a
+            // playtest note), +5% accuracy, range or fire rate.
+            public static readonly float[] Steps = { 0.01f, 0.05f, 0.05f, 0.05f };
+
+            // What one pays, or `times` of them, in words: "+5% fire rate".
+            public static string Pay(int stat, int times = 1) => $"+{Mathf.FloorToInt(Steps[stat] * 100 * times + 0.5f)}% {Names[stat]}";
 
             public static readonly ChallengeDef[] Kinds =
             {
@@ -539,7 +560,7 @@ namespace Graveway
                 new ChallengeDef { id = "runners", target = 6 },
                 new ChallengeDef { id = "tanks", target = 1 },
                 new ChallengeDef { id = "blasts", target = 8 },
-                new ChallengeDef { id = "streak", target = 5 },
+                new ChallengeDef { id = "streak", target = 5, max = 20 },          // past 20 in 3 seconds it's luck
                 new ChallengeDef { id = "coins", target = 40 },
                 new ChallengeDef { id = "wrecks", target = 3 },
                 new ChallengeDef { id = "untouched", target = 150 },
@@ -547,13 +568,12 @@ namespace Graveway
                 new ChallengeDef { id = "distance", target = 200 },
             };
 
-            // Its target after it's been done `done` times this run (rounded
-            // to something tidy: fives over 20, tens over 100).
+            // Its target after it's been done `done` times this run: double,
+            // and double again, up to its most.
             public static int Target(ChallengeDef d, int done)
             {
-                float t = d.target * Mathf.Pow(Grow, done);
-                int unit = t >= 100 ? 10 : t >= 20 ? 5 : 1;
-                return Mathf.Max(1, Mathf.FloorToInt(t / unit + 0.5f) * unit);   // halves up
+                int n = Mathf.Max(1, Mathf.RoundToInt(d.target * Mathf.Pow(Grow, done)));
+                return d.max > 0 ? Mathf.Min(n, d.max) : n;
             }
 
             public static string Describe(string id, int n)
@@ -674,7 +694,7 @@ namespace Graveway
             var perk = c.perk ?? new Perk();
             return new PlayerStats
             {
-                maxHp = c.baseHealth + PlayerUpgrades[0].step * Lv("maxHp"),
+                maxHp = c.baseHealth + PlayerUpgrades[0].step * Lv("maxHp") + (c.specialty?.health ?? 0),
                 speed = c.moveSpeed * (1 + PlayerUpgrades[1].step * Lv("speed")),
                 magnet = PlayerMagnet + PlayerUpgrades[2].step * Lv("magnet") + perk.magnetBonus,
                 radius = PlayerRadius,
@@ -683,6 +703,21 @@ namespace Graveway
                 coinMult = perk.coinMult,
                 perk = perk,
             };
+        }
+
+        // A survivor's specialty in words, a bonus each: "+10% damage".
+        public static List<string> SpecialtyText(Specialty s)
+        {
+            var l = new List<string>();
+            if (s == null) return l;
+            string P(float v) => $"{Mathf.FloorToInt(v * 100 + 0.5f)}%";
+            if (s.damage > 0) l.Add($"+{P(s.damage)} damage");
+            if (s.fireRate > 0) l.Add($"+{P(s.fireRate)} fire rate");
+            if (s.ammo > 0) l.Add($"+{P(s.ammo)} magazine");
+            if (s.reload > 0) l.Add($"{P(s.reload)} faster reloads");
+            if (s.blast > 0) l.Add($"+{P(s.blast)} blast radius");
+            if (s.health > 0) l.Add($"+{s.health:0} max health");
+            return l;
         }
 
         // Rounded like the web version's Math.round (halves up), in doubles.

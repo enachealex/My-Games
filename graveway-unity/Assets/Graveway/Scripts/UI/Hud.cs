@@ -281,6 +281,7 @@ namespace Graveway
         public void ShowPause()
         {
             pauseLevel.text = $"{N(game.Distance)} m · stage {game.Stage + 1}";
+            DrawChallenges(game.run);
             HideBanner();
             Show("pause");
         }
@@ -348,7 +349,7 @@ namespace Graveway
         // A short line near the top: "+35 health", a power-up's name.
         public void Toast(string text, string kind = null, Color? color = null)
         {
-            toastWrap.BringToFront();                 // over any modal, as on the web
+            toastWrap.BringToFront();                 // over any modal, as on the web (see Update)
             toast.text = text;
             toast.EnableInClassList("power", kind == "power");
             toast.style.color = color ?? (kind == "heal" ? Hex.C(0x7dff8a) : kind == "armor" ? Hex.C(0x5db4ff) : Hex.C(0xeef2ec));
@@ -368,6 +369,8 @@ namespace Graveway
                 RefreshPortraits();
             }
             FinishGlide();
+            UpdateRisers(Time.deltaTime);
+            LiftNote();
             if (IsShown(banner) && Time.unscaledTime > bannerUntil) HideBanner();
             if (toastT > 0)
             {
@@ -375,6 +378,10 @@ namespace Graveway
                 float k = 1.3f - toastT;
                 toastWrap.style.opacity = k < 0.2f ? k / 0.2f : toastT < 0.33f ? toastT / 0.33f : 1;
                 toastWrap.style.translate = new Translate(0, k < 0.2f ? 8 * (1 - k / 0.2f) : toastT < 0.33f ? -10 * (1 - toastT / 0.33f) : 0);
+                // With a modal open, in the room left over its card, not on it.
+                bool modal = false;
+                foreach (var m in root.Children()) modal |= m.ClassListContains("modal") && IsShown(m);
+                toastWrap.EnableInClassList("over-modal", modal);
                 if (toastT <= 0) Shown(toastWrap, false);
             }
             // Red flash when hurt; a slow pulse when health is low.
@@ -505,7 +512,6 @@ namespace Graveway
             pauseBtn.Add(Icons.Pause());
             hKills = Lbl("h-kills", hud);
             hDebug = Lbl("h-debug", hud);
-            hChallenges = El("h-challenges", hud);
             hBoss = El("h-boss", hud);
             Lbl("h-boss-label", hBoss, "BOSS");
             hBossPips = El("h-boss-pips", hBoss);              // the armored boss's plates

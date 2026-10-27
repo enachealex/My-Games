@@ -1,6 +1,7 @@
-// Challenges in a real run: done by playing, they pay their bonus at once,
-// another takes their place, being hit starts "without a scratch" over, and a
-// new run starts at normal. With a GPU, a picture of the panel.
+// Challenges in a real run: done by playing, they pay their bonus at once
+// (the words rising off the survivor), another takes their place, being hit
+// starts "without a scratch" over, and a new run starts at normal. They're in
+// the pause menu, not over the run. With a GPU, a picture of them there.
 
 using System.Collections;
 using System.Linq;
@@ -77,14 +78,20 @@ namespace Graveway.Tests
         {
             Assert.That(game.Challenges.Count, Is.EqualTo(C.Active));
             Assert.That(game.Challenges.Select(c => c.stat).Distinct().Count(), Is.EqualTo(C.Active), "three different rewards to start");
-            var panel = Find<VisualElement>(ui, v => v.ClassListContains("h-challenges"), "the challenge panel");
+            var panel = ui.Q<VisualElement>(className: "p-challenges");
+            Assert.That(panel, Is.Not.Null, "the challenge panel");
+            Assert.That(Visible(panel), Is.False, "not over the run");
+            game.Pause();
+            yield return null;
+            Assert.That(Visible(panel), "in the pause menu");
             Assert.That(panel.Query<VisualElement>(className: "hc-row").ToList().Count, Is.EqualTo(C.Active));
             if (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null)
             {
                 using var photo = new Photo(game);
-                yield return Seconds(1);
+                yield return null;
                 photo.Shot("23-challenges");
             }
+            game.Resume();
         }
 
         [UnityTest]
@@ -99,7 +106,7 @@ namespace Graveway.Tests
             float before = game.Bonus(stat);
             Kill(1);
             yield return null;
-            Assert.That(game.Bonus(stat), Is.EqualTo(before + C.Step).Within(0.001f), "paid");
+            Assert.That(game.Bonus(stat), Is.EqualTo(before + C.Steps[stat]).Within(0.001f), "paid");
             Assert.That(On("kills"), Is.Null, "and a different one in its place");
             Assert.That(game.Challenges.Count, Is.EqualTo(C.Active));
             Assert.That(game.run.challengesDone, Is.EqualTo(2));
@@ -109,9 +116,22 @@ namespace Graveway.Tests
             int bs = blasts.stat;
             before = game.Bonus(bs);
             Kill(blasts.target, blast: true);
-            Assert.That(game.Bonus(bs), Is.GreaterThanOrEqualTo(before + C.Step - 0.001f));
+            Assert.That(game.Bonus(bs), Is.GreaterThanOrEqualTo(before + C.Steps[bs] - 0.001f));
             yield return Seconds(0.5f);
-            Assert.That(Visible(Find<Label>(ui, l => l.text.StartsWith("CHALLENGES ·"), "the bonuses earned, over the panel")));
+            Assert.That(Visible(Find<Label>(ui, l => l.ClassListContains("riser-text") && l.text == C.Pay(bs).ToUpperInvariant(), "what it paid, rising off the survivor")));
+            if (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null)
+            {
+                using var photo = new Photo(game);
+                yield return null;
+                yield return null;                  // the camera in the picture's shape first
+                photo.Shot("23b-challenge-done");
+            }
+            yield return Seconds(2);
+            Assert.That(ui.Query<Label>(className: "riser-text").ToList(), Is.Empty, "and gone");
+            game.Pause();
+            yield return null;
+            Assert.That(Visible(Find<Label>(ui, l => l.text.StartsWith("So far this run: "), "the bonuses earned, in the pause menu")));
+            game.Resume();
         }
 
         [UnityTest]

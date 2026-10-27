@@ -163,7 +163,7 @@ namespace Graveway
 
         void BuildModals()
         {
-            pause = Modal(out var pc);
+            pause = Modal(out var pc, scroll: true);
             Lbl("card-title", pc, "PAUSED");
             pauseLevel = Lbl("card-sub", pc);
             var ps = El("stack", pc);
@@ -173,6 +173,7 @@ namespace Graveway
             Btn("Quit", "", pr, ToMenu);
             NoteButton(ps, "Leave a note");
             Btn("Call the evac (playtest)", "note-btn", ps, () => { game.Resume(); game.PlaytestEvac(); });
+            pChallenges = El("p-challenges", pc);        // the run's challenges (Hud.Challenges.cs)
 
             result = Modal(out var rc, scroll: true);
             rTitle = Lbl("card-title", rc, "OVERRUN");

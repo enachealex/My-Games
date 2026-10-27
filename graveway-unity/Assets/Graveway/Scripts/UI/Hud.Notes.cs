@@ -46,7 +46,8 @@ namespace Graveway
                 chips.Add(b);
                 tagButtons.Add(b);
             }
-            nText = new TextField { multiline = true };
+            // Typed straight into the note: no second box over the keyboard.
+            nText = new TextField { multiline = true, hideMobileInput = true };
             nText.AddToClassList("note-text");
             nText.textEdition.placeholder = "What should change?";
             nc.Add(nText);
@@ -73,12 +74,37 @@ namespace Graveway
         void OpenNote()
         {
             noteCtx = NoteContext();
-            nContext.text = noteCtx;
+            nContext.text = Parts(noteCtx.Split(new[] { " · " }, StringSplitOptions.None));
             nText.value = "";
             noteTags.Clear();
             foreach (var b in tagButtons) b.EnableInClassList("on", false);
             Shown(note, true);
-            nText.Focus();
+            // On a phone, the keyboard waits for a tap on the box, so the
+            // tags can be picked first.
+            if (!Application.isMobilePlatform) nText.Focus();
+        }
+
+        // On a phone the keyboard covers the bottom of the screen (a playtest
+        // note: you couldn't see what you typed). While it's up, the note sits
+        // above it, without its title and context, to fit.
+        public static float? KeyboardForTests;    // its share of the screen's height
+        void LiftNote()
+        {
+            if (!IsShown(note) || root.panel == null) return;
+            float share = 0;
+            if (root.panel.focusController?.focusedElement == nText)
+            {
+                if (KeyboardForTests.HasValue) share = KeyboardForTests.Value;
+                else if (Application.isMobilePlatform)
+                {
+                    // Where the phone doesn't say, about this much.
+                    float h = TouchScreenKeyboard.area.height;
+                    share = h > 0 ? h / Mathf.Max(1, Screen.height) : 0.45f;
+                }
+            }
+            note.EnableInClassList("typing", share > 0);
+            if (share > 0) note.style.paddingBottom = share * root.layout.height + 12;
+            else note.style.paddingBottom = StyleKeyword.Null;
         }
 
         void CloseNote()
@@ -98,6 +124,11 @@ namespace Graveway
             int unsent = Save.Notes.Count(n => n.sent == null);
             Toast($"Note saved · {unsent} to send (Settings → Playtest notes)");
         }
+
+        // "a · b · c" that wraps only between the parts, never inside one,
+        // and never starts a line with the dot.
+        static string Parts(IEnumerable<string> parts) =>
+            string.Join(" · ", parts.Where(p => p.Length > 0).Select(p => p.Replace(' ', ' ')));
 
         string NoteContext()
         {

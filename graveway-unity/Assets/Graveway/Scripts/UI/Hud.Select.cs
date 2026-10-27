@@ -243,6 +243,12 @@ namespace Graveway
             Lbl("small-caps", perk, "PERK");
             Lbl("perk-name", perk, c.perk.name);
             Lbl("perk-text", perk, c.perk.text);
+            // What their own gun (and they) get from it being theirs: more,
+            // the dearer the survivor.
+            var spec = El("perk", card);
+            Lbl("small-caps", spec, $"SPECIALIST · TIER {c.specialty.tier} OF {Tunables.Characters.Length}");
+            Lbl("perk-name", spec, $"{w.name} specialist");
+            Lbl("perk-boost", spec, Parts(Tunables.SpecialtyText(c.specialty)));
             // Their guns: their own first (the Armory's, not a copy, so its
             // parts are on it), then what else they carry.
             var guns = El("perk gunline", card);

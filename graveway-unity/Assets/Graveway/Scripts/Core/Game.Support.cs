@@ -311,7 +311,7 @@ namespace Graveway
             var p = player;
             var others = System.Array.FindAll(Tunables.Characters, c => c.id != character.id);
             var who = others[(int)(rng.Next() * others.Length)];
-            var w = new Weapon(Tunables.Weapons[(int)(rng.Next() * Tunables.Weapons.Length)].id, null, who.perk);
+            var w = new Weapon(Tunables.Weapons[(int)(rng.Next() * Tunables.Weapons.Length)].id, null, who);
             float side = allies.FindAll(a => !a.dead).Count % 2 == 0 ? -1 : 1;
             var a = new Ally { who = who, w = w, side = side, x = Mathf.Clamp(p.x + side * 2, -World.WalkHalf, World.WalkHalf), z = p.z + 12, yaw = Mathf.PI };
             a.rig = Rigs.Survivor(who, ring: false);

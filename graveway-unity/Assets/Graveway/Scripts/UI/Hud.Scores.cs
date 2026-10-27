@@ -147,7 +147,7 @@ namespace Graveway
             row.Add(Portrait(c, "sm"));
             var words = El("sc-words", row);
             Lbl("sc-name" + (name.Length == 0 ? " none" : ""), words, name.Length > 0 ? name : "No name");
-            Lbl("sc-sub", words, $"{c.name} · {N(kills)} kills{(place > 0 ? " · " + Tunables.PlaceAt(place).name : "")}{(tail.Length > 0 ? " · " + tail : "")}");
+            Lbl("sc-sub", words, Parts(new[] { c.name, $"{N(kills)} kills", place > 0 ? Tunables.PlaceAt(place).name : "", tail }));
             Lbl("sc-dist", row, $"{N(distance)} M");
             return row;
         }

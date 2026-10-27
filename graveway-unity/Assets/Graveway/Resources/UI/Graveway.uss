@@ -235,7 +235,7 @@
     text-shadow: 0 1px 4px rgb(0, 0, 0); }
 .h-debug { position: absolute; left: 12px; top: 100px; font-size: 11px; -unity-font-style: bold; color: rgb(255, 209, 102);
     text-shadow: 0 1px 4px rgb(0, 0, 0); }
-.h-boss { position: absolute; left: 15%; right: 15%; top: 62px; align-items: center; }
+.h-boss { position: absolute; left: 27%; right: 27%; top: 62px; align-items: center; }   /* clear of the kills on the left */
 .h-boss-label { font-size: 15px; -unity-font-style: bold; letter-spacing: 2px; color: rgb(255, 154, 138); text-shadow: 0 2px 6px rgb(0, 0, 0); }
 .h-boss-pips { flex-direction: row; margin-top: 4px; }
 .h-boss-pip { width: 22px; height: 7px; margin: 0 3px; border-radius: 2px; border-width: 1px; border-color: rgba(200, 206, 212, 0.6);
@@ -297,10 +297,11 @@
 .toast-pill { padding: 6px 14px; border-radius: 99px; background-color: rgba(14, 20, 24, 0.86); border-width: 1px;
     border-color: rgba(255, 255, 255, 0.1); -unity-font-style: bold; -unity-text-align: middle-center;
     transition-property: translate, opacity; transition-duration: 0.2s; }
+.toast.over-modal { top: 18px; }             /* in the modal's room at the top, clear of its card */
 .toast-pill.power { font-size: 22px; letter-spacing: 1px; padding: 4px 16px; }
 
 /* ── Modals ───────────────────────────────────────────────────────────── */
-.modal { position: absolute; left: 0; top: 0; right: 0; bottom: 0; padding: 20px; background-color: rgba(5, 8, 10, 0.66);
+.modal { position: absolute; left: 0; top: 0; right: 0; bottom: 0; padding: 64px 20px 20px 20px; background-color: rgba(5, 8, 10, 0.66);
     align-items: center; justify-content: center; }
 .card { width: 100%; max-width: 380px; max-height: 100%; padding: 22px; border-radius: 22px; background-color: rgb(18, 26, 31);
     border-width: 1px; border-color: rgba(255, 255, 255, 0.1); }
@@ -336,6 +337,9 @@
     background-color: rgba(255, 255, 255, 0.05); font-size: 13px; -unity-font-style: bold; color: rgb(238, 242, 236); }
 .chip-btn.on { background-color: rgb(155, 225, 93); color: rgb(15, 26, 8); border-color: rgba(0, 0, 0, 0); }
 .note-text { margin: 0 0 12px 0; min-height: 96px; }
+/* Typing on a phone: the note above the keyboard, with only what's needed. */
+.modal.typing { padding-top: 20px; }
+.modal.typing .card-title, .modal.typing .ctx { display: none; }
 .note-text > .unity-text-field__input { padding: 12px; border-radius: 12px; border-width: 1px; border-color: rgba(255, 255, 255, 0.1);
     background-color: rgba(0, 0, 0, 0.35); color: rgb(238, 242, 236); font-size: 14px; white-space: normal; -unity-text-align: upper-left; }
 .notes-text { margin: 0; height: 220px; }
@@ -344,7 +348,7 @@
 
 /* ── Bebas Neue, wherever the web version uses it (its var(--display)) ─── */
 .display, .btn.big, .title-main, .m-big, .portrait-letter, .a-head-title, .c-name-text, .wd-title,
-.h-dist, .h-boss-label, .ammo, .banner-t, .toast-pill.power, .card-title, .r-dist {
+.h-dist, .h-boss-label, .ammo, .banner-t, .toast-pill.power, .card-title, .r-dist, .riser-text {
     -unity-font-definition: url("Fonts/BebasNeue-Regular.ttf");
     -unity-font-style: normal;
 }
@@ -380,8 +384,8 @@
 .sc-words { flex-grow: 1; flex-shrink: 1; margin: 0 10px; min-width: 0; }
 .sc-name { font-size: 16px; -unity-font-style: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-name.none { color: rgb(154, 166, 160); -unity-font-style: italic; }
-.sc-sub { font-size: 12px; color: rgb(154, 166, 160); margin-top: 2px; }
-.sc-dist { font-size: 28px; -unity-font-definition: url("Fonts/BebasNeue-Regular.ttf"); -unity-font-style: normal; }
+.sc-sub { font-size: 12px; color: rgb(154, 166, 160); margin-top: 2px; white-space: normal; }
+.sc-dist { flex-shrink: 0; font-size: 28px; -unity-font-definition: url("Fonts/BebasNeue-Regular.ttf"); -unity-font-style: normal; }
 
 /* ── Hats ─────────────────────────────────────────────────────────────── */
 .hat-pic { width: 52px; height: 52px; margin-right: 12px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.05);
@@ -418,13 +422,20 @@
 
 
 /* ── Challenges in a run ──────────────────────────────────────────────── */
-.h-challenges { position: absolute; left: 12px; top: 120px; width: 176px; padding: 7px 9px 8px 9px; border-radius: 12px;
-    background-color: rgba(10, 14, 16, 0.62); border-width: 1px; border-color: rgba(255, 255, 255, 0.08); }
-.hc-head { font-size: 9px; letter-spacing: 1px; -unity-font-style: bold; color: rgb(155, 225, 93); white-space: normal; margin-bottom: 2px; }
-.hc-row { margin-top: 5px; }
+.p-challenges { margin-top: 18px; padding: 12px 14px 14px 14px; border-radius: 14px;
+    background-color: rgba(255, 255, 255, 0.04); border-width: 1px; border-color: rgba(255, 255, 255, 0.08); }
+.hc-head { font-size: 12px; letter-spacing: 1.5px; -unity-font-style: bold; color: rgb(154, 166, 160); }
+.hc-earned { font-size: 12px; -unity-font-style: bold; color: rgb(155, 225, 93); white-space: normal; margin-top: 3px; }
+.hc-row { margin-top: 10px; }
 .hc-top { flex-direction: row; justify-content: space-between; }
-.hc-text { font-size: 11px; -unity-font-style: bold; color: rgb(232, 236, 230); flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hc-n { font-size: 10px; color: rgb(154, 166, 160); margin-left: 6px; }
-.hc-bar { height: 4px; margin-top: 2px; border-radius: 99px; background-color: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.hc-text { font-size: 14px; -unity-font-style: bold; color: rgb(232, 236, 230); flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hc-n { font-size: 13px; color: rgb(154, 166, 160); margin-left: 8px; flex-shrink: 0; }
+.hc-bar { height: 5px; margin-top: 4px; border-radius: 99px; background-color: rgba(255, 255, 255, 0.1); overflow: hidden; }
 .hc-fill { height: 100%; background-color: rgb(155, 225, 93); }
-.hc-pay { font-size: 9px; color: rgb(155, 225, 93); margin-top: 1px; }
+.hc-pay { font-size: 12px; color: rgb(155, 225, 93); margin-top: 3px; }
+
+/* What a challenge paid, rising off the survivor (Hud.Challenges.cs). */
+.riser { position: absolute; width: 280px; align-items: center; }
+.riser-over { font-size: 12px; letter-spacing: 1.5px; -unity-font-style: bold; color: rgb(238, 242, 236);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9); }
+.riser-text { font-size: 34px; letter-spacing: 1px; color: rgb(155, 225, 93); text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9); }

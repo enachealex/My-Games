@@ -1,8 +1,9 @@
 // Challenges in a run (a player's idea, PORT_PLAN.md note 19): three at a
-// time, each saying up front what it pays: +5% damage, accuracy, range or
-// rate of fire, for the rest of the run. Done, it pays, and another takes its
-// place; a kind done again in the same run asks half as much more. The
-// bonuses stack, and the next run starts at normal.
+// time, each saying up front what it pays: +1% damage, or +5% accuracy, range
+// or rate of fire, for the rest of the run. Done, it pays (the words rise off
+// the survivor), and another takes its place; a kind done again in the same
+// run asks twice as much. The bonuses stack, and the next run starts at
+// normal. They're in the pause menu, not over the run.
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -25,7 +26,7 @@ namespace Graveway
     {
         // The bonus to one of C.Stats from challenges done this run, and the
         // hat being worn (1 = none).
-        public float Bonus(int stat) => run == null ? 1 : 1 + C.Step * run.boosts[stat] + Tunables.HatBoost(run.hat, stat);
+        public float Bonus(int stat) => run == null ? 1 : 1 + C.Steps[stat] * run.boosts[stat] + Tunables.HatBoost(run.hat, stat);
 
         // The accuracy bonus as a spread: tighter by the same share.
         float SpreadBonus => run == null ? 1 : Mathf.Max(0.4f, 2 - Bonus(C.Accuracy));
@@ -87,7 +88,7 @@ namespace Graveway
             run.challengesDone++;
             run.repeats[c.def.id] = run.repeats.TryGetValue(c.def.id, out int n) ? n + 1 : 1;
             run.challenges[i] = Offer();
-            hud.Toast($"Challenge done · +{Mathf.RoundToInt(C.Step * 100)}% {C.Names[c.stat]}", "power", Hex.C(0x9be15d));
+            hud.Rise(C.Pay(c.stat), "Challenge done");
             Sfx.Milestone();
             Haptics.Vibrate(25);
         }

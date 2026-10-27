@@ -11,23 +11,28 @@ namespace Graveway.Tests
         static ChallengeDef Kind(string id) => System.Array.Find(C.Kinds, k => k.id == id);
 
         [Test]
-        public void FourStatsEachPayingFivePercent()
+        public void FourStatsDamagePayingLeast()
         {
             Assert.That(C.Stats, Is.EqualTo(new[] { "damage", "accuracy", "range", "rate" }));
-            Assert.That(C.Step, Is.EqualTo(0.05f));
+            Assert.That(C.Steps, Is.EqualTo(new[] { 0.01f, 0.05f, 0.05f, 0.05f }), "1% damage, 5% the rest");
+            Assert.That(C.Pay(C.Damage), Is.EqualTo("+1% damage"));
+            Assert.That(C.Pay(C.Rate, 3), Is.EqualTo("+15% fire rate"));
             Assert.That(C.Active, Is.EqualTo(3));
             Assert.That(C.Kinds.Length, Is.GreaterThanOrEqualTo(C.Active + 1), "always a different one to offer");
         }
 
         [Test]
-        public void HarderEachTimeAndTidy()
+        public void TwiceAsMuchEachTime()
         {
             Assert.That(C.Target(Kind("kills"), 0), Is.EqualTo(30));
-            Assert.That(C.Target(Kind("kills"), 1), Is.EqualTo(45));
-            Assert.That(C.Target(Kind("kills"), 2), Is.EqualTo(70), "67.5, to the nearest five");
+            Assert.That(C.Target(Kind("kills"), 1), Is.EqualTo(60));
+            Assert.That(C.Target(Kind("kills"), 2), Is.EqualTo(120));
             Assert.That(C.Target(Kind("tanks"), 0), Is.EqualTo(1));
-            Assert.That(C.Target(Kind("tanks"), 1), Is.EqualTo(2));
-            Assert.That(C.Target(Kind("untouched"), 1), Is.EqualTo(230), "225, to the nearest ten");
+            Assert.That(C.Target(Kind("tanks"), 2), Is.EqualTo(4));
+            Assert.That(C.Target(Kind("blasts"), 2), Is.EqualTo(32));
+            Assert.That(C.Target(Kind("untouched"), 1), Is.EqualTo(300));
+            Assert.That(C.Target(Kind("streak"), 2), Is.EqualTo(20));
+            Assert.That(C.Target(Kind("streak"), 3), Is.EqualTo(20), "40 in 3 seconds would be luck");
         }
 
         [Test]

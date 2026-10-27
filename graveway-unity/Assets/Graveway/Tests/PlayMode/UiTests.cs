@@ -284,6 +284,33 @@ namespace Graveway.Tests
             Assert.That(n.tags, Is.EqualTo(new[] { "Bug" }));
             StringAssert.Contains(" HP · ", n.ctx, "a note made in a run says how the run was going");
             Assert.That(n.sent, Is.Null);
+
+            // On a phone, typing: the note sits above the keyboard.
+            Click(ui, "Leave a note");
+            yield return null;
+            var field = Find<TextField>(ui, f => f.ClassListContains("note-text"), "the note's box");
+            field.Focus();
+            Hud.KeyboardForTests = 0.45f;
+            try
+            {
+                yield return null;
+                yield return null;
+                VisualElement Up(string cls) { var e = field.hierarchy.parent; while (e != null && !e.ClassListContains(cls)) e = e.hierarchy.parent; return e; }
+                var modal = Up("modal");
+                var card = Up("card");
+                Assert.That(modal.ClassListContains("typing"));
+                Assert.That(card.worldBound.yMax, Is.LessThanOrEqualTo(modal.worldBound.height * 0.55f + 1), "clear of the keyboard");
+                Assert.That(card.Q<Label>(className: "card-title").resolvedStyle.display, Is.EqualTo(DisplayStyle.None), "without its title, to fit");
+                if (SystemInfo.graphicsDeviceType != UnityEngine.Rendering.GraphicsDeviceType.Null)
+                {
+                    using var photo = new Photo(game);
+                    yield return null;
+                    photo.Shot("13b-note-typing");
+                }
+            }
+            finally { Hud.KeyboardForTests = null; }
+            game.hud.Back();
+            yield return null;
             game.Resume();
             Assert.That(game.state, Is.EqualTo(Game.State.Playing));
         }

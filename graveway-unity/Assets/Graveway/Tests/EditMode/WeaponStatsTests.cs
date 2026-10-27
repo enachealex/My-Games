@@ -20,6 +20,24 @@ namespace Graveway.Tests
             return WeaponStats.Of(Tunables.Weapon(gun), fitted, perk);
         }
 
+        // A survivor's own gun is better in their hands; anyone else's isn't.
+        [Test]
+        public void TheirOwnGunIsBetterInTheirHands()
+        {
+            var juno = Tunables.Character("juno");
+            var plain = new Weapon("launcher", null, null).stats;
+            var hers = new Weapon("launcher", null, juno).stats;
+            Assert.That(hers.damage, Is.EqualTo(plain.damage * 1.25f).Within(1e-3f));
+            Assert.That(hers.fireRate, Is.EqualTo(plain.fireRate * 1.25f).Within(1e-4f));
+            Assert.That(hers.reloadTime, Is.EqualTo(plain.reloadTime * 0.75f).Within(1e-4f));
+            Assert.That(hers.blast.radius, Is.EqualTo(plain.blast.radius * 1.25f).Within(1e-4f));
+            Assert.That(new Weapon("launcher", null, Tunables.Character("bram")).stats.damage, Is.EqualTo(plain.damage), "not Bram's");
+            Assert.That(new Weapon("smg", null, Tunables.Character("wren")).stats.ammoCapacity, Is.EqualTo(37), "32, and 15%");
+            var rook = new Weapon("pistol", null, Tunables.Character("rook")).stats;
+            Assert.That(rook.damage, Is.EqualTo(22 * 1.1f).Within(1e-3f));
+            Assert.That(rook.reloadTime, Is.EqualTo(0.6f).Within(1e-4f), "his perk, on any gun");
+        }
+
         [Test]
         public void FactoryPistolIsItsDefinition()
         {

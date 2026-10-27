@@ -47,6 +47,28 @@ namespace Graveway.Tests
                 Assert.That(c.price, Is.GreaterThan(Tunables.Weapon(c.startingWeapon).price), c.id);
         }
 
+        // Twice what they were (a playtest note), and the dearer the survivor,
+        // the more their own gun gets in their hands, and the more of each.
+        [Test]
+        public void DearerSurvivorsAreBetterSpecialists()
+        {
+            Assert.That(Tunables.Characters.Select(c => (c.id, c.price)),
+                Is.EqualTo(new[] { ("rook", 0), ("bram", 4000), ("juno", 10000), ("wren", 2400) }));
+            var byPrice = Tunables.Characters.OrderBy(c => c.price).ToArray();
+            for (int i = 0; i < byPrice.Length; i++)
+            {
+                var s = byPrice[i].specialty;
+                Assert.That(s.tier, Is.EqualTo(i + 1), byPrice[i].id);
+                if (i == 0) continue;
+                var prev = byPrice[i - 1].specialty;
+                Assert.That(Tunables.SpecialtyText(s).Count, Is.GreaterThan(Tunables.SpecialtyText(prev).Count), byPrice[i].id + ": more of them");
+                Assert.That(s.damage, Is.GreaterThan(prev.damage), byPrice[i].id + ": and more of each");
+            }
+            Assert.That(Tunables.SpecialtyText(Tunables.Character("bram").specialty),
+                Is.EqualTo(new[] { "+20% damage", "+20% fire rate", "20% faster reloads", "+20 max health" }));
+            Assert.That(Tunables.StatsFor(Tunables.Character("bram"), null).maxHp, Is.EqualTo(160), "his 140, and 20");
+        }
+
         [Test]
         public void ANewSaveHasOnlyRook()
         {

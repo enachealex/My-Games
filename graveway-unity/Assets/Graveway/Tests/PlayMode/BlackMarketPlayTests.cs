@@ -102,9 +102,17 @@ namespace Graveway.Tests
             Assert.That(game.CallIn("heli"));
             Assert.That(game.CallIn("backup"));
             Assert.That(game.CallIn("napalm"));
-            for (int i = 0; i < 8; i++) game.SpawnZombie("walker", p.x - 4 + i, p.z - 14, 0, chase: true);
-            yield return Seconds(7);
-            Assert.That(game.HeliLeft, Is.GreaterThan(0).And.LessThan(Tunables.Support.HeliTime), "the helicopter's firing");
+            // Zombies for it to shoot when it gets there (Rook's pistol, his
+            // own, clears a few quickly).
+            bool fired = false;
+            int frames = 0;
+            for (int s = 0; s < 7 && !fired; s++)
+            {
+                for (int i = 0; i < 4; i++) game.SpawnZombie("walker", p.x - 4 + i * 2, p.z - 14, 0, chase: true);
+                for (int f = 0; f < 20 && !fired; f++, frames++) { yield return null; fired = game.HeliLeft > 0 && game.HeliLeft < Tunables.Support.HeliTime; }
+            }
+            Assert.That(fired, "the helicopter's firing");
+            for (; frames < 7 * 20; frames++) yield return null;       // and 7 seconds for the backup
             Assert.That(game.AllyCount, Is.EqualTo(1), "backup has arrived");
             if (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null)
             {

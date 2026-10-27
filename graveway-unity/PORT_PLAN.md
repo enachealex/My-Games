@@ -609,6 +609,50 @@ From a player's feedback, 23 October 2026:
       it's 1,500 in one run now (about 1,700 m, going by the runs on the
       world board). A save from before takes its most from this phone's
       scoreboard, and a straw hat already won stays won.
+21. **Playtest notes from 0.11** (23 to 26 October 2026). *(Built, 26 October 2026.)*
+    - **Survivors as specialists:** *"using a character that has a weapon
+      specialized to them will give bonuses to their weapon and other
+      benefits as well. the higher the character, the more and higher rated
+      the benefits. characters should be double their price."* Prices are
+      doubled (Wren 2,400, Bram 4,000, Juno 10,000), and each survivor's own
+      gun is better in their hands (`Specialty` on each `CharacterDef`; the
+      survivor card shows it):
+      - Rook, tier 1: pistol +10% damage and fire rate.
+      - Wren, tier 2: SMG +15% damage, fire rate and magazine.
+      - Bram, tier 3: shotgun +20% damage and fire rate, 20% faster
+        reloads, and +20 max health.
+      - Juno, tier 4: launcher +25% damage, fire rate and blast radius, 25%
+        faster reloads, and +25 max health.
+    - **Challenges out of the way:** *"hide the challenges during the
+      gameplay and place it in the pause menu below the options."* They're
+      under the pause menu's buttons now, with what's been earned so far.
+    - **What a challenge paid rises off the survivor:** *"there should be a
+      text going from the character and up while fading saying what bonus
+      was received."* "Challenge done" and "+5% fire rate" (say) rise from
+      over their head and fade, in place of the message at the top.
+    - **+1% damage:** *"for the damage increase percentage, only increase
+      by 1%."* Challenges that pay damage pay +1%; the rest still pay +5%.
+    - **Twice as much each time:** *"when they cycle again, the count
+      required to complete the next challenge needs to double."* 30 kills,
+      then 60, then 120. Down 5 in 3 seconds stops at 20: past that it's luck.
+    - **The joystick stays put:** *"the analog should be fixed where the user
+      first touched the screen."* It no longer follows the thumb past the
+      rim.
+    - **Notes you can see while typing:** *"I can't see what I am typing with
+      the keyboard blocking the text field."* While the keyboard's up, the
+      note sits above it, without its title and context, and the text goes
+      straight into it (no second box over the keyboard). The keyboard waits
+      for a tap on the box, so the tags can be picked first.
+    - **Overlapping text:** on the scoreboard, a long line under a name
+      (place and country) ran under the distance; it wraps now, and the
+      distance keeps its room. A look through every screen at three shapes
+      turned up more, now fixed:
+      - Modals leave room at the top, and a message that comes up while
+        one's open ("Run saved", "Note saved") sits in it rather than on
+        the card. The menu's badge no longer peeks over the settings card.
+      - The boss bar is narrower, clear of a four-figure kill count.
+      - Lines of parts joined by "·" (the note's context, the scoreboard,
+        a survivor's specialty) break only between parts.
     - The damage, accuracy, range and fire rate ones add to a run's
       challenge bonuses (`Game.Bonus`); the rest change the survivor as the
       run starts. The hats screen shows each hat's booster under its name,
